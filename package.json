@@ -1,0 +1,28 @@
+{
+  "name": "@osjs/server",
+  "version": "3.0.0-alpha.1",
+  "description": "OS.js v3 Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osjs/osjs-server.git"
+  },
+  "keywords": [
+    "osjs"
+  ],
+  "author": "Anders Evenrud <andersevenrud@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/osjs/osjs-server/issues"
+  },
+  "homepage": "https://github.com/osjs/osjs-server#readme",
+  "dependencies": {
+    "express": "^4.16.2",
+    "log-symbols": "^2.2.0",
+    "mime-types": "^2.1.18",
+    "morgan": "^1.9.0"
+  }
+}
