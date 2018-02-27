@@ -41,14 +41,14 @@ const getPath = (req) => {
   return [dir, vfsPath];
 };
 
-const init = async ({app, express, configuration}) => {
-  app.get('/API/VFS/readdir', async (req, res) => {
+const init = async (core) => {
+  core.app.get('/API/VFS/readdir', async (req, res) => {
     const [dir, vfsPath] = getPath(req);
     const result = await vfs.readdir(dir, vfsPath);
     res.json(result);
   });
 
-  app.get('/API/VFS/readfile', async (req, res) => {
+  core.app.get('/API/VFS/readfile', async (req, res) => {
     const [dir, vfsPath] = getPath(req);
 
     try {

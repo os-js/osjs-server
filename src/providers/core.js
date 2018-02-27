@@ -28,11 +28,25 @@
  * @licence Simplified BSD License
  */
 
+const path = require('path');
+const express = require('express');
+
 const init = async (core) => {
-  core.app.all('/packages/:name/API/:method', (req, res) => {
-    res.status(200).json({
-      result: 'Hello World'
-    });
+  const {app, session, configuration} = core;
+  const indexFile = path.join(configuration.public, configuration.index);
+
+  // Handle sessions
+  app.use(session);
+
+  // Handle index file
+  app.get('/', (req, res) => res.sendFile(indexFile));
+
+  // Handle static resources
+  app.use('/', express.static(configuration.public));
+
+  // Handle Websocket stuff
+  app.ws('/', (ws, req) => {
+    // NOTE: This is required to keep the connection open
   });
 };
 

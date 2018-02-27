@@ -28,97 +28,164 @@
  * @licence Simplified BSD License
  */
 
-const path = require('path');
 const morgan = require('morgan');
 const express = require('express');
+const express_session = require('express-session');
+const express_ws = require('express-ws');
 const symbols = require('log-symbols');
 
-const createConfiguration = cfg => Object.assign({}, {
-  index: 'index.html',
-  hostname: 'localhost',
-  port: 8000,
-  public: null,
-  morgan: 'tiny'
-}, cfg);
+const CoreServiceProvider = require('./providers/core');
 
-const server = (cfg) => {
-  const app = express();
-  const providers = [];
-  const configuration = createConfiguration(cfg);
-  const indexFile = path.join(configuration.public, configuration.index);
-  const args = {app, express, configuration};
-  let stopping;
+/*
+ * Create configuration tree
+ */
+const createConfiguration = cfg => {
+  const result = Object.assign({}, {
+    logging: true,
+    index: 'index.html',
+    hostname: 'localhost',
+    port: 8000,
+    public: null,
+    morgan: 'tiny',
+    ws: {
+      port: undefined
+    },
+    session: {
+      secret: 'osjs',
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        secure: 'auto'
+      }
+    }
+  }, cfg);
 
-  if (!configuration.public) {
-    throw new Error('The public option is required');
+  return result;
+};
+
+/*
+ * Create session parser
+ */
+const createSession = (app, configuration) =>
+  express_session(configuration.session);
+
+/*
+ * Create WebSocket server
+ */
+const createWebsocket = (app, configuration, session) => express_ws(app, null, {
+  wsOptions: Object.assign({}, configuration.ws, {
+    verifyClient: (info, done) => {
+      session(info.req, {}, () => {
+        done(true); // TODO
+      });
+    }
+  })
+});
+
+/**
+ * OS.js Server Core
+ */
+class Core {
+  /**
+   * Creates a new instance
+   * @param {Object} cfg Configuration tree
+   */
+  constructor(cfg) {
+    const app = express();
+
+    this.stopping = false;
+    this.providers = [CoreServiceProvider];
+    this.configuration = createConfiguration(cfg);
+    this.app = app;
+    this.session = createSession(app, this.configuration);
+    this.ws = createWebsocket(app, this.configuration, this.session);
+
+    if (!this.configuration.public) {
+      throw new Error('The public option is required');
+    }
   }
 
-  const start = () => {
-    console.log(symbols.info, 'Starting server...');
+  /**
+   * Destroys the instance
+   */
+  destroy() {
+    if (this.stopping) {
+      return;
+    }
+    this.stopping = true;
 
-    providers.forEach((provider) => provider.start(args))
+    console.log(symbols.warning, 'Stopping server...');
 
     try {
-      app.listen(configuration.port, () => {
-        console.log(symbols.info, 'Using directory', configuration.public.replace(process.cwd(), ''));
-        console.log(symbols.info, `Listening at ${configuration.hostname}:${configuration.port}`);
+      this.providers.forEach((provider) => provider.destroy(this))
+    } catch (e) {
+      console.warn(symbols.error, e);
+    }
+
+    process.exit(0);
+  }
+
+  /**
+   * Registers a service provider
+   * @param {*} provider A provider reference
+   */
+  register(provider) {
+    this.providers.push(provider);
+  }
+
+  /**
+   * Starts the server
+   */
+  start() {
+    console.log(symbols.info, 'Starting server...');
+
+    this.providers.forEach((provider) => provider.start(this));
+
+    try {
+      this.app.listen(this.configuration.port, () => {
+        const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
+        console.log(symbols.info, 'Using directory', this.configuration.public.replace(process.cwd(), ''));
+        console.log(symbols.success, `WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
+        console.log(symbols.success, `HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
         console.log(symbols.success, 'Running...');
       });
     } catch (e) {
       console.error(symbols.error, e);
       process.exit(1);
     }
-  };
+  }
 
-  const init = async () => {
+  /**
+   * Initializes the server
+   */
+  async init() {
     console.log(symbols.info, 'Initializing server...');
 
-    if (configuration.morgan) {
-      app.use(morgan(configuration.morgan));
+    if (this.configuration.logging) {
+      const wss = this.ws.getWss();
+
+      wss.on('connection', (c) => {
+        console.log('WS Connection opened');
+        c.on('close', () => console.log('WS Connection closed'));
+      });
+
+      if (this.configuration.morgan) {
+        this.app.use(morgan(this.configuration.morgan));
+      }
     }
 
-    app.get('/', (req, res) => res.sendFile(indexFile));
-    app.use('/', express.static(configuration.public));
+    console.log(symbols.info, 'Initializing providers...');
 
-    for (let i = 0; i < providers.length; i++) {
+    for (let i = 0; i < this.providers.length; i++) {
       try {
-        await providers[i].init(args);
+        await this.providers[i].init(this);
       } catch (e) {
         console.warn(symbols.warning, e);
       }
     }
 
-    start();
-  };
+    this.start();
+  }
+}
 
-  const register = (provider) => {
-    providers.push(provider);
-  };
-
-  const destroy = () => {
-    if (stopping) {
-      return;
-    }
-    stopping = true;
-
-    console.log(symbols.warning, 'Stopping server...');
-
-    try {
-      providers.forEach((provider) => provider.destroy(args))
-    } catch (e) {
-      console.warn(symbols.error, e);
-    }
-
-    process.exit(0);
-  };
-
-  return {
-    app,
-    init,
-    express,
-    destroy,
-    register,
-  };
-};
-
-module.exports = server;
+module.exports = Core;

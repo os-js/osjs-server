@@ -21,6 +21,8 @@
   "homepage": "https://github.com/osjs/osjs-server#readme",
   "dependencies": {
     "express": "^4.16.2",
+    "express-session": "^1.15.6",
+    "express-ws": "^3.0.0",
     "log-symbols": "^2.2.0",
     "mime-types": "^2.1.18",
     "morgan": "^1.9.0"

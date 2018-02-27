@@ -28,12 +28,13 @@
  * @licence Simplified BSD License
  */
 
-const server = require('./src/server.js');
+const Core = require('./src/server.js');
+const CoreServiceProvider = require('./src/providers/core');
 const PackageServiceProvider = require('./src/providers/packages');
 const VFSServiceProvider = require('./src/providers/vfs');
 
 module.exports = {
-  server,
+  Core,
   PackageServiceProvider,
   VFSServiceProvider
 };
