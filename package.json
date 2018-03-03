@@ -14,7 +14,7 @@
     "osjs"
   ],
   "author": "Anders Evenrud <andersevenrud@gmail.com>",
-  "license": "MIT",
+  "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/osjs/osjs-server/issues"
   },
