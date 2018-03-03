@@ -30,6 +30,7 @@
 
 const path = require('path');
 const express = require('express');
+const bodyParser = require('body-parser');
 
 const init = async (core) => {
   const {app, session, configuration} = core;
@@ -37,6 +38,9 @@ const init = async (core) => {
 
   // Handle sessions
   app.use(session);
+
+  // Handle bodies
+  app.use(bodyParser.json());
 
   // Handle index file
   app.get('/', (req, res) => res.sendFile(indexFile));

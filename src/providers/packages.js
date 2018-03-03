@@ -28,20 +28,44 @@
  * @licence Simplified BSD License
  */
 
+const path = require('path');
+const fs = require('fs');
+const {promisify} = require('util');
+const symbols = require('log-symbols');
+
+const packages = [];
+
 const init = async (core) => {
-  core.app.all('/packages/:name/API/:method', (req, res) => {
-    res.status(200).json({
-      result: 'Hello World'
-    });
-  });
+  const {app, session, configuration} = core;
+  const manifestFile = path.join(configuration.public, 'metadata.json');
+  const manifest = JSON.parse(await promisify(fs.readFile)(manifestFile, {encoding: 'utf8'}));
+
+  for (let i = 0; i < manifest.length; i++) {
+    const package = manifest[i];
+
+    if (package.server) {
+      console.log(symbols.info, `Using ${package._path}/${package.server}`);
+
+      // FIXME
+      const serverFile = path.join(process.cwd(), 'src/packages', package._path, package.server);
+      const script = require(serverFile);
+
+      try {
+        await script.init(core, package);
+        packages.push(script);
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+  }
 };
 
 const start = () => {
-
+  packages.forEach(p => p.start());
 };
 
 const destroy = () => {
-
+  packages.forEach(p => p.destroy());
 };
 
 module.exports = {
