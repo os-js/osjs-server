@@ -41,18 +41,21 @@ const init = async (core) => {
   const manifest = JSON.parse(await promisify(fs.readFile)(manifestFile, {encoding: 'utf8'}));
 
   for (let i = 0; i < manifest.length; i++) {
-    const package = manifest[i];
+    const metadata = manifest[i];
 
-    if (package.server) {
-      console.log(symbols.info, `Using ${package._path}/${package.server}`);
+    if (metadata.server) {
+      console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
 
       // FIXME
-      const serverFile = path.join(process.cwd(), 'src/packages', package._path, package.server);
+      const serverFile = path.join(process.cwd(), 'src/packages', metadata._path, metadata.server);
       const script = require(serverFile);
 
       try {
-        await script.init(core, package);
-        packages.push(script);
+        await script.init(core, metadata);
+        packages.push({
+          metadata,
+          script
+        });
       } catch (e) {
         console.warn(e);
       }
@@ -60,12 +63,12 @@ const init = async (core) => {
   }
 };
 
-const start = () => {
-  packages.forEach(p => p.start());
+const start = (core) => {
+  packages.forEach(({script, metadata}) => script.start(core, metadata));
 };
 
-const destroy = () => {
-  packages.forEach(p => p.destroy());
+const destroy = (core) => {
+  packages.forEach(({script, metadata}) => script.destroy(core, metadata));
 };
 
 module.exports = {
