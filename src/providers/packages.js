@@ -30,35 +30,43 @@
 
 const path = require('path');
 const fs = require('fs');
+const globby = require('globby');
 const {promisify} = require('util');
 const symbols = require('log-symbols');
 
 const packages = [];
 
 const init = async (core) => {
+
   const {app, session, configuration} = core;
-  const manifestFile = path.join(configuration.public, 'metadata.json');
-  const manifest = JSON.parse(await promisify(fs.readFile)(manifestFile, {encoding: 'utf8'}));
+  const readJson = async (f) => JSON.parse(await promisify(fs.readFile)(f, {encoding: 'utf8'}));
 
-  for (let i = 0; i < manifest.length; i++) {
-    const metadata = manifest[i];
+  const files = await globby(path.join(configuration.root, 'src/packages/*/metadata.json'));
+  const manifest = await readJson(path.join(configuration.public, 'metadata.json'));
 
-    if (metadata.server) {
-      console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
+  for (let i = 0; i < files.length; i++) {
+    const file = await readJson(files[i]);
+    const metadata = manifest.find(m => m.name == file.name);
+    if (!metadata || !metadata.server) {
+      continue;
+    }
 
-      // FIXME
-      const serverFile = path.join(process.cwd(), 'src/packages', metadata._path, metadata.server);
-      const script = require(serverFile);
+    const serverFile = path.join(path.dirname(files[i]), metadata.server);
+    if (!fs.existsSync(serverFile)) {
+      continue;
+    }
 
-      try {
-        await script.init(core, metadata);
-        packages.push({
-          metadata,
-          script
-        });
-      } catch (e) {
-        console.warn(e);
-      }
+    console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
+    const script = require(serverFile);
+
+    try {
+      await script.init(core, metadata);
+      packages.push({
+        metadata,
+        script
+      });
+    } catch (e) {
+      console.warn(e);
     }
   }
 };
