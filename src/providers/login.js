@@ -28,15 +28,31 @@
  * @licence Simplified BSD License
  */
 
-const Core = require('./src/server.js');
-const CoreServiceProvider = require('./src/providers/core');
-const PackageServiceProvider = require('./src/providers/packages');
-const VFSServiceProvider = require('./src/providers/vfs');
-const LoginServiceProvider = require('./src/providers/login');
+const path = require('path');
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const init = async (core) => {
+  core.app.post('/login', (req, res) => {
+
+    res.json({
+      user: {
+        username: req.body.username
+      }
+    });
+  });
+};
+
+const start = () => {
+
+};
+
+const destroy = () => {
+
+};
 
 module.exports = {
-  Core,
-  PackageServiceProvider,
-  VFSServiceProvider,
-  LoginServiceProvider
+  init,
+  start,
+  destroy
 };
