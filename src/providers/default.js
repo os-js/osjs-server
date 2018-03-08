@@ -28,18 +28,23 @@
  * @licence Simplified BSD License
  */
 
-const Core = require('./src/server.js');
-const CoreServiceProvider = require('./src/providers/core');
-const PackageServiceProvider = require('./src/providers/packages');
-const VFSServiceProvider = require('./src/providers/vfs');
-const LoginServiceProvider = require('./src/providers/login');
-const DefaultServiceProvider = require('./src/providers/default');
+const CoreServiceProvider = require('./core.js');
+const PackageServiceProvider = require('./packages.js');
+const LoginServiceProvider = require('./login.js');
+const VFSServiceProvider = require('./vfs.js');
+const ServiceProvider = require('../service-provider.js');
 
-module.exports = {
-  Core,
-  CoreServiceProvider,
-  PackageServiceProvider,
-  VFSServiceProvider,
-  LoginServiceProvider,
-  DefaultServiceProvider
-};
+class DefaultServiceProvider extends ServiceProvider {
+
+  constructor(core) {
+    super(core);
+
+    core.register(CoreServiceProvider);
+    core.register(PackageServiceProvider);
+    core.register(VFSServiceProvider);
+    core.register(LoginServiceProvider);
+  }
+
+}
+
+module.exports = DefaultServiceProvider;

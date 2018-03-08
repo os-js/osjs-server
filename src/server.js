@@ -34,8 +34,6 @@ const express_session = require('express-session');
 const express_ws = require('express-ws');
 const symbols = require('log-symbols');
 
-const CoreServiceProvider = require('./providers/core');
-
 /*
  * Create configuration tree
  */
@@ -94,9 +92,7 @@ class Core {
     const app = express();
 
     this.stopping = false;
-    this.providers = [
-      new CoreServiceProvider(this)
-    ];
+    this.providers = [];
     this.configuration = createConfiguration(cfg);
     this.app = app;
     this.session = createSession(app, this.configuration);
