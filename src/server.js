@@ -94,7 +94,9 @@ class Core {
     const app = express();
 
     this.stopping = false;
-    this.providers = [CoreServiceProvider];
+    this.providers = [
+      new CoreServiceProvider(this)
+    ];
     this.configuration = createConfiguration(cfg);
     this.app = app;
     this.session = createSession(app, this.configuration);
@@ -117,7 +119,7 @@ class Core {
     console.log(symbols.warning, 'Stopping server...');
 
     try {
-      this.providers.forEach((provider) => provider.destroy(this))
+      this.providers.forEach((provider) => provider.destroy())
     } catch (e) {
       console.warn(symbols.error, e);
     }
@@ -130,7 +132,7 @@ class Core {
    * @param {*} provider A provider reference
    */
   register(provider) {
-    this.providers.push(provider);
+    this.providers.push(new provider(this));
   }
 
   /**
@@ -139,7 +141,7 @@ class Core {
   start() {
     console.log(symbols.info, 'Starting server...');
 
-    this.providers.forEach((provider) => provider.start(this));
+    this.providers.forEach((provider) => provider.start());
 
     try {
       this.app.listen(this.configuration.port, () => {
@@ -178,7 +180,7 @@ class Core {
 
     for (let i = 0; i < this.providers.length; i++) {
       try {
-        await this.providers[i].init(this);
+        await this.providers[i].init();
       } catch (e) {
         console.warn(symbols.warning, e);
       }

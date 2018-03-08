@@ -28,20 +28,23 @@
  * @licence Simplified BSD License
  */
 
-const ServiceProvider = require('../service-provider.js');
-
-class LoginServiceProvider extends ServiceProvider {
+class ServiceProvider {
+  constructor(core) {
+    this.core = core;
+  }
 
   async init() {
-    this.core.app.post('/login', (req, res) => {
-      res.json({
-        user: {
-          username: req.body.username
-        }
-      });
-    });
+
+  }
+
+  start() {
+
+  }
+
+  destroy() {
+
   }
 
 }
 
-module.exports = LoginServiceProvider;
+module.exports = ServiceProvider;

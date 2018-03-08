@@ -33,54 +33,57 @@ const fs = require('fs');
 const globby = require('globby');
 const {promisify} = require('util');
 const symbols = require('log-symbols');
+const ServiceProvider = require('../service-provider.js');
 
-const packages = [];
+class PackageServiceProvider extends ServiceProvider {
+  constructor(core) {
+    super(core);
+    this.packages = [];
+  }
 
-const init = async (core) => {
+  async init() {
+    const {app, session, configuration} = this.core;
+    const readJson = async (f) => JSON.parse(await promisify(fs.readFile)(f, {encoding: 'utf8'}));
 
-  const {app, session, configuration} = core;
-  const readJson = async (f) => JSON.parse(await promisify(fs.readFile)(f, {encoding: 'utf8'}));
+    const files = await globby(path.join(configuration.root, 'src/packages/*/metadata.json'));
+    const manifest = await readJson(path.join(configuration.public, 'metadata.json'));
 
-  const files = await globby(path.join(configuration.root, 'src/packages/*/metadata.json'));
-  const manifest = await readJson(path.join(configuration.public, 'metadata.json'));
+    for (let i = 0; i < files.length; i++) {
+      const file = await readJson(files[i]);
+      const metadata = manifest.find(m => m.name == file.name);
+      if (!metadata || !metadata.server) {
+        continue;
+      }
 
-  for (let i = 0; i < files.length; i++) {
-    const file = await readJson(files[i]);
-    const metadata = manifest.find(m => m.name == file.name);
-    if (!metadata || !metadata.server) {
-      continue;
-    }
+      const serverFile = path.join(path.dirname(files[i]), metadata.server);
+      if (!fs.existsSync(serverFile)) {
+        continue;
+      }
 
-    const serverFile = path.join(path.dirname(files[i]), metadata.server);
-    if (!fs.existsSync(serverFile)) {
-      continue;
-    }
+      console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
+      const script = require(serverFile);
 
-    console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
-    const script = require(serverFile);
+      try {
+        await script.init(this.core, metadata);
 
-    try {
-      await script.init(core, metadata);
-      packages.push({
-        metadata,
-        script
-      });
-    } catch (e) {
-      console.warn(e);
+        this.packages.push({
+          metadata,
+          script
+        });
+      } catch (e) {
+        console.warn(e);
+      }
     }
   }
-};
 
-const start = (core) => {
-  packages.forEach(({script, metadata}) => script.start(core, metadata));
-};
+  start() {
+    this.packages.forEach(({script, metadata}) => script.start(this.core, metadata));
+  }
 
-const destroy = (core) => {
-  packages.forEach(({script, metadata}) => script.destroy(core, metadata));
-};
+  destroy() {
+    this.packages.forEach(({script, metadata}) => script.destroy(this.core, metadata));
+    this.packages =[];
+  }
+}
 
-module.exports = {
-  init,
-  start,
-  destroy
-};
+module.exports = PackageServiceProvider;

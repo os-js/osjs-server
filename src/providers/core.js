@@ -31,39 +31,32 @@
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
+const ServiceProvider = require('../service-provider.js');
 
-const init = async (core) => {
-  const {app, session, configuration} = core;
-  const indexFile = path.join(configuration.public, configuration.index);
+class CoreServiceProvider extends ServiceProvider {
 
-  // Handle sessions
-  app.use(session);
+  async init() {
+    const {app, session, configuration} = this.core;
+    const indexFile = path.join(configuration.public, configuration.index);
 
-  // Handle bodies
-  app.use(bodyParser.json());
+    // Handle sessions
+    app.use(session);
 
-  // Handle index file
-  app.get('/', (req, res) => res.sendFile(indexFile));
+    // Handle bodies
+    app.use(bodyParser.json());
 
-  // Handle static resources
-  app.use('/', express.static(configuration.public));
+    // Handle index file
+    app.get('/', (req, res) => res.sendFile(indexFile));
 
-  // Handle Websocket stuff
-  app.ws('/', (ws, req) => {
-    // NOTE: This is required to keep the connection open
-  });
-};
+    // Handle static resources
+    app.use('/', express.static(configuration.public));
 
-const start = () => {
+    // Handle Websocket stuff
+    app.ws('/', (ws, req) => {
+      // NOTE: This is required to keep the connection open
+    });
+  }
 
-};
+}
 
-const destroy = () => {
-
-};
-
-module.exports = {
-  init,
-  start,
-  destroy
-};
+module.exports = CoreServiceProvider;

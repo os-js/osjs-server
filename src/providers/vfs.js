@@ -31,6 +31,7 @@
 const vfs = require('../vfs/system');
 const path = require('path');
 const url = require('url');
+const ServiceProvider = require('../service-provider.js');
 
 const getPath = (req) => {
   const {query} = url.parse(req.url, true);
@@ -41,39 +42,31 @@ const getPath = (req) => {
   return [dir, vfsPath];
 };
 
-const init = async (core) => {
-  core.app.get('/vfs/readdir', async (req, res) => {
-    const [dir, vfsPath] = getPath(req);
-    const result = await vfs.readdir(dir, vfsPath);
-    res.json(result);
-  });
+class VFSServiceProvider extends ServiceProvider {
 
-  core.app.get('/vfs/readfile', async (req, res) => {
-    const [dir, vfsPath] = getPath(req);
+  async init() {
+    this.core.app.get('/vfs/readdir', async (req, res) => {
+      const [dir, vfsPath] = getPath(req);
+      const result = await vfs.readdir(dir, vfsPath);
+      res.json(result);
+    });
 
-    try {
-      const stream = await vfs.readfile(dir);
-      if (stream) {
-        stream.pipe(res);
+    this.core.app.get('/vfs/readfile', async (req, res) => {
+      const [dir, vfsPath] = getPath(req);
+
+      try {
+        const stream = await vfs.readfile(dir);
+        if (stream) {
+          stream.pipe(res);
+        }
+      } catch (e) {
+        res.status(404).json({
+          error: e
+        });
       }
-    } catch (e) {
-      res.status(404).json({
-        error: e
-      });
-    }
-  });
-};
+    });
+  }
 
-const start = () => {
+}
 
-};
-
-const destroy = () => {
-
-};
-
-module.exports = {
-  init,
-  start,
-  destroy
-};
+module.exports = VFSServiceProvider;
