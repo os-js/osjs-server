@@ -34,11 +34,22 @@ class LoginServiceProvider extends ServiceProvider {
 
   async init() {
     this.core.app.post('/login', (req, res) => {
+      const {username} = req.body;
+      req.session.username = username;
+
       res.json({
-        user: {
-          username: req.body.username
-        }
+        user: {username}
       });
+    });
+
+    this.core.app.post('/logout', (req, res) => {
+      try {
+        req.session.destroy();
+      } catch (e) {
+        console.warn(e);
+      }
+
+      res.json({});
     });
   }
 

@@ -33,33 +33,30 @@ const express = require('express');
 const express_session = require('express-session');
 const express_ws = require('express-ws');
 const symbols = require('log-symbols');
+const merge = require('deepmerge');
 
 /*
  * Create configuration tree
  */
-const createConfiguration = cfg => {
-  const result = Object.assign({}, {
-    logging: true,
-    index: 'index.html',
-    hostname: 'localhost',
-    port: 8000,
-    public: null,
-    morgan: 'tiny',
-    ws: {
-      port: undefined
-    },
-    session: {
-      secret: 'osjs',
-      resave: false,
-      saveUninitialized: true,
-      cookie: {
-        secure: 'auto'
-      }
+const createConfiguration = cfg => merge({
+  logging: true,
+  index: 'index.html',
+  hostname: 'localhost',
+  port: 8000,
+  public: null,
+  morgan: 'tiny',
+  ws: {
+    port: undefined
+  },
+  session: {
+    secret: 'osjs',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      secure: 'auto'
     }
-  }, cfg);
-
-  return result;
-};
+  }
+}, cfg);
 
 /*
  * Create session parser
@@ -74,7 +71,7 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   wsOptions: Object.assign({}, configuration.ws, {
     verifyClient: (info, done) => {
       session(info.req, {}, () => {
-        done(true); // TODO
+        done(true);
       });
     }
   })
