@@ -32,7 +32,7 @@ const Core = require('./src/server.js');
 const CoreServiceProvider = require('./src/providers/core');
 const PackageServiceProvider = require('./src/providers/packages');
 const VFSServiceProvider = require('./src/providers/vfs');
-const LoginServiceProvider = require('./src/providers/login');
+const AuthServiceProvider = require('./src/providers/auth');
 const DefaultServiceProvider = require('./src/providers/default');
 
 module.exports = {
@@ -40,6 +40,6 @@ module.exports = {
   CoreServiceProvider,
   PackageServiceProvider,
   VFSServiceProvider,
-  LoginServiceProvider,
+  AuthServiceProvider,
   DefaultServiceProvider
 };

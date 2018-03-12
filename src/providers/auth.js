@@ -30,7 +30,7 @@
 
 const ServiceProvider = require('../service-provider.js');
 
-class LoginServiceProvider extends ServiceProvider {
+class AuthServiceProvider extends ServiceProvider {
 
   async init() {
     this.core.app.post('/login', (req, res) => {
@@ -55,4 +55,4 @@ class LoginServiceProvider extends ServiceProvider {
 
 }
 
-module.exports = LoginServiceProvider;
+module.exports = AuthServiceProvider;

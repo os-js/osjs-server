@@ -30,7 +30,7 @@
 
 const CoreServiceProvider = require('./core.js');
 const PackageServiceProvider = require('./packages.js');
-const LoginServiceProvider = require('./login.js');
+const AuthServiceProvider = require('./auth.js');
 const VFSServiceProvider = require('./vfs.js');
 const ServiceProvider = require('../service-provider.js');
 
@@ -42,7 +42,7 @@ class DefaultServiceProvider extends ServiceProvider {
     core.register(CoreServiceProvider);
     core.register(PackageServiceProvider);
     core.register(VFSServiceProvider);
-    core.register(LoginServiceProvider);
+    core.register(AuthServiceProvider);
   }
 
 }
