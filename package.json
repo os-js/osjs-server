@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/osjs/osjs-server.git"
+    "url": "git+https://github.com/os-js/osjs-server.git"
   },
   "keywords": [
     "osjs"
@@ -16,9 +16,9 @@
   "author": "Anders Evenrud <andersevenrud@gmail.com>",
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/osjs/osjs-server/issues"
+    "url": "https://github.com/os-js/osjs-server/issues"
   },
-  "homepage": "https://github.com/osjs/osjs-server#readme",
+  "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
     "body-parser": "^1.18.2",
     "deepmerge": "^2.1.0",
