@@ -47,8 +47,12 @@ class VFSServiceProvider extends ServiceProvider {
   async init() {
     this.core.app.get('/vfs/readdir', async (req, res) => {
       const [dir, vfsPath] = getPath(req);
-      const result = await vfs.readdir(dir, vfsPath);
-      res.json(result);
+      try {
+        const result = await vfs.readdir(dir, vfsPath);
+        res.json(result);
+      } catch (e) {
+        res.status(404).json({error: e});
+      }
     });
 
     this.core.app.get('/vfs/readfile', async (req, res) => {
@@ -60,9 +64,7 @@ class VFSServiceProvider extends ServiceProvider {
           stream.pipe(res);
         }
       } catch (e) {
-        res.status(404).json({
-          error: e
-        });
+        res.status(404).json({error: e});
       }
     });
   }
