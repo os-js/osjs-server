@@ -35,6 +35,19 @@ const {promisify} = require('util');
 const symbols = require('log-symbols');
 const ServiceProvider = require('../service-provider.js');
 
+/*
+ * Creates a helper passed on to application methods
+ */
+const proc = metadata => ({
+  metadata,
+  resource: (path) => {
+    if (path.substr(0, 1) !== '/') {
+      path = '/' + path;
+    }
+    return `/packages/${metadata._path}${path}`;
+  }
+});
+
 class PackageServiceProvider extends ServiceProvider {
   constructor(core) {
     super(core);
@@ -64,14 +77,7 @@ class PackageServiceProvider extends ServiceProvider {
       const script = require(serverFile);
 
       try {
-        await script.init(this.core, metadata, {
-          resource: (path) => {
-            if (path.substr(0, 1) !== '/') {
-              path = '/' + path;
-            }
-            return `/packages/${metadata._path}${path}`;
-          }
-        });
+        await script.init(this.core, proc(metadata));
 
         this.packages.push({
           metadata,
@@ -84,11 +90,11 @@ class PackageServiceProvider extends ServiceProvider {
   }
 
   start() {
-    this.packages.forEach(({script, metadata}) => script.start(this.core, metadata));
+    this.packages.forEach(({script, metadata}) => script.start(this.core, proc(metadata)));
   }
 
   destroy() {
-    this.packages.forEach(({script, metadata}) => script.destroy(this.core, metadata));
+    this.packages.forEach(({script, metadata}) => script.destroy(this.core, proc(metadata)));
     this.packages =[];
   }
 }
