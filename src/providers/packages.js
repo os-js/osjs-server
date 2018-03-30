@@ -64,7 +64,14 @@ class PackageServiceProvider extends ServiceProvider {
       const script = require(serverFile);
 
       try {
-        await script.init(this.core, metadata);
+        await script.init(this.core, metadata, {
+          resource: (path) => {
+            if (path.substr(0, 1) !== '/') {
+              path = '/' + path;
+            }
+            return `/packages/${metadata._path}${path}`;
+          }
+        });
 
         this.packages.push({
           metadata,
