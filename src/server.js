@@ -35,6 +35,11 @@ const express_ws = require('express-ws');
 const symbols = require('log-symbols');
 const merge = require('deepmerge');
 
+const CoreServiceProvider = require('./providers/core.js');
+const PackageServiceProvider = require('./providers/packages.js');
+const AuthServiceProvider = require('./providers/auth.js');
+const VFSServiceProvider = require('./providers/vfs.js');
+
 /*
  * Create configuration tree
  */
@@ -84,9 +89,15 @@ class Core {
   /**
    * Creates a new instance
    * @param {Object} cfg Configuration tree
+   * @param {Object} [options] Options
+   * @param {Boolean} [options.registerDefault] Register default provided service providers
    */
-  constructor(cfg) {
+  constructor(cfg, options = {}) {
     const app = express();
+
+    options = Object.assign({}, {
+      registerDefault: true
+    }, options);
 
     this.stopping = false;
     this.providers = [];
@@ -97,6 +108,13 @@ class Core {
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
+    }
+
+    if (options.registerDefault) {
+      this.register(CoreServiceProvider);
+      this.register(PackageServiceProvider);
+      this.register(VFSServiceProvider);
+      this.register(AuthServiceProvider);
     }
   }
 

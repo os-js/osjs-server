@@ -33,13 +33,11 @@ const CoreServiceProvider = require('./src/providers/core');
 const PackageServiceProvider = require('./src/providers/packages');
 const VFSServiceProvider = require('./src/providers/vfs');
 const AuthServiceProvider = require('./src/providers/auth');
-const DefaultServiceProvider = require('./src/providers/default');
 
 module.exports = {
   Core,
   CoreServiceProvider,
   PackageServiceProvider,
   VFSServiceProvider,
-  AuthServiceProvider,
-  DefaultServiceProvider
+  AuthServiceProvider
 };
