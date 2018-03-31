@@ -18,6 +18,9 @@
   "bugs": {
     "url": "https://github.com/os-js/osjs-server/issues"
   },
+  "engines": {
+    "node": ">=8.0"
+  },
   "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
     "body-parser": "^1.18.2",
