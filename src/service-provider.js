@@ -28,19 +28,40 @@
  * @licence Simplified BSD License
  */
 
+/**
+ * Service Provider Interface
+ *
+ * @desc Provides a basic Service Provider interface for OS.js
+ *
+ * @interface
+ */
 class ServiceProvider {
+
+  /**
+   * Constructor
+   * @param {Core} core Core reference
+   */
   constructor(core) {
     this.core = core;
   }
 
+  /**
+   * Initializes provider
+   */
   async init() {
 
   }
 
+  /**
+   * Starts provider
+   */
   start() {
 
   }
 
+  /**
+   * Destroys provider
+   */
   destroy() {
 
   }

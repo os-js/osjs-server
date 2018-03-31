@@ -30,6 +30,11 @@
 
 const ServiceProvider = require('../service-provider.js');
 
+/**
+ * OS.js Auth Service Provider
+ *
+ * @desc Creates the login prompt and handles authentication flow
+ */
 class AuthServiceProvider extends ServiceProvider {
 
   async init() {

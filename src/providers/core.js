@@ -33,6 +33,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const ServiceProvider = require('../service-provider.js');
 
+/**
+ * OS.js Core Service Provider
+ *
+ * @desc Provides base services
+ */
 class CoreServiceProvider extends ServiceProvider {
 
   async init() {

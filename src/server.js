@@ -83,7 +83,9 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
 });
 
 /**
- * OS.js Server Core
+ * Server Core
+ *
+ * @desc Provides the OS.js Server Core
  */
 class Core {
   /**
