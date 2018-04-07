@@ -44,7 +44,7 @@ const proc = metadata => ({
     if (path.substr(0, 1) !== '/') {
       path = '/' + path;
     }
-    return `/packages/${metadata._path}${path}`;
+    return `/apps/${metadata._path}${path}`;
   }
 });
 
