@@ -32,37 +32,88 @@ const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
 const {promisify} = require('util');
+const readdirAsync = promisify(fs.readdir);
+const statAsync = promisify(fs.stat);
+const mkdirAsync = promisify(fs.mkdir);
+const renameAsync = promisify(fs.rename);
+const unlinkAsync = promisify(fs.rename);
 
-const readdir = async (root, vfsPath) => {
-  const files = await promisify(fs.readdir)(root)
+/*
+ * Resolves "real path"
+ */
+const createRealPath = file => path.join('/', process.cwd(), file || '/'); // FIXME
+
+/*
+ * Creates an object readable by client
+ */
+const createFileIter = async (realRoot, file) => {
+  const filename = path.basename(file);
+  const realPath = path.join(realRoot, filename);
+  const stat = await statAsync(realPath);
+
+  return {
+    isDirectory: stat.isDirectory(),
+    isFile: stat.isFile(),
+    mime: stat.isFile()
+      ? mime.lookup(realPath) || 'application/octet-stream'
+      : null,
+    size: stat.size,
+    path: file,
+    filename,
+    stat
+  };
+};
+
+/**
+ * Checks if file exists
+ * @param {String} file The file path from client
+ * @return {Promise<boolean, Error>}
+ */
+const exists = (file) => new Promise((resolve, reject) => {
+  fs.access(file, fs.F_OK, err => resolve(!err));
+});
+
+/**
+ * Get file statistics
+ * @param {String} file The file path from client
+ * @return {Object}
+ */
+const stat = async (file) => {
+  const realPath = createRealPath(file);
+  const stat = await statAsync(realPath);
+  return createFileIter(realPath, file)
+};
+
+/**
+ * Reads directory
+ * @param {String} root The file path from client
+ * @return {Object[]}
+ */
+const readdir = async (root) => {
+  const realPath = createRealPath(root);
+  const files = await readdirAsync(realPath);
   const result = [];
 
   for (let i = 0; i < files.length; i++) {
-    const filename = files[i];
-    const file = path.join(root, filename);
-    const stat = await promisify(fs.stat)(file)
-
-    result.push({
-      isDirectory: stat.isDirectory(),
-      isFile: stat.isFile(),
-      mime: stat.isFile()
-        ? mime.lookup(file) || 'application/octet-stream'
-        : null,
-      size: stat.size,
-      path: path.join(vfsPath, filename),
-      filename,
-      stat
-    });
+    const file = path.join(root, files[i]);
+    const iter = await createFileIter(realPath, file);
+    result.push(iter);
   }
 
   return result;
 };
 
+/**
+ * Reads file stream
+ * @param {String} file The file path from client
+ * @return {stream.Readable}
+ */
 const readfile = async (file) => {
-  const stat = await promisify(fs.stat)(file);
+  const realPath = createRealPath(file);
+  const stat = await statAsync(realPath);
 
   if (stat.isFile()) {
-    return fs.createReadStream(file, {
+    return fs.createReadStream(realPath, {
       flags: 'r'
     });
   }
@@ -70,7 +121,65 @@ const readfile = async (file) => {
   return false;
 };
 
+/**
+ * Creates directory
+ * @param {String} file The file path from client
+ * @return {boolean}
+ */
+const mkdir = async (file) => {
+  const realPath = createRealPath(file);
+
+  await mkdirAsync(realPath);
+
+  return true;
+};
+
+/**
+ * Writes file stream
+ * @param {String} file The file path from client
+ * @param {stream.Writable} data The stream
+ * @return {boolean}
+ */
+const writefile = async (file, data) => {
+  throw new Error('Not implemented'); // TODO
+};
+
+/**
+ * Renames given file or directory
+ * @param {String} src The source file path from client
+ * @param {String} dest The destination file path from client
+ * @return {boolean}
+ */
+const rename = async (src, dest) => {
+  const realSource = createRealPath(src);
+  const realDest = createRealPath(dest);
+
+  await renameAsync(realSource, realDest);
+
+  return true;
+};
+
+/**
+ * Removes given file or directory
+ * @param {String} file The file path from client
+ * @return {boolean}
+ */
+const unlink = async (file) => {
+  // TODO: Recursively remove directories
+  const realPath = createRealPath(file);
+
+  await unlinkAsync(realPath);
+
+  return true;
+};
+
 module.exports = {
+  stat,
+  exists,
   readdir,
-  readfile
+  readfile,
+  writefile,
+  mkdir,
+  rename,
+  unlink
 };

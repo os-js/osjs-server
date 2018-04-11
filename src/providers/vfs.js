@@ -33,15 +33,6 @@ const path = require('path');
 const url = require('url');
 const ServiceProvider = require('../service-provider.js');
 
-const getPath = (req) => {
-  const {query} = url.parse(req.url, true);
-  const root = process.cwd();
-  const vfsPath = path.join('/', query.path || '/')
-  const dir = path.join(root, vfsPath);
-
-  return [dir, vfsPath];
-};
-
 /**
  * OS.js Virtual Filesystem Service Provider
  *
@@ -50,27 +41,45 @@ const getPath = (req) => {
 class VFSServiceProvider extends ServiceProvider {
 
   async init() {
-    this.core.app.get('/vfs/readdir', async (req, res) => {
-      const [dir, vfsPath] = getPath(req);
-      try {
-        const result = await vfs.readdir(dir, vfsPath);
-        res.json(result);
-      } catch (e) {
-        res.status(404).json({error: e});
-      }
-    });
+    const methods = {
+      'exists': ['path'],
+      'stat': ['path'],
+      'readdir': ['path'],
+      'readfile': ['path'],
+      'writefile': ['path'],
+      'mkdir': ['path'],
+      'rename': ['from', 'to'],
+      'unlink': ['path']
+    };
 
-    this.core.app.get('/vfs/readfile', async (req, res) => {
-      const [dir, vfsPath] = getPath(req);
+    Object.keys(methods).forEach(k => {
+      this.core.app.get('/vfs/' + k, async (req, res) => {
+        const {query} = url.parse(req.url, true);
+        const args = methods[k].reduce((result, item) => {
+          return result.concat([query[item]]);
+        }, []);
 
-      try {
-        const stream = await vfs.readfile(dir);
-        if (stream) {
-          stream.pipe(res);
+        try {
+          const result = await vfs[k](query.path);
+
+          if (k === 'readfile') {
+            if (result) { // stream
+              result.pipe(res);
+            } else {
+              res.status(500)
+                .send('Failed to create stream');
+            }
+          } else {
+            res.json(result);
+          }
+        } catch (e) {
+          console.warn(e);
+
+          // FIXME
+          res.status(404)
+            .json({error: e});
         }
-      } catch (e) {
-        res.status(404).json({error: e});
-      }
+      });
     });
   }
 
