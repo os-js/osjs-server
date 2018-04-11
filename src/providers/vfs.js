@@ -94,7 +94,7 @@ class VFSServiceProvider extends ServiceProvider {
       'readdir': ['path'],
       'readfile': ['path'],
       'writefile': [
-        (fields, files) => fields.path,
+        'path',
         (fields, files) => fs.createReadStream(files.upload.path)
       ],
       'mkdir': ['path'],
@@ -120,6 +120,11 @@ class VFSServiceProvider extends ServiceProvider {
           await vfsRequestWrapper(req, res, k, m, args);
         } catch (error) {
           res.status(500).json({error});
+        }
+
+        // Remove uploads
+        for (let fieldname in files) {
+          fs.unlink(files[fieldname].path, () => ({/* noop */}));
         }
       });
     });

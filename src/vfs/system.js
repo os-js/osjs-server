@@ -141,6 +141,9 @@ const mkdir = async (file) => {
  * @return {Promise<boolean, Error>}
  */
 const writefile = (file, data) => new Promise((resolve, reject) => {
+  // FIXME: Currently this actually copies the file because
+  // formidable will put this in a temporary directory.
+  // It would probably be better to do a "rename()" on local filesystems
   const realPath = createRealPath(file);
 
   const write = () => {
