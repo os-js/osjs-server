@@ -137,12 +137,27 @@ const mkdir = async (file) => {
 /**
  * Writes file stream
  * @param {String} file The file path from client
- * @param {stream.Writable} data The stream
- * @return {boolean}
+ * @param {stream.Readable} data The stream
+ * @return {Promise<boolean, Error>}
  */
-const writefile = async (file, data) => {
-  throw new Error('Not implemented'); // TODO
-};
+const writefile = (file, data) => new Promise((resolve, reject) => {
+  const realPath = createRealPath(file);
+
+  const write = () => {
+    const stream = fs.createWriteStream(realPath);
+    data.on('error', err => reject(err));
+    data.on('end', () => resolve(true));
+    data.pipe(stream);
+  };
+
+  statAsync(realPath).then(stat => {
+    if (stat.isDirectory()) {
+      resolve(false);
+    } else {
+      write();
+    }
+  }).catch((err) => err.code === 'ENOENT' ? write()  : reject(err));
+});
 
 /**
  * Renames given file or directory

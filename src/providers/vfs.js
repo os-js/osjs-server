@@ -29,9 +29,56 @@
  */
 
 const vfs = require('../vfs/system');
+const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const formidable = require('formidable');
 const ServiceProvider = require('../service-provider.js');
+
+const vfsRequestWrapper = async (req, res, k, m, args) => {
+  try {
+    const result = await vfs[k](...args);
+
+    if (k === 'readfile') {
+      if (result) { // stream
+        result.pipe(res);
+      } else {
+        res.status(500)
+          .send('Failed to create stream');
+      }
+    } else {
+      res.json(result);
+    }
+  } catch (e) {
+    console.warn(e);
+
+    // FIXME
+    res.status(404)
+      .json({error: e});
+  }
+};
+
+const parseFormAsync = req => new Promise((resolve, reject) => {
+  const form = new formidable.IncomingForm();
+
+  form.parse(req, (err, fields, files) => {
+    if (err) {
+      reject(err);
+    } else {
+      resolve({fields, files});
+    }
+  });
+});
+
+const parseRequestWrapper = async (req, res, k, m) => {
+  if (m === 'post') {
+    const form = new formidable.IncomingForm();
+    return parseFormAsync(req);
+  }
+
+  const {query} = url.parse(req.url, true);
+  return {fields: query, files: {}};
+};
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -46,38 +93,33 @@ class VFSServiceProvider extends ServiceProvider {
       'stat': ['path'],
       'readdir': ['path'],
       'readfile': ['path'],
-      'writefile': ['path'],
+      'writefile': [
+        (fields, files) => fields.path,
+        (fields, files) => fs.createReadStream(files.upload.path)
+      ],
       'mkdir': ['path'],
       'rename': ['from', 'to'],
       'unlink': ['path']
     };
 
     Object.keys(methods).forEach(k => {
-      this.core.app.get('/vfs/' + k, async (req, res) => {
-        const {query} = url.parse(req.url, true);
-        const args = methods[k].reduce((result, item) => {
-          return result.concat([query[item]]);
-        }, []);
+      const m = k === 'writefile' ? 'post' : 'get';
 
+      this.core.app[m]('/vfs/' + k, async (req, res) => {
         try {
-          const result = await vfs[k](query.path);
+          const {fields, files} = await parseRequestWrapper(req, res, k, m);
 
-          if (k === 'readfile') {
-            if (result) { // stream
-              result.pipe(res);
-            } else {
-              res.status(500)
-                .send('Failed to create stream');
-            }
-          } else {
-            res.json(result);
-          }
-        } catch (e) {
-          console.warn(e);
+          const args = methods[k].reduce((result, item) => {
+            const param = typeof item === 'function'
+              ? item(fields, files)
+              : fields[item];
 
-          // FIXME
-          res.status(404)
-            .json({error: e});
+            return result.concat([param]);
+          }, []);
+
+          await vfsRequestWrapper(req, res, k, m, args);
+        } catch (error) {
+          res.status(500).json({error});
         }
       });
     });

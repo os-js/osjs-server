@@ -28,6 +28,7 @@
     "express": "^4.16.2",
     "express-session": "^1.15.6",
     "express-ws": "^3.0.0",
+    "formidable": "^1.2.1",
     "globby": "^8.0.1",
     "log-symbols": "^2.2.0",
     "mime-types": "^2.1.18",
