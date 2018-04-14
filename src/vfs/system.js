@@ -28,15 +28,9 @@
  * @licence Simplified BSD License
  */
 
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const mime = require('mime-types');
-const {promisify} = require('util');
-const readdirAsync = promisify(fs.readdir);
-const statAsync = promisify(fs.stat);
-const mkdirAsync = promisify(fs.mkdir);
-const renameAsync = promisify(fs.rename);
-const unlinkAsync = promisify(fs.rename);
 
 /*
  * Resolves "real path"
@@ -49,7 +43,7 @@ const createRealPath = file => path.join('/', process.cwd(), file || '/'); // FI
 const createFileIter = async (realRoot, file) => {
   const filename = path.basename(file);
   const realPath = path.join(realRoot, filename);
-  const stat = await statAsync(realPath);
+  const stat = await fs.stat(realPath);
 
   return {
     isDirectory: stat.isDirectory(),
@@ -80,7 +74,7 @@ const exists = (file) => new Promise((resolve, reject) => {
  */
 const stat = async (file) => {
   const realPath = createRealPath(file);
-  const stat = await statAsync(realPath);
+  const stat = await fs.stat(realPath);
   return createFileIter(realPath, file)
 };
 
@@ -91,7 +85,7 @@ const stat = async (file) => {
  */
 const readdir = async (root) => {
   const realPath = createRealPath(root);
-  const files = await readdirAsync(realPath);
+  const files = await fs.readdir(realPath);
   const result = [];
 
   for (let i = 0; i < files.length; i++) {
@@ -110,7 +104,7 @@ const readdir = async (root) => {
  */
 const readfile = async (file) => {
   const realPath = createRealPath(file);
-  const stat = await statAsync(realPath);
+  const stat = await fs.stat(realPath);
 
   if (stat.isFile()) {
     return fs.createReadStream(realPath, {
@@ -129,7 +123,7 @@ const readfile = async (file) => {
 const mkdir = async (file) => {
   const realPath = createRealPath(file);
 
-  await mkdirAsync(realPath);
+  await fs.mkdir(realPath);
 
   return true;
 };
@@ -153,7 +147,7 @@ const writefile = (file, data) => new Promise((resolve, reject) => {
     data.pipe(stream);
   };
 
-  statAsync(realPath).then(stat => {
+  fs.stat(realPath).then(stat => {
     if (stat.isDirectory()) {
       resolve(false);
     } else {
@@ -172,7 +166,7 @@ const rename = async (src, dest) => {
   const realSource = createRealPath(src);
   const realDest = createRealPath(dest);
 
-  await renameAsync(realSource, realDest);
+  await fs.rename(realSource, realDest);
 
   return true;
 };
@@ -186,7 +180,7 @@ const unlink = async (file) => {
   // TODO: Recursively remove directories
   const realPath = createRealPath(file);
 
-  await unlinkAsync(realPath);
+  await fs.unlink(realPath);
 
   return true;
 };

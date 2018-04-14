@@ -118,14 +118,15 @@ class VFSServiceProvider extends ServiceProvider {
           }, []);
 
           await vfsRequestWrapper(req, res, k, m, args);
+
+          // Remove uploads
+          for (let fieldname in files) {
+            fs.unlink(files[fieldname].path, () => ({/* noop */}));
+          }
         } catch (error) {
           res.status(500).json({error});
         }
 
-        // Remove uploads
-        for (let fieldname in files) {
-          fs.unlink(files[fieldname].path, () => ({/* noop */}));
-        }
       });
     });
   }
