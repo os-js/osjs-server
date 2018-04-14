@@ -172,6 +172,21 @@ const rename = async (src, dest) => {
 };
 
 /**
+ * Copies given file or directory
+ * @param {String} src The source file path from client
+ * @param {String} dest The destination file path from client
+ * @return {boolean}
+ */
+const copy = async (src, dest) => {
+  const realSource = createRealPath(src);
+  const realDest = createRealPath(dest);
+
+  await fs.copy(realSource, realDest);
+
+  return true;
+};
+
+/**
  * Removes given file or directory
  * @param {String} file The file path from client
  * @return {boolean}
@@ -193,5 +208,6 @@ module.exports = {
   writefile,
   mkdir,
   rename,
+  copy,
   unlink
 };
