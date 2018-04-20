@@ -35,7 +35,7 @@ const mime = require('mime-types');
 /*
  * Resolves "real path"
  */
-const createRealPath = file => path.join('/', process.cwd(), file || '/'); // FIXME
+const createRealPath = file => path.join('/', process.cwd(), (file || '/').replace(/^(\w+):/, '')); // FIXME
 
 /*
  * Creates an object readable by client
