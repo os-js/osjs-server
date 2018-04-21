@@ -33,7 +33,14 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const formidable = require('formidable');
+const sanitizeFilename = require('sanitize-filename');
 const ServiceProvider = require('../service-provider.js');
+
+const sanitize = filename => {
+  const [name, str] = (filename.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
+  const sane = str.split('/').map(s => sanitizeFilename(s)).join('/').replace(/\/+/g, '/');
+  return name + ':' + sane;
+}
 
 const vfsRequestWrapper = wrapper => async (req, res, k, m, args) => {
   try {
@@ -133,7 +140,7 @@ class VFSServiceProvider extends ServiceProvider {
           const args = methods[k].reduce((result, item) => {
             const param = typeof item === 'function'
               ? item(fields, files)
-              : fields[item];
+              : sanitize(fields[item]);
 
             return result.concat([param]);
           }, []);
