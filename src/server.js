@@ -60,6 +60,12 @@ const createConfiguration = cfg => merge({
     cookie: {
       secure: 'auto'
     }
+  },
+  vfs: {
+    mountpoints: [{
+      name: 'osjs',
+      root: '{root}/dist'
+    }]
   }
 }, cfg);
 
@@ -168,6 +174,26 @@ class Core {
       console.error(symbols.error, e);
       process.exit(1);
     }
+  }
+
+  /**
+   * Gets a configuration entry by key
+   *
+   * @param {String} key The key to get the value from
+   * @param {*} [defaultValue] If result is undefined, return this instead
+   * @return {*}
+   */
+  config(key, defaultValue) {
+
+    let result;
+
+    try {
+      result = key
+        .split(/\./g)
+        .reduce((result, key) => result[key], Object.assign({}, this.configuration));
+    } catch (e) { /* noop */ }
+
+    return typeof result === 'undefined' ? defaultValue : result;
   }
 
   /**
