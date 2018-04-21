@@ -64,7 +64,9 @@ const createConfiguration = cfg => merge({
   vfs: {
     mountpoints: [{
       name: 'osjs',
-      root: '{root}/dist'
+      attributes: {
+        root: '{root}/dist'
+      }
     }]
   }
 }, cfg);

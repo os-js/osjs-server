@@ -119,7 +119,7 @@ class VFSServiceProvider extends ServiceProvider {
         throw new Error(`Mountpoint for path '${file}' not found.`);
       }
 
-      const root = resolveSegments(found.root);
+      const root = resolveSegments(found.attributes.root);
       return path.join(root, str);
     };
 
