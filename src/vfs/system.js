@@ -33,11 +33,6 @@ const path = require('path');
 const mime = require('mime-types');
 
 /*
- * Resolves "real path"
- */
-const createRealPath = file => path.join('/', process.cwd(), (file || '/').replace(/^(\w+):/, '')); // FIXME
-
-/*
  * Creates an object readable by client
  */
 const createFileIter = async (realRoot, file) => {
@@ -63,8 +58,9 @@ const createFileIter = async (realRoot, file) => {
  * @param {String} file The file path from client
  * @return {Promise<boolean, Error>}
  */
-const exists = (file) => new Promise((resolve, reject) => {
-  fs.access(file, fs.F_OK, err => resolve(!err));
+const exists = vfs => file => new Promise((resolve, reject) => {
+  const realPath = vfs.resolve(file);
+  fs.access(realPath, fs.F_OK, err => resolve(!err));
 });
 
 /**
@@ -72,8 +68,8 @@ const exists = (file) => new Promise((resolve, reject) => {
  * @param {String} file The file path from client
  * @return {Object}
  */
-const stat = async (file) => {
-  const realPath = createRealPath(file);
+const stat = vfs => async file => {
+  const realPath = vfs.resolve(file);
   const stat = await fs.stat(realPath);
   return createFileIter(realPath, file)
 };
@@ -83,8 +79,8 @@ const stat = async (file) => {
  * @param {String} root The file path from client
  * @return {Object[]}
  */
-const readdir = async (root) => {
-  const realPath = createRealPath(root);
+const readdir = vfs => async root => {
+  const realPath = vfs.resolve(root);
   const files = await fs.readdir(realPath);
 
   return Promise.all(files.map(f => createFileIter(realPath, path.join(root, f))));
@@ -95,8 +91,8 @@ const readdir = async (root) => {
  * @param {String} file The file path from client
  * @return {stream.Readable}
  */
-const readfile = async (file) => {
-  const realPath = createRealPath(file);
+const readfile = vfs => async file => {
+  const realPath = vfs.resolve(file);
   const stat = await fs.stat(realPath);
 
   if (stat.isFile()) {
@@ -113,8 +109,8 @@ const readfile = async (file) => {
  * @param {String} file The file path from client
  * @return {boolean}
  */
-const mkdir = async (file) => {
-  const realPath = createRealPath(file);
+const mkdir = vfs => async file => {
+  const realPath = vfs.resolve(file);
 
   await fs.mkdir(realPath);
 
@@ -127,11 +123,11 @@ const mkdir = async (file) => {
  * @param {stream.Readable} data The stream
  * @return {Promise<boolean, Error>}
  */
-const writefile = (file, data) => new Promise((resolve, reject) => {
+const writefile = vfs => (file, data) => new Promise((resolve, reject) => {
   // FIXME: Currently this actually copies the file because
   // formidable will put this in a temporary directory.
   // It would probably be better to do a "rename()" on local filesystems
-  const realPath = createRealPath(file);
+  const realPath = vfs.resolve(file);
 
   const write = () => {
     const stream = fs.createWriteStream(realPath);
@@ -155,9 +151,9 @@ const writefile = (file, data) => new Promise((resolve, reject) => {
  * @param {String} dest The destination file path from client
  * @return {boolean}
  */
-const rename = async (src, dest) => {
-  const realSource = createRealPath(src);
-  const realDest = createRealPath(dest);
+const rename = vfs => async (src, dest) => {
+  const realSource = vfs.resolve(src);
+  const realDest = vfs.resolve(dest);
 
   await fs.rename(realSource, realDest);
 
@@ -170,9 +166,9 @@ const rename = async (src, dest) => {
  * @param {String} dest The destination file path from client
  * @return {boolean}
  */
-const copy = async (src, dest) => {
-  const realSource = createRealPath(src);
-  const realDest = createRealPath(dest);
+const copy = vfs => async (src, dest) => {
+  const realSource = vfs.resolve(src);
+  const realDest = vfs.resolve(dest);
 
   await fs.copy(realSource, realDest);
 
@@ -184,9 +180,9 @@ const copy = async (src, dest) => {
  * @param {String} file The file path from client
  * @return {boolean}
  */
-const unlink = async (file) => {
+const unlink = vfs => async file => {
   // TODO: Recursively remove directories
-  const realPath = createRealPath(file);
+  const realPath = vfs.resolve(file);
 
   await fs.unlink(realPath);
 

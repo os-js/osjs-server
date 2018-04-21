@@ -35,9 +35,9 @@ const url = require('url');
 const formidable = require('formidable');
 const ServiceProvider = require('../service-provider.js');
 
-const vfsRequestWrapper = async (req, res, k, m, args) => {
+const vfsRequestWrapper = wrapper => async (req, res, k, m, args) => {
   try {
-    const result = await vfs[k](...args);
+    const result = await vfs[k](wrapper)(...args);
 
     if (k === 'readfile') {
       if (result) { // stream
@@ -80,6 +80,15 @@ const parseRequestWrapper = async (req, res, k, m) => {
   return {fields: query, files: {}};
 };
 
+const segments = {
+  root: () => process.cwd()
+};
+
+const getSegment = seg => segments[seg] ? segments[seg]() : '';
+
+const resolveSegments = str => (str.match(/(\{\w+\})/g) || [])
+  .reduce((result, current) => result.replace(current, getSegment(current.replace(/(\{|\})/g, ''))), str);
+
 /**
  * OS.js Virtual Filesystem Service Provider
  *
@@ -102,6 +111,18 @@ class VFSServiceProvider extends ServiceProvider {
       'unlink': ['path']
     };
 
+    const resolve = file => {
+      const mountpoints = this.core.config('vfs.mountpoints');
+      const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
+      const found = name ? mountpoints.find(m => m.name === name) : false;
+      if (!found) {
+        throw new Error(`Mountpoint for path '${file}' not found.`);
+      }
+
+      const root = resolveSegments(found.root);
+      return path.join(root, str);
+    };
+
     Object.keys(methods).forEach(k => {
       const m = k === 'writefile' ? 'post' : 'get';
 
@@ -117,7 +138,9 @@ class VFSServiceProvider extends ServiceProvider {
             return result.concat([param]);
           }, []);
 
-          await vfsRequestWrapper(req, res, k, m, args);
+          await vfsRequestWrapper({
+            resolve
+          })(req, res, k, m, args);
 
           // Remove uploads
           for (let fieldname in files) {
