@@ -67,6 +67,11 @@ const createConfiguration = cfg => merge({
       attributes: {
         root: '{root}/dist'
       }
+    }, {
+      name: 'home',
+      attributes: {
+        root: '{root}/vfs/{username}'
+      }
     }]
   }
 }, cfg);
