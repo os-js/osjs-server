@@ -88,13 +88,14 @@ const parseRequestWrapper = async (req, res, k, m) => {
 };
 
 const segments = {
-  root: () => process.cwd()
+  root: () => process.cwd(),
+  username: req => req.session.username
 };
 
-const getSegment = seg => segments[seg] ? segments[seg]() : '';
+const getSegment = (req, seg) => segments[seg] ? segments[seg](req) : '';
 
-const resolveSegments = str => (str.match(/(\{\w+\})/g) || [])
-  .reduce((result, current) => result.replace(current, getSegment(current.replace(/(\{|\})/g, ''))), str);
+const resolveSegments = (req, str) => (str.match(/(\{\w+\})/g) || [])
+  .reduce((result, current) => result.replace(current, getSegment(req, current.replace(/(\{|\})/g, ''))), str);
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -118,7 +119,7 @@ class VFSServiceProvider extends ServiceProvider {
       'unlink': ['path']
     };
 
-    const resolve = file => {
+    const resolve = req => file => {
       const mountpoints = this.core.config('vfs.mountpoints');
       const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
       const found = name ? mountpoints.find(m => m.name === name) : false;
@@ -126,7 +127,7 @@ class VFSServiceProvider extends ServiceProvider {
         throw new Error(`Mountpoint for path '${file}' not found.`);
       }
 
-      const root = resolveSegments(found.attributes.root);
+      const root = resolveSegments(req, found.attributes.root);
       return path.join(root, str);
     };
 
@@ -146,7 +147,7 @@ class VFSServiceProvider extends ServiceProvider {
           }, []);
 
           await vfsRequestWrapper({
-            resolve
+            resolve: resolve(req)
           })(req, res, k, m, args);
 
           // Remove uploads
