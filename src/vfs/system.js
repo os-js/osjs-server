@@ -86,15 +86,8 @@ const stat = async (file) => {
 const readdir = async (root) => {
   const realPath = createRealPath(root);
   const files = await fs.readdir(realPath);
-  const result = [];
 
-  for (let i = 0; i < files.length; i++) {
-    const file = path.join(root, files[i]);
-    const iter = await createFileIter(realPath, file);
-    result.push(iter);
-  }
-
-  return result;
+  return Promise.all(files.map(f => createFileIter(realPath, path.join(root, f))));
 };
 
 /**
