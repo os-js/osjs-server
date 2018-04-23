@@ -95,9 +95,7 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   })
 });
 
-const providerOptions = (name, defaults, opts = {}) => Object.assign({
-  args: defaults[name] ? defaults[name] : {}
-}, opts);
+const providerOptions = (name, defaults) => defaults[name] ? defaults[name] : {};
 
 /**
  * Server Core
@@ -115,10 +113,12 @@ class Core {
     const app = express();
 
     options = Object.assign({}, {
+      root: process.cwd(),
       registerDefault: true
     }, options);
 
     this.stopping = false;
+    this.options = options;
     this.providers = [];
     this.configuration = createConfiguration(cfg);
     this.app = app;
@@ -165,8 +165,8 @@ class Core {
    * Registers a service provider
    * @param {*} provider A provider reference
    */
-  register(provider) {
-    this.providers.push(new provider(this));
+  register(provider, options = {}) {
+    this.providers.push(new provider(this, options));
   }
 
   /**

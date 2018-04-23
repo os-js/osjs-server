@@ -38,11 +38,11 @@ const Auth = require('../auth.js');
  */
 class AuthServiceProvider extends ServiceProvider {
 
-  constructor(...args) {
-    super(...args);
+  constructor(core, options) {
+    super(core, options);
 
-    const classRef = this.options.class || Auth;
-    this.handler = new classRef(this.core, this.options);
+    const classRef = options.class || Auth;
+    this.handler = new classRef(core, options);
   }
 
   destroy() {
