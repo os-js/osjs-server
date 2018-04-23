@@ -120,6 +120,8 @@ class Core {
     this.stopping = false;
     this.options = options;
     this.providers = [];
+    this.registry = [];
+    this.instances = {};
     this.configuration = createConfiguration(cfg);
     this.app = app;
     this.session = createSession(app, this.configuration);
@@ -149,6 +151,7 @@ class Core {
       return;
     }
     this.stopping = true;
+    this.instances = {};
 
     console.log(symbols.warning, 'Stopping server...');
 
@@ -209,6 +212,76 @@ class Core {
     } catch (e) { /* noop */ }
 
     return typeof result === 'undefined' ? defaultValue : result;
+  }
+
+  /*
+   * Wrapper for registering a service provider
+   */
+  _registerMethod(name, singleton, callback) {
+    console.log(`Registering service provider: "${name}" (${singleton ? 'singleton' : 'instance'})`);
+
+    this.registry.push({
+      singleton,
+      name,
+      make(...args) {
+        return callback(...args);
+      }
+    });
+  }
+
+  /**
+   * Register a instanciator provider
+   *
+   * @param {String} name Provider name
+   * @param {Function} callback Callback that returns an instance
+   */
+  instance(name, callback) {
+    this._registerMethod(name, false, callback);
+  }
+
+  /**
+   * Register a singleton provider
+   *
+   * @param {String} name Provider name
+   * @param {Function} callback Callback that returns an instance
+   */
+  singleton(name, callback) {
+    this._registerMethod(name, true, callback);
+  }
+
+  /**
+   * Create an instance of a provided service
+   *
+   * @param {String} name Service name
+   * @param {*} args Constructor arguments
+   * @return {*} An instance of a service
+   */
+  make(name, ...args) {
+    const found = this.registry.find(p => p.name === name);
+    if (!found) {
+      throw new Error(`Provider '${name}' not found`);
+    }
+
+    if (!found.singleton) {
+      return found.make(...args);
+    }
+
+    if (!this.instances[name]) {
+      if (found) {
+        this.instances[name] = found.make(...args);
+      }
+    }
+
+    return this.instances[name];
+  }
+
+  /**
+   * Check if a service exists
+   * @param {String} name Provider name
+   * @return {Boolean}
+   */
+  has(name) {
+    return this.registry.findIndex(p => p.name === name) !== -1;
   }
 
   /**
