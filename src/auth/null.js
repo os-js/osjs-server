@@ -28,29 +28,47 @@
  * @licence Simplified BSD License
  */
 
-/**
- * Handles login request
- */
-const login = async (core, req, res) => {
-  const {username} = req.body;
-  req.session.username = username;
+module.exports = (core, options) => {
 
-  res.json({
-    user: {username}
-  });
+  /**
+   * When server goes up
+   */
+  const init = () => {
+
+  };
+
+  /**
+   * Handles login request
+   */
+  const login = async (req, res) => {
+    const {username} = req.body;
+    req.session.username = username;
+
+    res.json({
+      user: {username}
+    });
+  };
+
+  /**
+   * Handles logout request
+   */
+  const logout = async (req, res) => {
+    try {
+      req.session.destroy();
+    } catch (e) {
+      console.warn(e);
+    }
+
+    res.json({});
+  };
+
+  /**
+   * When server goes down
+   */
+  const destroy = () => {
+
+  };
+
+  // Exports
+  return {init, destroy, login, logout};
 };
-
-/**
- * Handles logout request
- */
-const logout = async (core, req, res) => {
-  try {
-    req.session.destroy();
-  } catch (e) {
-    console.warn(e);
-  }
-
-  res.json({});
-};
-
-module.exports = {login, logout};

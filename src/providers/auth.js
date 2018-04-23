@@ -41,24 +41,29 @@ class AuthServiceProvider extends ServiceProvider {
   constructor(...args) {
     super(...args);
 
-    this.handler = this.options.handler || this.core.config('auth.handler') || nullAuth;
+    const handlerRef = this.options.handler || this.core.config('auth.handler') || nullAuth;
+    this.handler = handlerRef(this.core, this.options);
   }
 
   destroy() {
     super.destroy();
 
-    if (this.handler && this.handler.destroy) {
+    if (this.handler && typeof this.handler.destroy === 'function') {
       this.handler.destroy();
     }
   }
 
   async init() {
+    if (typeof this.handler.init === 'function') {
+      await this.handler.init();
+    }
+
     this.core.app.post('/login', async (req, res) => {
-      return this.handler.login(this.core, req, res);
+      return this.handler.login(req, res);
     });
 
     this.core.app.post('/logout', async (req, res) => {
-      return this.handler.logout(this.core, req, res);
+      return this.handler.logout(req, res);
     });
   }
 
