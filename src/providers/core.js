@@ -33,6 +33,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const ServiceProvider = require('../service-provider.js');
 
+const isAuthenticated = gropus => (req, res, next) => {
+  if (req.session.username) {
+    return next();
+  }
+
+  return res.status(403).send('Access denied');
+};
+
 /**
  * OS.js Core Service Provider
  *
@@ -60,6 +68,12 @@ class CoreServiceProvider extends ServiceProvider {
     app.ws('/', (ws, req) => {
       // NOTE: This is required to keep the connection open
     });
+
+    this.core.singleton('osjs/express', () => ({
+      route: (method, uri, cb) => app[method](uri, cb),
+      routeAuthenticated: (method, uri, cb, groups = []) =>
+        app[method](uri, isAuthenticated(groups), cb)
+    }));
   }
 
 }
