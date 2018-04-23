@@ -28,40 +28,29 @@
  * @licence Simplified BSD License
  */
 
-const ServiceProvider = require('../service-provider.js');
-const nullAuth = require('../auth/null.js');
+/**
+ * Handles login request
+ */
+const login = async (core, req, res) => {
+  const {username} = req.body;
+  req.session.username = username;
+
+  res.json({
+    user: {username}
+  });
+};
 
 /**
- * OS.js Auth Service Provider
- *
- * @desc Creates the login prompt and handles authentication flow
+ * Handles logout request
  */
-class AuthServiceProvider extends ServiceProvider {
-
-  constructor(...args) {
-    super(...args);
-
-    this.handler = this.options.handler || this.core.config('auth.handler') || nullAuth;
+const logout = async (core, req, res) => {
+  try {
+    req.session.destroy();
+  } catch (e) {
+    console.warn(e);
   }
 
-  destroy() {
-    super.destroy();
+  res.json({});
+};
 
-    if (this.handler && this.handler.destroy) {
-      this.handler.destroy();
-    }
-  }
-
-  async init() {
-    this.core.app.post('/login', async (req, res) => {
-      return this.handler.login(this.core, req, res);
-    });
-
-    this.core.app.post('/logout', async (req, res) => {
-      return this.handler.logout(this.core, req, res);
-    });
-  }
-
-}
-
-module.exports = AuthServiceProvider;
+module.exports = {login, logout};
