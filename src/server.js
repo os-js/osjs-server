@@ -61,9 +61,6 @@ const createConfiguration = cfg => merge({
       secure: 'auto'
     }
   },
-  auth: {
-    handler: null
-  },
   vfs: {
     mountpoints: [{
       name: 'osjs',
