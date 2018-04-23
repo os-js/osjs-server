@@ -218,7 +218,7 @@ class Core {
    * Wrapper for registering a service provider
    */
   _registerMethod(name, singleton, callback) {
-    console.log(`Registering service provider: "${name}" (${singleton ? 'singleton' : 'instance'})`);
+    console.log(symbols.info, `Registering service provider: "${name}" (${singleton ? 'singleton' : 'instance'})`);
 
     this.registry.push({
       singleton,
