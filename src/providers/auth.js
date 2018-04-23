@@ -29,7 +29,7 @@
  */
 
 const ServiceProvider = require('../service-provider.js');
-const nullAuth = require('../auth/null.js');
+const Auth = require('../auth.js');
 
 /**
  * OS.js Auth Service Provider
@@ -41,22 +41,20 @@ class AuthServiceProvider extends ServiceProvider {
   constructor(...args) {
     super(...args);
 
-    const handlerRef = this.options.handler || this.core.config('auth.handler') || nullAuth;
-    this.handler = handlerRef(this.core, this.options);
+    const classRef = this.options.class || Auth;
+    this.handler = new classRef(this.core, this.options);
   }
 
   destroy() {
     super.destroy();
 
-    if (this.handler && typeof this.handler.destroy === 'function') {
+    if (this.handler) {
       this.handler.destroy();
     }
   }
 
   async init() {
-    if (typeof this.handler.init === 'function') {
-      await this.handler.init();
-    }
+    await this.handler.init();
 
     this.core.app.post('/login', async (req, res) => {
       return this.handler.login(req, res);

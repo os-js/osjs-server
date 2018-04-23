@@ -1,4 +1,5 @@
 /*!
+/*!
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
  * Copyright (c) 2011-2018, Anders Evenrud <andersevenrud@gmail.com>
@@ -28,31 +29,36 @@
  * @licence Simplified BSD License
  */
 
-module.exports = (core, options) => {
+/**
+ * Server Authentication Handler
+ *
+ * @desc Handles Authentication
+ */
+class Auth {
 
-  /**
-   * When server goes up
-   */
-  const init = () => {
+  constructor(core, options) {
+    this.core = core;
+    this.options = options;
+  }
 
-  };
+  destroy() {
 
-  /**
-   * Handles login request
-   */
-  const login = async (req, res) => {
+  }
+
+  async init() {
+  }
+
+  async login(req, res) {
     const {username} = req.body;
+
     req.session.username = username;
 
     res.json({
       user: {username}
     });
-  };
+  }
 
-  /**
-   * Handles logout request
-   */
-  const logout = async (req, res) => {
+  async logout(req, res) {
     try {
       req.session.destroy();
     } catch (e) {
@@ -60,15 +66,8 @@ module.exports = (core, options) => {
     }
 
     res.json({});
-  };
+  }
 
-  /**
-   * When server goes down
-   */
-  const destroy = () => {
+}
 
-  };
-
-  // Exports
-  return {init, destroy, login, logout};
-};
+module.exports = Auth;
