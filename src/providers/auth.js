@@ -56,13 +56,15 @@ class AuthServiceProvider extends ServiceProvider {
   async init() {
     await this.handler.init();
 
-    this.core.app.post('/login', async (req, res) => {
-      return this.handler.login(req, res);
-    });
+    this.core.make('osjs/express')
+      .route('post', '/login', async(req, res) => {
+        return this.handler.login(req, res);
+      });
 
-    this.core.app.post('/logout', async (req, res) => {
-      return this.handler.logout(req, res);
-    });
+    this.core.make('osjs/express')
+      .routeAuthenticated('post', '/logout', async(req, res) => {
+        return this.handler.logout(req, res);
+      });
   }
 
 }
