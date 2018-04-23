@@ -61,6 +61,9 @@ const createConfiguration = cfg => merge({
       secure: 'auto'
     }
   },
+  auth: {
+    handler: null
+  },
   vfs: {
     mountpoints: [{
       name: 'osjs',
@@ -95,6 +98,10 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   })
 });
 
+const providerOptions = (name, defaults, opts = {}) => Object.assign({
+  args: defaults[name] ? defaults[name] : {}
+}, opts);
+
 /**
  * Server Core
  *
@@ -126,10 +133,14 @@ class Core {
     }
 
     if (options.registerDefault) {
-      this.register(CoreServiceProvider);
-      this.register(PackageServiceProvider);
-      this.register(VFSServiceProvider);
-      this.register(AuthServiceProvider);
+      const defaults = typeof options.registerDefault === 'object'
+        ? options.registerDefault || {}
+        : {};
+
+      this.register(CoreServiceProvider, providerOptions('core', defaults));
+      this.register(PackageServiceProvider, providerOptions('package', defaults));
+      this.register(VFSServiceProvider, providerOptions('vfs', defaults));
+      this.register(AuthServiceProvider, providerOptions('auth', defaults));
     }
   }
 
