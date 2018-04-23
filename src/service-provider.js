@@ -40,9 +40,11 @@ class ServiceProvider {
   /**
    * Constructor
    * @param {Core} core Core reference
+   * @param {Object} [options={}] Options
    */
-  constructor(core) {
+  constructor(core, options = {}) {
     this.core = core;
+    this.options = {};
   }
 
   /**
