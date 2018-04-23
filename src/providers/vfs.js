@@ -134,7 +134,7 @@ class VFSServiceProvider extends ServiceProvider {
     Object.keys(methods).forEach(k => {
       const m = k === 'writefile' ? 'post' : 'get';
 
-      this.core.app[m]('/vfs/' + k, async (req, res) => {
+      this.core.make('osjs/express').routeAuthenticated(m, '/vfs/' + k, async (req, res) => {
         try {
           const {fields, files} = await parseRequestWrapper(req, res, k, m);
 
