@@ -23,9 +23,8 @@
   },
   "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
-    "@osjs/common": "^3.0.0-alpha.1",
+    "@osjs/common": "^3.0.0-alpha.2",
     "body-parser": "^1.18.2",
-    "deepmerge": "^2.1.0",
     "express": "^4.16.2",
     "express-session": "^1.15.6",
     "express-ws": "^3.0.0",

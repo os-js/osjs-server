@@ -33,49 +33,13 @@ const express = require('express');
 const express_session = require('express-session');
 const express_ws = require('express-ws');
 const symbols = require('log-symbols');
-const merge = require('deepmerge');
 
 const {CoreBase} = require('@osjs/common');
 const CoreServiceProvider = require('./providers/core.js');
 const PackageServiceProvider = require('./providers/packages.js');
 const AuthServiceProvider = require('./providers/auth.js');
 const VFSServiceProvider = require('./providers/vfs.js');
-
-/*
- * Create configuration tree
- */
-const createConfiguration = cfg => merge({
-  logging: true,
-  index: 'index.html',
-  hostname: 'localhost',
-  port: 8000,
-  public: null,
-  morgan: 'tiny',
-  ws: {
-    port: undefined
-  },
-  session: {
-    secret: 'osjs',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: 'auto'
-    }
-  },
-  vfs: {
-    mountpoints: [{
-      name: 'osjs',
-      attributes: {
-        root: '{root}/dist'
-      }
-    }, {
-      name: 'home',
-      attributes: {
-        root: '{root}/vfs/{username}'
-      }
-    }]
-  }
-}, cfg);
+const defaultConfiguration = require('./config.js');
 
 /*
  * Create session parser
@@ -114,20 +78,16 @@ class Core extends CoreBase {
    * @param {Boolean} [options.registerDefault] Register default provided service providers
    */
   constructor(cfg, options = {}) {
-    super('Core');
-
-    const app = express();
-
     options = Object.assign({}, {
       root: process.cwd(),
       registerDefault: true
     }, options);
 
-    this.options = options;
-    this.configuration = createConfiguration(cfg);
-    this.app = app;
-    this.session = createSession(app, this.configuration);
-    this.ws = createWebsocket(app, this.configuration, this.session);
+    super('Core', defaultConfiguration, cfg, options);
+
+    this.app = express();
+    this.session = createSession(this.app, this.configuration);
+    this.ws = createWebsocket(this.app, this.configuration, this.session);
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
