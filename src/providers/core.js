@@ -31,7 +31,7 @@
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
-const ServiceProvider = require('../service-provider.js');
+const {ServiceProvider} = require('@osjs/common');
 
 const isAuthenticated = gropus => (req, res, next) => {
   if (req.session.username) {

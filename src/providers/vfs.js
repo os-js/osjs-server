@@ -34,7 +34,7 @@ const path = require('path');
 const url = require('url');
 const formidable = require('formidable');
 const sanitizeFilename = require('sanitize-filename');
-const ServiceProvider = require('../service-provider.js');
+const {ServiceProvider} = require('@osjs/common');
 
 const sanitize = filename => {
   const [name, str] = (filename.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);

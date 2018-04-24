@@ -35,6 +35,7 @@ const express_ws = require('express-ws');
 const symbols = require('log-symbols');
 const merge = require('deepmerge');
 
+const {CoreBase} = require('@osjs/common');
 const CoreServiceProvider = require('./providers/core.js');
 const PackageServiceProvider = require('./providers/packages.js');
 const AuthServiceProvider = require('./providers/auth.js');
@@ -95,14 +96,17 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   })
 });
 
-const providerOptions = (name, defaults) => defaults[name] ? defaults[name] : {};
+const providerOptions = (name, defaults, opts = {}) => Object.assign({
+  args: defaults[name] ? defaults[name] : {}
+}, opts);
+
 
 /**
  * Server Core
  *
  * @desc Provides the OS.js Server Core
  */
-class Core {
+class Core extends CoreBase {
   /**
    * Creates a new instance
    * @param {Object} cfg Configuration tree
@@ -110,6 +114,8 @@ class Core {
    * @param {Boolean} [options.registerDefault] Register default provided service providers
    */
   constructor(cfg, options = {}) {
+    super('Core');
+
     const app = express();
 
     options = Object.assign({}, {
@@ -117,11 +123,7 @@ class Core {
       registerDefault: true
     }, options);
 
-    this.stopping = false;
     this.options = options;
-    this.providers = [];
-    this.registry = [];
-    this.instances = {};
     this.configuration = createConfiguration(cfg);
     this.app = app;
     this.session = createSession(app, this.configuration);
@@ -147,38 +149,28 @@ class Core {
    * Destroys the instance
    */
   destroy() {
-    if (this.stopping) {
+    if (this.destroying) {
       return;
     }
-    this.stopping = true;
-    this.instances = {};
 
     console.log(symbols.warning, 'Stopping server...');
 
-    try {
-      this.providers.forEach((provider) => provider.destroy())
-    } catch (e) {
-      console.warn(symbols.error, e);
-    }
+    super.destroy();
 
     process.exit(0);
   }
 
   /**
-   * Registers a service provider
-   * @param {*} provider A provider reference
-   */
-  register(provider, options = {}) {
-    this.providers.push(new provider(this, options));
-  }
-
-  /**
    * Starts the server
    */
-  start() {
+  async start() {
+    if (this.started) {
+      return;
+    }
+
     console.log(symbols.info, 'Starting server...');
 
-    this.providers.forEach((provider) => provider.start());
+    await super.start();
 
     try {
       this.app.listen(this.configuration.port, () => {
@@ -195,99 +187,9 @@ class Core {
   }
 
   /**
-   * Gets a configuration entry by key
-   *
-   * @param {String} key The key to get the value from
-   * @param {*} [defaultValue] If result is undefined, return this instead
-   * @return {*}
-   */
-  config(key, defaultValue) {
-
-    let result;
-
-    try {
-      result = key
-        .split(/\./g)
-        .reduce((result, key) => result[key], Object.assign({}, this.configuration));
-    } catch (e) { /* noop */ }
-
-    return typeof result === 'undefined' ? defaultValue : result;
-  }
-
-  /*
-   * Wrapper for registering a service provider
-   */
-  _registerMethod(name, singleton, callback) {
-    console.log(symbols.info, `Registering service provider: "${name}" (${singleton ? 'singleton' : 'instance'})`);
-
-    this.registry.push({
-      singleton,
-      name,
-      make(...args) {
-        return callback(...args);
-      }
-    });
-  }
-
-  /**
-   * Register a instanciator provider
-   *
-   * @param {String} name Provider name
-   * @param {Function} callback Callback that returns an instance
-   */
-  instance(name, callback) {
-    this._registerMethod(name, false, callback);
-  }
-
-  /**
-   * Register a singleton provider
-   *
-   * @param {String} name Provider name
-   * @param {Function} callback Callback that returns an instance
-   */
-  singleton(name, callback) {
-    this._registerMethod(name, true, callback);
-  }
-
-  /**
-   * Create an instance of a provided service
-   *
-   * @param {String} name Service name
-   * @param {*} args Constructor arguments
-   * @return {*} An instance of a service
-   */
-  make(name, ...args) {
-    const found = this.registry.find(p => p.name === name);
-    if (!found) {
-      throw new Error(`Provider '${name}' not found`);
-    }
-
-    if (!found.singleton) {
-      return found.make(...args);
-    }
-
-    if (!this.instances[name]) {
-      if (found) {
-        this.instances[name] = found.make(...args);
-      }
-    }
-
-    return this.instances[name];
-  }
-
-  /**
-   * Check if a service exists
-   * @param {String} name Provider name
-   * @return {Boolean}
-   */
-  has(name) {
-    return this.registry.findIndex(p => p.name === name) !== -1;
-  }
-
-  /**
    * Initializes the server
    */
-  async init() {
+  async boot() {
     console.log(symbols.info, 'Initializing server...');
 
     if (this.configuration.logging) {
@@ -305,13 +207,7 @@ class Core {
 
     console.log(symbols.info, 'Initializing providers...');
 
-    for (let i = 0; i < this.providers.length; i++) {
-      try {
-        await this.providers[i].init();
-      } catch (e) {
-        console.warn(symbols.warning, e);
-      }
-    }
+    await super.boot();
 
     this.start();
   }

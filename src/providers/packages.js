@@ -33,7 +33,7 @@ const fs = require('fs');
 const globby = require('globby');
 const {promisify} = require('util');
 const symbols = require('log-symbols');
-const ServiceProvider = require('../service-provider.js');
+const {ServiceProvider} = require('@osjs/common');
 
 /*
  * Creates a helper passed on to application methods
