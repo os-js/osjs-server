@@ -48,7 +48,7 @@ const sanitize = filename => {
 /*
  * A wrapper for handling VFS requests
  */
-const vfsRequestWrapper = wrapper => async (req, res, k, m, args) => {
+const vfsRequestWrapper = wrapper => async (req, res, k, args) => {
   try {
     const result = await vfs[k](wrapper)(...args);
 
@@ -89,7 +89,7 @@ const parseFormAsync = req => new Promise((resolve, reject) => {
 /*
  * Wrapper for handling incoming messages
  */
-const parseRequestWrapper = async (req, res, k, m) => {
+const parseRequestWrapper = async (req, res, m) => {
   if (m === 'post') {
     const form = new formidable.IncomingForm();
     return parseFormAsync(req);
@@ -135,6 +135,35 @@ const resolve = core => req => file => {
   return path.join(root, str);
 };
 
+/*
+ * A list of methods and how to use an incoming request
+ */
+const methods = [
+  {name: 'exists', method: 'get', args: ['path']},
+  {name: 'stat', method: 'get', args: ['path']},
+  {name: 'readdir', method: 'get', args: ['path']},
+  {name: 'readfile', method: 'get', args: ['path']},
+  {name: 'writefile', method: 'post', args: [
+    'path',
+    (fields, files) => fs.createReadStream(files.upload.path)
+  ]},
+  {name: 'mkdir', method: 'get', args: ['path']},
+  {name: 'rename', method: 'get', args: ['from', 'to']},
+  {name: 'unlink', method: 'get', args: ['path']}
+];
+
+/*
+ * Creates the arguments passed on to a VFS method from a request
+ */
+const createMethodArgs = (fields, files, iter) => 
+  iter.args.reduce((result, item) => {
+    const param = typeof item === 'function'
+      ? item(fields, files)
+      : sanitize(fields[item]);
+
+    return result.concat([param]);
+  }, []);
+
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -159,48 +188,29 @@ class VFSServiceProvider extends ServiceProvider {
 
   createRoutes() {
     const resolver = resolve(this.core);
-    const methods = {
-      'exists': ['path'],
-      'stat': ['path'],
-      'readdir': ['path'],
-      'readfile': ['path'],
-      'writefile': [
-        'path',
-        (fields, files) => fs.createReadStream(files.upload.path)
-      ],
-      'mkdir': ['path'],
-      'rename': ['from', 'to'],
-      'unlink': ['path']
-    };
 
-    Object.keys(methods).forEach(k => {
-      const m = k === 'writefile' ? 'post' : 'get';
-
-      this.core.make('osjs/express').routeAuthenticated(m, '/vfs/' + k, async (req, res) => {
+    methods.forEach(iter => {
+      const uri = '/vfs/' + iter.name;
+      const handler = async (req, res) => {
         try {
-          const {fields, files} = await parseRequestWrapper(req, res, k, m);
-
-          const args = methods[k].reduce((result, item) => {
-            const param = typeof item === 'function'
-              ? item(fields, files)
-              : sanitize(fields[item]);
-
-            return result.concat([param]);
-          }, []);
+          const {fields, files} = await parseRequestWrapper(req, res, iter.method);
+          const args = createMethodArgs(fields, files, iter);
 
           await vfsRequestWrapper({
             resolve: resolver(req)
-          })(req, res, k, m, args);
+          })(req, res, iter.name, args);
 
           // Remove uploads
           for (let fieldname in files) {
             fs.unlink(files[fieldname].path, () => ({/* noop */}));
           }
         } catch (error) {
+          console.warn(error);
           res.status(500).json({error});
         }
+      };
 
-      });
+      this.core.make('osjs/express').routeAuthenticated(iter.method, uri, handler);
     });
   }
 
