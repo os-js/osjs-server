@@ -28,42 +28,32 @@
  * @licence Simplified BSD License
  */
 
-const {ServiceProvider} = require('@osjs/common');
-const Auth = require('../auth.js');
-
 /**
- * OS.js Auth Service Provider
+ * Server Settings Handler
  *
- * @desc Creates the login prompt and handles authentication flow
+ * @desc Handles Settings
  */
-class AuthServiceProvider extends ServiceProvider {
+class Settings {
+
+  constructor(core, options) {
+    this.core = core;
+    this.options = options;
+  }
 
   destroy() {
-    super.destroy();
-
-    if (this.handler) {
-      this.handler.destroy();
-    }
   }
 
   async init() {
-    const classRef = this.options.class || Auth;
+  }
 
-    this.handler = new classRef(this.core, this.options.config);
+  async save(req, res) {
+    return res.json(true);
+  }
 
-    await this.handler.init();
-
-    this.core.make('osjs/express')
-      .route('post', '/login', (req, res) => {
-        return this.handler.login(req, res);
-      });
-
-    this.core.make('osjs/express')
-      .routeAuthenticated('post', '/logout', (req, res) => {
-        return this.handler.logout(req, res);
-      });
+  async load(req, res) {
+    return res.json({});
   }
 
 }
 
-module.exports = AuthServiceProvider;
+module.exports = Settings;

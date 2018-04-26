@@ -38,6 +38,7 @@ const {CoreBase} = require('@osjs/common');
 const CoreServiceProvider = require('./providers/core.js');
 const PackageServiceProvider = require('./providers/packages.js');
 const AuthServiceProvider = require('./providers/auth.js');
+const SettingsServiceProvider = require('./providers/settings.js');
 const VFSServiceProvider = require('./providers/vfs.js');
 const defaultConfiguration = require('./config.js');
 
@@ -102,6 +103,7 @@ class Core extends CoreBase {
       this.register(PackageServiceProvider, providerOptions('package', defaults));
       this.register(VFSServiceProvider, providerOptions('vfs', defaults));
       this.register(AuthServiceProvider, providerOptions('auth', defaults));
+      this.register(SettingsServiceProvider, providerOptions('settings', defaults));
     }
   }
 

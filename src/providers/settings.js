@@ -29,14 +29,14 @@
  */
 
 const {ServiceProvider} = require('@osjs/common');
-const Auth = require('../auth.js');
+const Settings = require('../settings.js');
 
 /**
- * OS.js Auth Service Provider
+ * OS.js Settings Service Provider
  *
- * @desc Creates the login prompt and handles authentication flow
+ * @desc Provides services for settings
  */
-class AuthServiceProvider extends ServiceProvider {
+class SettingsServiceProvider extends ServiceProvider {
 
   destroy() {
     super.destroy();
@@ -47,23 +47,23 @@ class AuthServiceProvider extends ServiceProvider {
   }
 
   async init() {
-    const classRef = this.options.class || Auth;
+    const classRef = this.options.class || Settings;
 
     this.handler = new classRef(this.core, this.options.config);
 
     await this.handler.init();
 
     this.core.make('osjs/express')
-      .route('post', '/login', (req, res) => {
-        return this.handler.login(req, res);
+      .routeAuthenticated('post', '/settings', (req, res) => {
+        return this.handler.save(req, res);
       });
 
     this.core.make('osjs/express')
-      .routeAuthenticated('post', '/logout', (req, res) => {
-        return this.handler.logout(req, res);
+      .routeAuthenticated('get', '/settings', (req, res) => {
+        return this.handler.load(req, res);
       });
   }
 
 }
 
-module.exports = AuthServiceProvider;
+module.exports = SettingsServiceProvider;
