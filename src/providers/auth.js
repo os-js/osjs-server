@@ -42,7 +42,7 @@ class AuthServiceProvider extends ServiceProvider {
     super(core, options);
 
     const classRef = options.class || Auth;
-    this.handler = new classRef(core, options.args);
+    this.handler = new classRef(core, options.config);
   }
 
   destroy() {
