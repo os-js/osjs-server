@@ -36,12 +36,18 @@ const formidable = require('formidable');
 const sanitizeFilename = require('sanitize-filename');
 const {ServiceProvider} = require('@osjs/common');
 
+/*
+ * Sanitizes a file path
+ */
 const sanitize = filename => {
   const [name, str] = (filename.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
   const sane = str.split('/').map(s => sanitizeFilename(s)).join('/').replace(/\/+/g, '/');
   return name + ':' + sane;
 }
 
+/*
+ * A wrapper for handling VFS requests
+ */
 const vfsRequestWrapper = wrapper => async (req, res, k, m, args) => {
   try {
     const result = await vfs[k](wrapper)(...args);
@@ -65,6 +71,9 @@ const vfsRequestWrapper = wrapper => async (req, res, k, m, args) => {
   }
 };
 
+/*
+ * Asyncronous wrapper for handling form parsing
+ */
 const parseFormAsync = req => new Promise((resolve, reject) => {
   const form = new formidable.IncomingForm();
 
@@ -77,6 +86,9 @@ const parseFormAsync = req => new Promise((resolve, reject) => {
   });
 });
 
+/*
+ * Wrapper for handling incoming messages
+ */
 const parseRequestWrapper = async (req, res, k, m) => {
   if (m === 'post') {
     const form = new formidable.IncomingForm();
@@ -87,15 +99,42 @@ const parseRequestWrapper = async (req, res, k, m) => {
   return {fields: query, files: {}};
 };
 
+/*
+ * Segment value map
+ */
 const segments = {
   root: () => process.cwd(),
   username: req => req.session.username
 };
 
+/*
+ * Gets a segment value
+ */
 const getSegment = (req, seg) => segments[seg] ? segments[seg](req) : '';
 
+/*
+ * Resolves a string with segments
+ */
 const resolveSegments = (req, str) => (str.match(/(\{\w+\})/g) || [])
   .reduce((result, current) => result.replace(current, getSegment(req, current.replace(/(\{|\})/g, ''))), str);
+
+/*
+ * Resolves a given file path based on a request
+ * Will take out segments from the resulting string
+ * and replace them with a list of defined variables
+ */
+const resolve = core => req => file => {
+  const mountpoints = core.config('vfs.mountpoints');
+  const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
+  const found = name ? mountpoints.find(m => m.name === name) : false;
+  if (!found) {
+    throw new Error(`Mountpoint for path '${file}' not found.`);
+  }
+
+  const root = resolveSegments(req, found.attributes.root);
+  return path.join(root, str);
+};
+
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -105,6 +144,21 @@ const resolveSegments = (req, str) => (str.match(/(\{\w+\})/g) || [])
 class VFSServiceProvider extends ServiceProvider {
 
   async init() {
+    const resolver = resolve(this.core);
+
+    this.core.singleton('osjs/vfs', () => ({
+      request: (method, mockSession = {}) => (...args) => {
+        vfs[method]({
+          resolve: resolver({session: mockSession})
+        })(...args)
+      }
+    }));
+
+    this.createRoutes();
+  }
+
+  createRoutes() {
+    const resolver = resolve(this.core);
     const methods = {
       'exists': ['path'],
       'stat': ['path'],
@@ -117,18 +171,6 @@ class VFSServiceProvider extends ServiceProvider {
       'mkdir': ['path'],
       'rename': ['from', 'to'],
       'unlink': ['path']
-    };
-
-    const resolve = req => file => {
-      const mountpoints = this.core.config('vfs.mountpoints');
-      const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
-      const found = name ? mountpoints.find(m => m.name === name) : false;
-      if (!found) {
-        throw new Error(`Mountpoint for path '${file}' not found.`);
-      }
-
-      const root = resolveSegments(req, found.attributes.root);
-      return path.join(root, str);
     };
 
     Object.keys(methods).forEach(k => {
@@ -147,7 +189,7 @@ class VFSServiceProvider extends ServiceProvider {
           }, []);
 
           await vfsRequestWrapper({
-            resolve: resolve(req)
+            resolve: resolver(req)
           })(req, res, k, m, args);
 
           // Remove uploads
