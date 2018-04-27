@@ -27,8 +27,13 @@
  * @author  Anders Evenrud <andersevenrud@gmail.com>
  * @licence Simplified BSD License
  */
+const CoreServiceProvider = require('./providers/core.js');
+const PackageServiceProvider = require('./providers/packages.js');
+const AuthServiceProvider = require('./providers/auth.js');
+const SettingsServiceProvider = require('./providers/settings.js');
+const VFSServiceProvider = require('./providers/vfs.js');
 
-module.exports = {
+const defaultConfiguration = {
   logging: true,
   index: 'index.html',
   hostname: 'localhost',
@@ -59,5 +64,27 @@ module.exports = {
       }
     }]
   }
+};
+
+const defaultProviders = [{
+  class: CoreServiceProvider,
+  name: 'core'
+}, {
+  class: PackageServiceProvider,
+  name: 'packages'
+}, {
+  class: VFSServiceProvider,
+  name: 'vfs'
+}, {
+  class: AuthServiceProvider,
+  name: 'auth'
+}, {
+  class: SettingsServiceProvider,
+  name: 'settings'
+}];
+
+module.exports = {
+  defaultConfiguration,
+  defaultProviders
 };
 

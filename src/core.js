@@ -35,12 +35,7 @@ const express_ws = require('express-ws');
 const symbols = require('log-symbols');
 
 const {CoreBase} = require('@osjs/common');
-const CoreServiceProvider = require('./providers/core.js');
-const PackageServiceProvider = require('./providers/packages.js');
-const AuthServiceProvider = require('./providers/auth.js');
-const SettingsServiceProvider = require('./providers/settings.js');
-const VFSServiceProvider = require('./providers/vfs.js');
-const defaultConfiguration = require('./config.js');
+const {defaultConfiguration, defaultProviders} = require('./config.js');
 
 /*
  * Create session parser
@@ -61,11 +56,6 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   })
 });
 
-const providerOptions = (name, defaults, opts = {}) => Object.assign({
-  args: defaults[name] ? defaults[name] : {}
-}, opts);
-
-
 /**
  * Server Core
  *
@@ -84,7 +74,7 @@ class Core extends CoreBase {
       registerDefault: true
     }, options);
 
-    super('Core', defaultConfiguration, cfg, options);
+    super(defaultProviders, defaultConfiguration, cfg, options);
 
     this.app = express();
     this.session = createSession(this.app, this.configuration);
@@ -92,18 +82,6 @@ class Core extends CoreBase {
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
-    }
-
-    if (options.registerDefault) {
-      const defaults = typeof options.registerDefault === 'object'
-        ? options.registerDefault || {}
-        : {};
-
-      this.register(CoreServiceProvider, providerOptions('core', defaults));
-      this.register(PackageServiceProvider, providerOptions('package', defaults));
-      this.register(VFSServiceProvider, providerOptions('vfs', defaults));
-      this.register(AuthServiceProvider, providerOptions('auth', defaults));
-      this.register(SettingsServiceProvider, providerOptions('settings', defaults));
     }
   }
 
