@@ -28,7 +28,7 @@
  * @licence Simplified BSD License
  */
 
-const Core = require('./src/server.js');
+const Core = require('./src/core.js');
 const Auth = require('./src/auth.js');
 const Settings = require('./src/settings.js');
 const CoreServiceProvider = require('./src/providers/core');
