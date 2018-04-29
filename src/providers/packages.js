@@ -79,10 +79,11 @@ class PackageServiceProvider extends ServiceProvider {
       }
 
       console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
-      const script = require(serverFile);
-
       try {
-        await script.init(this.core, proc(metadata));
+        const script = require(serverFile)(this.core, proc(metadata));
+        if (typeof script.init === 'function') {
+          await script.init();
+        }
 
         this.packages.push({
           metadata,
@@ -95,11 +96,19 @@ class PackageServiceProvider extends ServiceProvider {
   }
 
   start() {
-    this.packages.forEach(({script, metadata}) => script.start(this.core, proc(metadata)));
+    this.packages.forEach(({script, metadata}) => {
+      if (typeof script.start === 'function') {
+        script.start();
+      }
+    });
   }
 
   destroy() {
-    this.packages.forEach(({script, metadata}) => script.destroy(this.core, proc(metadata)));
+    this.packages.forEach(({script, metadata}) => {
+      if (typeof script.destroy === 'function') {
+        script.destroy();
+      }
+    });
     this.packages =[];
   }
 }
