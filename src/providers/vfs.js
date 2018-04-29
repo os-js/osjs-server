@@ -123,7 +123,7 @@ const resolveSegments = (req, str) => (str.match(/(\{\w+\})/g) || [])
  * Will take out segments from the resulting string
  * and replace them with a list of defined variables
  */
-const resolve = core => req => file => {
+const resolver = (core, req) => file => {
   const mountpoints = core.config('vfs.mountpoints');
   const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
   const found = name ? mountpoints.find(m => m.name === name) : false;
@@ -172,63 +172,31 @@ const createMethodArgs = (fields, files, iter) =>
  */
 class VFSServiceProvider extends ServiceProvider {
 
-  async init() {
-    const resolver = resolve(this.core);
+  constructor(core, options) {
+    super(core, options);
 
+    this.mountpoints = [];
+    this.adapters = {};
+  }
+
+  async init() {
+    // Expose VFS as service
     this.core.singleton('osjs/vfs', () => ({
-      request: (method, mockSession = {}) => (...args) => {
-        vfs[method]({
-          resolve: resolver({session: mockSession})
+      request: (adapter, method, mockSession = {}) => (...args) => {
+        const adapterInstance = this.adapters[adapter](this.core);
+
+        adapterInstance[method]({
+          resolve: resolver(this.core, {session: mockSession})
         })(...args)
       }
     }));
 
-    this.createMountpoints();
-    this.createRoutes();
-  }
-
-  createMountpoints() {
-    const mountpoints = this.core.config('vfs.mountpoints');
-    const adapters = Object.assign({
-      system: systemAdapter
-    },  this.core.config('vfs.adapters', {}))
-
-    this.mountpoints = mountpoints.map(mount => {
-      const adapter = mount.adapter
-        ? (typeof mount.adapter === 'function' ? mount.adapter : adapters[mount.adapter])
-        : systemAdapter;
-
-      console.log('Mounted', mount.name, mount.attributes);
-      return Object.assign({
-        _adapter: adapter(this.core)
-      }, mount);
-    });
-  }
-
-  createRoutes() {
-    const resolver = resolve(this.core);
-
+    // HTTP routes
     methods.forEach(iter => {
       const uri = '/vfs/' + iter.name;
-      const handler = async (req, res) => {
+      const handler = (req, res) => {
         try {
-          const {fields, files} = await parseRequestWrapper(req, res, iter.method);
-          const args = createMethodArgs(fields, files, iter);
-          const prefix = String(args[0]).split(':')[0];
-          const mountpoint = prefix ? this.mountpoints.find(m => m.name === prefix) : null;
-
-          if (!mountpoint) {
-            throw new Error(`Mountpoint not found for '${prefix}'`);
-          }
-
-          await vfsRequestWrapper(mountpoint._adapter, {
-            resolve: resolver(req)
-          })(req, res, iter.name, args);
-
-          // Remove uploads
-          for (let fieldname in files) {
-            fs.unlink(files[fieldname].path, () => ({/* noop */}));
-          }
+          return this.request(iter, req, res);
         } catch (error) {
           console.warn(error);
           res.status(500).json({error});
@@ -237,6 +205,64 @@ class VFSServiceProvider extends ServiceProvider {
 
       this.core.make('osjs/express').routeAuthenticated(iter.method, uri, handler);
     });
+
+    // Adapters
+    this.adapters = Object.assign({
+      system: systemAdapter
+    },  this.core.config('vfs.adapters', {}))
+
+    // Mountpoints
+    this.core.config('vfs.mountpoints')
+      .forEach(mount => this.mount(mount));
+  }
+
+  request(iter, req, res) {
+    return parseRequestWrapper(req, res, iter.method)
+      .then(({files, fields}) => {
+        const args = createMethodArgs(fields, files, iter);
+        const prefix = String(args[0]).split(':')[0];
+        const mountpoint = prefix ? this.mountpoints.find(m => m.name === prefix) : null;
+        const cleanup = () => {
+          // Remove uploads
+          for (let fieldname in files) {
+            fs.unlink(files[fieldname].path, () => ({/* noop */}));
+          }
+        };
+
+        if (!mountpoint) {
+          return Promise.reject(new Error(`Mountpoint not found for '${prefix}'`));
+        }
+
+        const request = vfsRequestWrapper(mountpoint._adapter, {
+          resolve: resolver(this.core, req)
+        });
+
+        return request(req, res, iter.name, args)
+          .then(result => {
+            cleanup();
+            return result;
+          })
+          .catch(error => {
+            cleanup();
+            return error;
+          });
+      });
+  }
+
+  mount(mount) {
+    const adapter = mount.adapter
+      ? (typeof mount.adapter === 'function' ? mount.adapter : this.adapters[mount.adapter])
+      : systemAdapter;
+
+    console.log('Mounted', mount.name, mount.attributes);
+
+    this.mountpoints.push(Object.assign({
+      _adapter: adapter(this.core)
+    }, mount));
+  }
+
+  unmount() {
+
   }
 
 }
