@@ -35,12 +35,11 @@ const mime = require('mime-types');
 /*
  * Creates an object readable by client
  */
-const createFileIter = async (realRoot, file) => {
+const createFileIter = (realRoot, file) => {
   const filename = path.basename(file);
   const realPath = path.join(realRoot, filename);
-  const stat = await fs.stat(realPath);
 
-  return {
+  return fs.stat(realPath).then(stat => ({
     isDirectory: stat.isDirectory(),
     isFile: stat.isFile(),
     mime: stat.isFile()
@@ -50,7 +49,7 @@ const createFileIter = async (realRoot, file) => {
     path: file,
     filename,
     stat
-  };
+  }));
 };
 
 module.exports = (core) => ({

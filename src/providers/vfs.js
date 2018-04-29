@@ -36,6 +36,11 @@ const formidable = require('formidable');
 const sanitizeFilename = require('sanitize-filename');
 const {ServiceProvider} = require('@osjs/common');
 
+const errorCodes = {
+  ENOENT: 404,
+  EACCES: 401
+};
+
 /*
  * Sanitizes a file path
  */
@@ -44,32 +49,6 @@ const sanitize = filename => {
   const sane = str.split('/').map(s => sanitizeFilename(s)).join('/').replace(/\/+/g, '/');
   return name + ':' + sane;
 }
-
-/*
- * A wrapper for handling VFS requests
- */
-const vfsRequestWrapper = (adapter, wrapper) => async (req, res, k, args) => {
-  try {
-    const result = await adapter[k](wrapper)(...args);
-
-    if (k === 'readfile') {
-      if (result) { // stream
-        result.pipe(res);
-      } else {
-        res.status(500)
-          .send('Failed to create stream');
-      }
-    } else {
-      res.json(result);
-    }
-  } catch (e) {
-    console.warn(e);
-
-    // FIXME
-    res.status(404)
-      .json({error: e});
-  }
-};
 
 /*
  * Asyncronous wrapper for handling form parsing
@@ -142,7 +121,7 @@ const methods = [
   {name: 'exists', method: 'get', args: ['path']},
   {name: 'stat', method: 'get', args: ['path']},
   {name: 'readdir', method: 'get', args: ['path']},
-  {name: 'readfile', method: 'get', args: ['path']},
+  {name: 'readfile', method: 'get', args: ['path'], pipe: true},
   {name: 'writefile', method: 'post', args: [
     'path',
     (fields, files) => fs.createReadStream(files.upload.path)
@@ -195,12 +174,11 @@ class VFSServiceProvider extends ServiceProvider {
     methods.forEach(iter => {
       const uri = '/vfs/' + iter.name;
       const handler = (req, res) => {
-        try {
-          return this.request(iter, req, res);
-        } catch (error) {
-          console.warn(error);
-          res.status(500).json({error});
-        }
+        this.request(iter, req, res)
+          .catch(error => {
+            console.warn(error);
+            res.status(500).json({error});
+          });
       };
 
       this.core.make('osjs/express').routeAuthenticated(iter.method, uri, handler);
@@ -233,19 +211,33 @@ class VFSServiceProvider extends ServiceProvider {
           return Promise.reject(new Error(`Mountpoint not found for '${prefix}'`));
         }
 
-        const request = vfsRequestWrapper(mountpoint._adapter, {
+        return mountpoint._adapter[iter.name]({
           resolve: resolver(this.core, req)
-        });
+        })(...args).then(result => {
+          try {
+            if (iter.pipe) {
+              result.pipe(res);
+            } else {
+              res.json(result);
+            }
+          } catch (e) {
+            console.warn(e);
+            res.status(500).send('Fatal error');
+          } finally {
+            cleanup();
+          }
+        }).catch(error => {
+          console.warn(error);
 
-        return request(req, res, iter.name, args)
-          .then(result => {
-            cleanup();
-            return result;
-          })
-          .catch(error => {
-            cleanup();
-            return error;
-          });
+          if (error.code) {
+            const code = errorCodes[error.code] || 400;
+            res.status(code).json({error: error.code});
+          } else {
+            res.status(500).json({error}); // FIXME
+          }
+
+          cleanup();
+        });
       });
   }
 
