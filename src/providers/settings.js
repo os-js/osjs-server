@@ -29,7 +29,11 @@
  */
 
 const {ServiceProvider} = require('@osjs/common');
-const Settings = require('../settings.js');
+
+const nullAdapter = (core, options) => ({
+  save: (req, res) => Promise.resolve(true),
+  load: (req, res) => Promise.resolve({})
+});
 
 /**
  * OS.js Settings Service Provider
@@ -38,32 +42,45 @@ const Settings = require('../settings.js');
  */
 class SettingsServiceProvider extends ServiceProvider {
 
-  destroy() {
-    super.destroy();
+  constructor(core, options) {
+    options = Object.assign({
+      adapter: nullAdapter
+    }, options);
 
-    if (this.handler) {
-      this.handler.destroy();
+    super(core, options);
+
+    this.adapter = options.adapter(core, options.config);
+  }
+
+  destroy() {
+    if (this.adapter.destroy) {
+      this.adapter.destroy();
     }
+
+    super.destroy();
   }
 
   async init() {
-    const classRef = this.options.class || Settings;
-
-    this.handler = new classRef(this.core, this.options.config);
-
-    await this.handler.init();
+    this.core.make('osjs/express')
+      .routeAuthenticated('post', '/settings', (req, res) => this.save(req, res));
 
     this.core.make('osjs/express')
-      .routeAuthenticated('post', '/settings', (req, res) => {
-        return this.handler.save(req, res);
-      });
+      .routeAuthenticated('get', '/settings', (req, res) => this.load(req, res));
 
-    this.core.make('osjs/express')
-      .routeAuthenticated('get', '/settings', (req, res) => {
-        return this.handler.load(req, res);
-      });
+    if (this.adapter.init) {
+      await this.adapter.init();
+    }
   }
 
+  async save(req, res) {
+    const result = this.adapter.save(req, res);
+    res.json(result);
+  }
+
+  async load(req, res) {
+    const result = this.adapter.load(req, res);
+    res.json(result);
+  }
 }
 
 module.exports = SettingsServiceProvider;

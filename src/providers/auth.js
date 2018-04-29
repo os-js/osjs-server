@@ -29,7 +29,11 @@
  */
 
 const {ServiceProvider} = require('@osjs/common');
-const Auth = require('../auth.js');
+
+const nullAdapter = (core, options) => ({
+  login: (req, res) => Promise.resolve(req.body),
+  logout: (req, res) => Promise.resolve(true)
+});
 
 /**
  * OS.js Auth Service Provider
@@ -38,30 +42,61 @@ const Auth = require('../auth.js');
  */
 class AuthServiceProvider extends ServiceProvider {
 
-  destroy() {
-    super.destroy();
+  constructor(core, options) {
+    options = Object.assign({
+      adapter: nullAdapter
+    }, options);
 
-    if (this.handler) {
-      this.handler.destroy();
+    super(core, options);
+
+    this.adapter = options.adapter(core, options.config);
+  }
+
+  destroy() {
+    if (this.adapter.destroy) {
+      this.adapter.destroy();
     }
+
+    super.destroy();
   }
 
   async init() {
-    const classRef = this.options.class || Auth;
-
-    this.handler = new classRef(this.core, this.options.config);
-
-    await this.handler.init();
+    this.core.make('osjs/express')
+      .route('post', '/login', (req, res) => this.login(req, res));
 
     this.core.make('osjs/express')
-      .route('post', '/login', (req, res) => {
-        return this.handler.login(req, res);
-      });
+      .routeAuthenticated('post', '/logout', (req, res) => this.logout(req, res));
 
-    this.core.make('osjs/express')
-      .routeAuthenticated('post', '/logout', (req, res) => {
-        return this.handler.logout(req, res);
+    if (this.adapter.init) {
+      await this.adapter.init();
+    }
+  }
+
+  async login(req, res) {
+    const result = await this.adapter.login(req, res);
+    if (result) {
+      const {username} = result;
+      req.session.username = username;
+
+      res.json({
+        user: {username}
       });
+    } else {
+      res.status(403)
+        .json({error: 'Invalid login'});
+    }
+  }
+
+  async logout(req, res) {
+    const result = await this.adapter.logout(req, res);
+
+    try {
+      req.session.destroy();
+    } catch (e) {
+      console.warn(e);
+    }
+
+    res.json({});
   }
 
 }

@@ -29,8 +29,6 @@
  */
 
 const Core = require('./src/core.js');
-const Auth = require('./src/auth.js');
-const Settings = require('./src/settings.js');
 const CoreServiceProvider = require('./src/providers/core');
 const PackageServiceProvider = require('./src/providers/packages');
 const VFSServiceProvider = require('./src/providers/vfs');
@@ -39,8 +37,6 @@ const SettingsServiceProvider = require('./src/providers/settings');
 
 module.exports = {
   Core,
-  Auth,
-  Settings,
   CoreServiceProvider,
   PackageServiceProvider,
   VFSServiceProvider,
