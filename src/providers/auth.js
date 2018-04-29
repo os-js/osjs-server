@@ -81,6 +81,12 @@ class AuthServiceProvider extends ServiceProvider {
     if (result) {
       const ignores = ['password'];
       const required = ['username', 'id'];
+      const template = {
+        id: 0,
+        username: req.body.username,
+        name: req.body.username,
+        groups: []
+      };
 
       const missing = required
         .filter(k => typeof result[k] === 'undefined');
@@ -88,9 +94,9 @@ class AuthServiceProvider extends ServiceProvider {
       if (missing.length) {
         console.warn('Missing user attributes', missing);
       } else {
-        const useResult = Object.keys(result)
+        const useResult = Object.assign({}, template, Object.keys(result)
           .filter(k => ignores.indexOf(k) === -1)
-          .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {});
+          .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {}));
 
         req.session.user = useResult;
         res.json(useResult);
