@@ -53,150 +53,126 @@ const createFileIter = async (realRoot, file) => {
   };
 };
 
-/**
- * Checks if file exists
- * @param {String} file The file path from client
- * @return {Promise<boolean, Error>}
- */
-const exists = vfs => file => new Promise((resolve, reject) => {
-  const realPath = vfs.resolve(file);
-  fs.access(realPath, fs.F_OK, err => resolve(!err));
+module.exports = (core) => ({
+
+  /**
+   * Checks if file exists
+   * @param {String} file The file path from client
+   * @return {Promise<boolean, Error>}
+   */
+  exists: vfs => file => 
+    Promise.resolve(vfs.resolve(file))
+      .then(realPath => fs.access(realPath, fs.F_OK))
+      .catch(() => false)
+      .then(() => true),
+
+  /**
+   * Get file statistics
+   * @param {String} file The file path from client
+   * @return {Object}
+   */
+  stat: vfs => file =>
+    Promise.resolve(vfs.resolve(file))
+      .then(realPath => createFileIter(path.dirname(realPath), realPath)),
+
+  /**
+   * Reads directory
+   * @param {String} root The file path from client
+   * @return {Object[]}
+   */
+  readdir: vfs => root =>
+    Promise.resolve(vfs.resolve(root))
+      .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
+      .then(({realPath, files}) => {
+        const promises = files.map(f => createFileIter(realPath, path.join(root, f)))
+        return Promise.all(promises);
+      }),
+
+  /**
+   * Reads file stream
+   * @param {String} file The file path from client
+   * @return {stream.Readable}
+   */
+  readfile: vfs => file =>
+    Promise.resolve(vfs.resolve(file))
+      .then(realPath => fs.stat(realPath).then(stat => ({realPath, stat})))
+      .then(({realPath, stat}) => stat.isFile() ? fs.createReadStream(realPath, {
+        flags: 'r'
+      }) : false),
+
+  /**
+   * Creates directory
+   * @param {String} file The file path from client
+   * @return {boolean}
+   */
+  mkdir: vfs => file => 
+    Promise.resolve(vfs.resolve(file))
+      .then(realPath => fs.mkdir(realPath))
+      .then(() => true),
+
+  /**
+   * Writes file stream
+   * @param {String} file The file path from client
+   * @param {stream.Readable} data The stream
+   * @return {Promise<boolean, Error>}
+   */
+  writefile: vfs => (file, data) => new Promise((resolve, reject) => {
+    // FIXME: Currently this actually copies the file because
+    // formidable will put this in a temporary directory.
+    // It would probably be better to do a "rename()" on local filesystems
+    const realPath = vfs.resolve(file);
+
+    const write = () => {
+      const stream = fs.createWriteStream(realPath);
+      data.on('error', err => reject(err));
+      data.on('end', () => resolve(true));
+      data.pipe(stream);
+    };
+
+    fs.stat(realPath).then(stat => {
+      if (stat.isDirectory()) {
+        resolve(false);
+      } else {
+        write();
+      }
+    }).catch((err) => err.code === 'ENOENT' ? write()  : reject(err));
+  }),
+
+  /**
+   * Renames given file or directory
+   * @param {String} src The source file path from client
+   * @param {String} dest The destination file path from client
+   * @return {boolean}
+   */
+  rename: vfs => (src, dest) =>
+    Promise.resolve({
+      realSource: vfs.resolve(src),
+      realDest: vfs.resolve(dest)
+    })
+    .then(({realSource, realDest}) => fs.rename(realSource, realDest))
+    .then(() => true),
+
+  /**
+   * Copies given file or directory
+   * @param {String} src The source file path from client
+   * @param {String} dest The destination file path from client
+   * @return {boolean}
+   */
+  copy: vfs => (src, dest) =>
+    Promise.resolve({
+      realSource: vfs.resolve(src),
+      realDest: vfs.resolve(dest)
+    })
+    .then(({realSource, realDest}) => fs.copy(realSource, realDest))
+    .then(() => true),
+
+  /**
+   * Removes given file or directory
+   * @param {String} file The file path from client
+   * @return {boolean}
+   */
+  unlink: vfs => file =>
+    Promise.resolve(vfs.resolve(file))
+      .then(realPath => fs.unlink(realPath))
+      .then(() => true)
 });
-
-/**
- * Get file statistics
- * @param {String} file The file path from client
- * @return {Object}
- */
-const stat = vfs => async file => {
-  const realPath = vfs.resolve(file);
-  const stat = await fs.stat(realPath);
-  return createFileIter(realPath, file)
-};
-
-/**
- * Reads directory
- * @param {String} root The file path from client
- * @return {Object[]}
- */
-const readdir = vfs => async root => {
-  const realPath = vfs.resolve(root);
-  const files = await fs.readdir(realPath);
-
-  return Promise.all(files.map(f => createFileIter(realPath, path.join(root, f))));
-};
-
-/**
- * Reads file stream
- * @param {String} file The file path from client
- * @return {stream.Readable}
- */
-const readfile = vfs => async file => {
-  const realPath = vfs.resolve(file);
-  const stat = await fs.stat(realPath);
-
-  if (stat.isFile()) {
-    return fs.createReadStream(realPath, {
-      flags: 'r'
-    });
-  }
-
-  return false;
-};
-
-/**
- * Creates directory
- * @param {String} file The file path from client
- * @return {boolean}
- */
-const mkdir = vfs => async file => {
-  const realPath = vfs.resolve(file);
-
-  await fs.mkdir(realPath);
-
-  return true;
-};
-
-/**
- * Writes file stream
- * @param {String} file The file path from client
- * @param {stream.Readable} data The stream
- * @return {Promise<boolean, Error>}
- */
-const writefile = vfs => (file, data) => new Promise((resolve, reject) => {
-  // FIXME: Currently this actually copies the file because
-  // formidable will put this in a temporary directory.
-  // It would probably be better to do a "rename()" on local filesystems
-  const realPath = vfs.resolve(file);
-
-  const write = () => {
-    const stream = fs.createWriteStream(realPath);
-    data.on('error', err => reject(err));
-    data.on('end', () => resolve(true));
-    data.pipe(stream);
-  };
-
-  fs.stat(realPath).then(stat => {
-    if (stat.isDirectory()) {
-      resolve(false);
-    } else {
-      write();
-    }
-  }).catch((err) => err.code === 'ENOENT' ? write()  : reject(err));
-});
-
-/**
- * Renames given file or directory
- * @param {String} src The source file path from client
- * @param {String} dest The destination file path from client
- * @return {boolean}
- */
-const rename = vfs => async (src, dest) => {
-  const realSource = vfs.resolve(src);
-  const realDest = vfs.resolve(dest);
-
-  await fs.rename(realSource, realDest);
-
-  return true;
-};
-
-/**
- * Copies given file or directory
- * @param {String} src The source file path from client
- * @param {String} dest The destination file path from client
- * @return {boolean}
- */
-const copy = vfs => async (src, dest) => {
-  const realSource = vfs.resolve(src);
-  const realDest = vfs.resolve(dest);
-
-  await fs.copy(realSource, realDest);
-
-  return true;
-};
-
-/**
- * Removes given file or directory
- * @param {String} file The file path from client
- * @return {boolean}
- */
-const unlink = vfs => async file => {
-  // TODO: Recursively remove directories
-  const realPath = vfs.resolve(file);
-
-  await fs.unlink(realPath);
-
-  return true;
-};
-
-module.exports = {
-  stat,
-  exists,
-  readdir,
-  readfile,
-  writefile,
-  mkdir,
-  rename,
-  copy,
-  unlink
-};

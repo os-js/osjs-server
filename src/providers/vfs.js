@@ -28,7 +28,7 @@
  * @licence Simplified BSD License
  */
 
-const vfs = require('../vfs/system');
+const systemAdapter = require('../vfs/system');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
@@ -48,9 +48,9 @@ const sanitize = filename => {
 /*
  * A wrapper for handling VFS requests
  */
-const vfsRequestWrapper = wrapper => async (req, res, k, args) => {
+const vfsRequestWrapper = (adapter, wrapper) => async (req, res, k, args) => {
   try {
-    const result = await vfs[k](wrapper)(...args);
+    const result = await adapter[k](wrapper)(...args);
 
     if (k === 'readfile') {
       if (result) { // stream
@@ -183,7 +183,26 @@ class VFSServiceProvider extends ServiceProvider {
       }
     }));
 
+    this.createMountpoints();
     this.createRoutes();
+  }
+
+  createMountpoints() {
+    const mountpoints = this.core.config('vfs.mountpoints');
+    const adapters = Object.assign({
+      system: systemAdapter
+    },  this.core.config('vfs.adapters', {}))
+
+    this.mountpoints = mountpoints.map(mount => {
+      const adapter = mount.adapter
+        ? (typeof mount.adapter === 'function' ? mount.adapter : adapters[mount.adapter])
+        : systemAdapter;
+
+      console.log('Mounted', mount.name, mount.attributes);
+      return Object.assign({
+        _adapter: adapter(this.core)
+      }, mount);
+    });
   }
 
   createRoutes() {
@@ -195,8 +214,14 @@ class VFSServiceProvider extends ServiceProvider {
         try {
           const {fields, files} = await parseRequestWrapper(req, res, iter.method);
           const args = createMethodArgs(fields, files, iter);
+          const prefix = String(args[0]).split(':')[0];
+          const mountpoint = prefix ? this.mountpoints.find(m => m.name === prefix) : null;
 
-          await vfsRequestWrapper({
+          if (!mountpoint) {
+            throw new Error(`Mountpoint not found for '${prefix}'`);
+          }
+
+          await vfsRequestWrapper(mountpoint._adapter, {
             resolve: resolver(req)
           })(req, res, iter.name, args);
 
