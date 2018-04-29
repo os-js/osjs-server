@@ -44,11 +44,17 @@ const defaultConfiguration = {
     port: undefined
   },
   session: {
-    secret: 'osjs',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: 'auto'
+    store: {
+      module: require.resolve('session-file-store'),
+      options: {}
+    },
+    options: {
+      secret: 'osjs',
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        secure: 'auto'
+      }
     }
   },
   vfs: {

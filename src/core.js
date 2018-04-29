@@ -33,6 +33,7 @@ const express = require('express');
 const express_session = require('express-session');
 const express_ws = require('express-ws');
 const symbols = require('log-symbols');
+const session_file_store = require('session-file-store');
 
 const {CoreBase} = require('@osjs/common');
 const {defaultConfiguration, defaultProviders} = require('./config.js');
@@ -40,8 +41,14 @@ const {defaultConfiguration, defaultProviders} = require('./config.js');
 /*
  * Create session parser
  */
-const createSession = (app, configuration) =>
-  express_session(configuration.session);
+const createSession = (app, configuration) => {
+  const Store = require(configuration.session.store.module)(express_session);
+  const store = new Store(configuration.session.store.options);
+
+  return express_session(Object.assign({
+    store
+  }, configuration.session.options));
+};
 
 /*
  * Create WebSocket server
@@ -69,6 +76,11 @@ class Core extends CoreBase {
    * @param {Boolean} [options.registerDefault] Register default provided service providers
    */
   constructor(cfg, options = {}) {
+    const createDefaultSession = (ref) => {
+      const classRef = session_file_store(ref);
+      return new classRef({});
+    };
+
     options = Object.assign({}, {
       root: process.cwd(),
       registerDefault: true
