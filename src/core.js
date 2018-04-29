@@ -151,6 +151,32 @@ class Core extends CoreBase {
 
     this.start();
   }
+
+  /**
+   * Broadcast given event to client
+   * @param {string} name Event name
+   * @param {Object} params Message
+   * @param {Function} [filter] A function to filter clients
+   */
+  broadcast(name, params, filter) {
+    filter = filter || (() => true);
+
+    if (this.ws) {
+      this.ws.getWss('/').clients // This is a Set
+        .forEach(client => {
+          if (!client._osjs_client) {
+            return;
+          }
+
+          if (filter(client)) {
+            client.send(JSON.stringify({
+              params,
+              name
+            }));
+          }
+        });
+    }
+  }
 }
 
 module.exports = Core;

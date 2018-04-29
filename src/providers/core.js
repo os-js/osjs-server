@@ -66,7 +66,7 @@ class CoreServiceProvider extends ServiceProvider {
 
     // Handle Websocket stuff
     app.ws('/', (ws, req) => {
-      // NOTE: This is required to keep the connection open
+      ws._osjs_client = true;
     });
 
     this.core.singleton('osjs/express', () => ({
