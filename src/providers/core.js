@@ -34,7 +34,7 @@ const bodyParser = require('body-parser');
 const {ServiceProvider} = require('@osjs/common');
 
 const isAuthenticated = gropus => (req, res, next) => {
-  if (req.session.username) {
+  if (req.session.user) {
     return next();
   }
 

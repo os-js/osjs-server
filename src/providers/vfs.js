@@ -104,7 +104,7 @@ const parseRequestWrapper = async (req, res, m) => {
  */
 const segments = {
   root: () => process.cwd(),
-  username: req => req.session.username
+  username: req => req.session.user.username
 };
 
 /*

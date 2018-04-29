@@ -31,7 +31,10 @@
 const {ServiceProvider} = require('@osjs/common');
 
 const nullAdapter = (core, options) => ({
-  login: (req, res) => Promise.resolve(req.body),
+  login: (req, res) => Promise.resolve({
+    id: 0,
+    username: req.body.username
+  }),
   logout: (req, res) => Promise.resolve(true)
 });
 
@@ -74,17 +77,30 @@ class AuthServiceProvider extends ServiceProvider {
 
   async login(req, res) {
     const result = await this.adapter.login(req, res);
-    if (result) {
-      const {username} = result;
-      req.session.username = username;
 
-      res.json({
-        user: {username}
-      });
-    } else {
-      res.status(403)
-        .json({error: 'Invalid login'});
+    if (result) {
+      const ignores = ['password'];
+      const required = ['username', 'id'];
+
+      const missing = required
+        .filter(k => typeof result[k] === 'undefined');
+
+      if (missing.length) {
+        console.warn('Missing user attributes', missing);
+      } else {
+        const useResult = Object.keys(result)
+          .filter(k => ignores.indexOf(k) === -1)
+          .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {});
+
+        req.session.user = useResult;
+        res.json(useResult);
+
+        return;
+      }
     }
+
+    res.status(403)
+      .json({error: 'Invalid login'});
   }
 
   async logout(req, res) {
