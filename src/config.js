@@ -51,7 +51,7 @@ const defaultConfiguration = {
     options: {
       secret: 'osjs',
       resave: false,
-      saveUninitialized: true,
+      saveUninitialized: false,
       cookie: {
         secure: 'auto'
       }
