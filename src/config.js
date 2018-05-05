@@ -34,6 +34,7 @@ const SettingsServiceProvider = require('./providers/settings.js');
 const VFSServiceProvider = require('./providers/vfs.js');
 
 const defaultConfiguration = {
+  development: !(process.env.NODE_ENV || '').match(/^prod/i),
   logging: true,
   index: 'index.html',
   hostname: 'localhost',

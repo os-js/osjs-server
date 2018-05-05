@@ -29,10 +29,11 @@
  */
 
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const globby = require('globby');
 const {promisify} = require('util');
 const symbols = require('log-symbols');
+const chokidar = require('chokidar');
 const {ServiceProvider} = require('@osjs/common');
 
 /*
@@ -56,20 +57,52 @@ const proc = metadata => ({
 class PackageServiceProvider extends ServiceProvider {
   constructor(core) {
     super(core);
+
     this.packages = [];
+    this.watches = [];
+    this.hotReloading = {};
   }
 
   async init() {
     const {app, session, configuration} = this.core;
     const readJson = async (f) => JSON.parse(await promisify(fs.readFile)(f, {encoding: 'utf8'}));
+    const metadataFile = path.join(configuration.root, 'src/packages/*/metadata.json');
+    const distDir = path.join(this.core.config('public'), 'metadata.json');
 
-    const files = await globby(path.join(configuration.root, 'src/packages/*/metadata.json'));
+    if (this.core.config('development')) {
+      const watcher = chokidar.watch(distDir);
+      watcher.on('change', () => {
+        this.core.broadcast('osjs/packages:metadata:changed');
+      });
+      this.watches.push(watcher);
+    }
+
+    const files = await globby(metadataFile);
     const manifest = await readJson(path.join(configuration.public, 'metadata.json'));
+    const dev = this.core.config('development');
 
     for (let i = 0; i < files.length; i++) {
       const file = await readJson(files[i]);
       const metadata = manifest.find(m => m.name == file.name);
-      if (!metadata || !metadata.server) {
+      if (!metadata) {
+        continue;
+      }
+
+      if (dev) {
+        const distDir = path.join(this.core.config('public'), 'apps', metadata.name);
+        const watcher = chokidar.watch(distDir);
+        watcher.on('change', () => {
+          clearTimeout(this.hotReloading[metadata.name]);
+          this.hotReloading[metadata.name] = setTimeout(() => {
+            console.log('Reloading', metadata.name);
+            this.core.broadcast('osjs/packages:package:changed', metadata.name);
+          }, 500);
+        });
+        this.watches.push(watcher);
+        console.log(symbols.info, `Watching ${distDir}`);
+      }
+
+      if (!metadata.server) {
         continue;
       }
 
@@ -109,7 +142,11 @@ class PackageServiceProvider extends ServiceProvider {
         script.destroy();
       }
     });
-    this.packages =[];
+
+    this.watches.forEach(watch => watch.close());
+
+    this.packages = [];
+    this.watches = [];
   }
 }
 
