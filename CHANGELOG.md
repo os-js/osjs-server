@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.17
+
+* Added npmignore
+* Added CHANGELOG
+
 ## 3.0.0-alpha.16
 
 * Broadcast package/meta updates in dev mode
