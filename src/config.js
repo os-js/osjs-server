@@ -50,6 +50,7 @@ const defaultConfiguration = {
       options: {}
     },
     options: {
+      name: 'osjs.sid',
       secret: 'osjs',
       resave: false,
       saveUninitialized: false,
