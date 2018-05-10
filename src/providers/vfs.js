@@ -151,11 +151,17 @@ const createMethodArgs = (fields, files, iter) =>
  */
 class VFSServiceProvider extends ServiceProvider {
 
-  constructor(core, options) {
+  constructor(core, options = {}) {
+    options = Object.assign({
+      adapters: {}
+    }, options);
+
     super(core, options);
 
     this.mountpoints = [];
-    this.adapters = {};
+    this.adapters = Object.assign({
+      system: systemAdapter
+    }, options.adapters);
   }
 
   async init() {
@@ -183,11 +189,6 @@ class VFSServiceProvider extends ServiceProvider {
 
       this.core.make('osjs/express').routeAuthenticated(iter.method, uri, handler);
     });
-
-    // Adapters
-    this.adapters = Object.assign({
-      system: systemAdapter
-    },  this.core.config('vfs.adapters', {}))
 
     // Mountpoints
     this.core.config('vfs.mountpoints')
