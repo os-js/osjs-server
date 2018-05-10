@@ -36,7 +36,7 @@ const symbols = require('log-symbols');
 const session_file_store = require('session-file-store');
 
 const {CoreBase} = require('@osjs/common');
-const {defaultConfiguration, defaultProviders} = require('./config.js');
+const {defaultConfiguration} = require('./config.js');
 
 /*
  * Create session parser
@@ -73,7 +73,6 @@ class Core extends CoreBase {
    * Creates a new instance
    * @param {Object} cfg Configuration tree
    * @param {Object} [options] Options
-   * @param {Boolean} [options.registerDefault] Register default provided service providers
    */
   constructor(cfg, options = {}) {
     const createDefaultSession = (ref) => {
@@ -82,11 +81,10 @@ class Core extends CoreBase {
     };
 
     options = Object.assign({}, {
-      root: process.cwd(),
-      registerDefault: true
+      root: process.cwd()
     }, options);
 
-    super(defaultProviders, defaultConfiguration, cfg, options);
+    super(defaultConfiguration, cfg, options);
 
     this.app = express();
     this.session = createSession(this.app, this.configuration);

@@ -74,25 +74,7 @@ const defaultConfiguration = {
   }
 };
 
-const defaultProviders = [{
-  class: CoreServiceProvider,
-  name: 'core'
-}, {
-  class: PackageServiceProvider,
-  name: 'packages'
-}, {
-  class: VFSServiceProvider,
-  name: 'vfs'
-}, {
-  class: AuthServiceProvider,
-  name: 'auth'
-}, {
-  class: SettingsServiceProvider,
-  name: 'settings'
-}];
-
 module.exports = {
-  defaultConfiguration,
-  defaultProviders
+  defaultConfiguration
 };
 
