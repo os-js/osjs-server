@@ -1,5 +1,12 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.18
+
+* Remove 'registerDefault' from Core options
+
+This requires the distribution to manually register base providers.
+See 'index.js' in the base repository.
+
 ## 3.0.0-alpha.17
 
 * Added npmignore
