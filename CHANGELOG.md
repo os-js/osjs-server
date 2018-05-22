@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.20
+
+* Added proxy support via configuration
+
 ## 3.0.0-alpha.19
 
 * Solved an issue with readdir on Windows
