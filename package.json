@@ -27,6 +27,7 @@
     "body-parser": "^1.18.2",
     "chokidar": "^2.0.3",
     "express": "^4.16.2",
+    "express-http-proxy": "^1.2.0",
     "express-session": "^1.15.6",
     "express-ws": "^3.0.0",
     "formidable": "^1.2.1",

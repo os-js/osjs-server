@@ -44,6 +44,15 @@ const defaultConfiguration = {
   ws: {
     port: undefined
   },
+  proxy: [
+    /*
+    {
+      source: 'pattern',
+      destination: 'pattern',
+      options: {}
+    }
+    */
+  ],
   session: {
     store: {
       module: require.resolve('session-file-store'),

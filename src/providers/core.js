@@ -31,6 +31,8 @@
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
+const proxy = require('express-http-proxy');
+const symbols = require('log-symbols');
 const {ServiceProvider} = require('@osjs/common');
 
 const isAuthenticated = gropus => (req, res, next) => {
@@ -51,6 +53,11 @@ class CoreServiceProvider extends ServiceProvider {
   async init() {
     const {app, session, configuration} = this.core;
     const indexFile = path.join(configuration.public, configuration.index);
+    const proxies = (configuration.proxy || []).map(item => Object.assign({
+      source: null,
+      destination: null,
+      options: {}
+    }, item)).filter(item => item.source && item.destination);
 
     // Handle sessions
     app.use(session);
@@ -67,6 +74,11 @@ class CoreServiceProvider extends ServiceProvider {
     // Handle Websocket stuff
     app.ws('/', (ws, req) => {
       ws._osjs_client = true;
+    });
+
+    proxies.forEach(item => {
+      console.log(symbols.info, `Proxying ${item.source} -> ${item.destination}`);
+      app.use(item.source, proxy(item.destination, item.options));
     });
 
     this.core.singleton('osjs/express', () => ({
