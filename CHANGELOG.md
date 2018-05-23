@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.21
+
+* Emit starting events (#1)
+* Added urlencoded body-parser middleware (#1)
+
 ## 3.0.0-alpha.20
 
 * Added proxy support via configuration
