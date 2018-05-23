@@ -142,6 +142,8 @@ class Core extends CoreBase {
   async boot() {
     console.log(symbols.info, 'Initializing server...');
 
+    this.emit('osjs/core:start');
+
     if (this.configuration.logging) {
       const wss = this.ws.getWss();
 
@@ -159,7 +161,11 @@ class Core extends CoreBase {
 
     await super.boot();
 
-    this.start();
+    this.emit('init');
+
+    await this.start();
+
+    this.emit('osjs/core:started');
   }
 
   /**
