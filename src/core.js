@@ -86,6 +86,7 @@ class Core extends CoreBase {
 
     super(defaultConfiguration, cfg, options);
 
+    this.httpServer = null;
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
@@ -123,7 +124,7 @@ class Core extends CoreBase {
     await super.start();
 
     try {
-      this.app.listen(this.configuration.port, () => {
+      this.httpServer = this.app.listen(this.configuration.port, () => {
         const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
         console.log(symbols.info, 'Using directory', this.configuration.public.replace(process.cwd(), ''));
         console.log(symbols.success, `WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
