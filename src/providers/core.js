@@ -35,12 +35,32 @@ const proxy = require('express-http-proxy');
 const symbols = require('log-symbols');
 const {ServiceProvider} = require('@osjs/common');
 
-const isAuthenticated = gropus => (req, res, next) => {
+const validateGroups = (req, groups) => {
+  if (groups.length) {
+    const userGroups = req.session.user.groups;
+
+    return groups.every(g => userGroups.indexOf(g) !== -1);
+  }
+
+  return true;
+};
+
+const isAuthenticated = groups => (req, res, next) => {
+  const deny = () => res
+    .status(403)
+    .send('Access denied');
+
   if (req.session.user) {
+    if (groups instanceof Array) {
+      if (!validateGroups(req, groups)) {
+        return deny();
+      }
+    }
+
     return next();
   }
 
-  return res.status(403).send('Access denied');
+  return deny();
 };
 
 /**
