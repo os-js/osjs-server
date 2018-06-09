@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.22
+
+* Added group checking to authenticated routes
+* Add 'httpServer' reference in core
+
 ## 3.0.0-alpha.21
 
 * Emit starting events (#1)
