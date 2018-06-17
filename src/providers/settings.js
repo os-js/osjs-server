@@ -28,12 +28,37 @@
  * @licence Simplified BSD License
  */
 
+const fs = require('fs-extra');
+const path = require('path');
 const {ServiceProvider} = require('@osjs/common');
 
 const nullAdapter = (core, options) => ({
   save: (req, res) => Promise.resolve(true),
   load: (req, res) => Promise.resolve({})
 });
+
+const fsAdapter = (core, options) => {
+  const fsOptions = Object.assign({
+    path: 'home:/.osjs/settings.json',
+    resolve: (req, dest) => core.make('osjs/vfs').resolve(req, dest)
+  }, options || {});
+
+  const getAdapterPath = req => Promise.resolve(
+    fsOptions.resolve(req, fsOptions.path)
+  );
+
+  const ensureDir = p => fs.ensureDir(path.dirname(p))
+    .then(() => p);
+
+  return {
+    save: (req, res) => getAdapterPath(req)
+      .then(p => ensureDir(p))
+      .then(p => fs.writeJson(p, req.body)),
+    load: (req, res) => getAdapterPath(req)
+      .then(p => ensureDir(p))
+      .then(p => fs.readJson(p))
+  };
+};
 
 /**
  * OS.js Settings Service Provider
@@ -46,6 +71,10 @@ class SettingsServiceProvider extends ServiceProvider {
     options = Object.assign({
       adapter: nullAdapter
     }, options);
+
+    if (options.adapter === 'fs') {
+      options.adapter = fsAdapter;
+    }
 
     super(core, options);
 
@@ -73,12 +102,12 @@ class SettingsServiceProvider extends ServiceProvider {
   }
 
   async save(req, res) {
-    const result = this.adapter.save(req, res);
+    const result = await this.adapter.save(req, res);
     res.json(result);
   }
 
   async load(req, res) {
-    const result = this.adapter.load(req, res);
+    const result = await this.adapter.load(req, res);
     res.json(result);
   }
 }

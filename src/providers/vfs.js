@@ -167,6 +167,7 @@ class VFSServiceProvider extends ServiceProvider {
   async init() {
     // Expose VFS as service
     this.core.singleton('osjs/vfs', () => ({
+      resolve: (req, file) => resolver(this.core, req)(file),
       request: (adapter, method, mockSession = {}) => (...args) => {
         const adapterInstance = this.adapters[adapter](this.core);
 
