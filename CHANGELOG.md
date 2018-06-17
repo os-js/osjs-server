@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.23
+
+* Provide 'fs' settings adapter
+
 ## 3.0.0-alpha.22
 
 * Added group checking to authenticated routes
