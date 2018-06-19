@@ -115,6 +115,36 @@ const resolver = (core, req) => file => {
 };
 
 /*
+ * Validates a mountpoint groups to the user groups
+ */
+const validateGroups = (req, method, mountpoint) => {
+  const all = (arr, compare) => arr.every(g => compare.indexOf(g) !== -1);
+
+  const groups = mountpoint.attributes.groups || [];
+  if (groups.length) {
+    const userGroups = req.session.user.groups;
+
+    const namedGroups = groups
+      .filter(g => typeof g === 'string');
+
+    const methodGroups = groups
+      .find(g => typeof g === 'string' ? false : (method in g));
+
+    const namedValid = namedGroups.length
+      ? all(namedGroups, userGroups)
+      : true;
+
+    const methodValid = methodGroups
+      ? all(methodGroups[method], userGroups)
+      : true;
+
+    return namedValid && methodValid;
+  }
+
+  return true;
+};
+
+/*
  * A list of methods and how to use an incoming request
  */
 const methods = [
@@ -211,6 +241,11 @@ class VFSServiceProvider extends ServiceProvider {
 
         if (!mountpoint) {
           return Promise.reject(new Error(`Mountpoint not found for '${prefix}'`));
+        }
+
+        if (!validateGroups(req, iter.name, mountpoint)) {
+          return res.status(403)
+            .json({error: `Permission was denied for '${iter.method}' in '${prefix}'`});
         }
 
         return mountpoint._adapter[iter.name]({
