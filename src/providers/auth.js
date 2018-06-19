@@ -99,7 +99,7 @@ class AuthServiceProvider extends ServiceProvider {
           .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {}));
 
         req.session.user = useResult;
-        res.json(useResult);
+        req.session.save(() => res.json(useResult));
 
         return;
       }
