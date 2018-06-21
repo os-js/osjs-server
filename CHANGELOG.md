@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.24
+
+* Added group-based permissions to VFS
+* Force-save session on login
+
 ## 3.0.0-alpha.23
 
 * Provide 'fs' settings adapter
