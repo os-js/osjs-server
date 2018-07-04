@@ -110,7 +110,7 @@ class AuthServiceProvider extends ServiceProvider {
   }
 
   async logout(req, res) {
-    const result = await this.adapter.logout(req, res);
+    await this.adapter.logout(req, res);
 
     try {
       req.session.destroy();

@@ -48,7 +48,7 @@ const sanitize = filename => {
   const [name, str] = (filename.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
   const sane = str.split('/').map(s => sanitizeFilename(s)).join('/').replace(/\/+/g, '/');
   return name + ':' + sane;
-}
+};
 
 /*
  * Asyncronous wrapper for handling form parsing
@@ -70,7 +70,6 @@ const parseFormAsync = req => new Promise((resolve, reject) => {
  */
 const parseRequestWrapper = async (req, res, m) => {
   if (m === 'post') {
-    const form = new formidable.IncomingForm();
     return parseFormAsync(req);
   }
 
@@ -203,7 +202,7 @@ class VFSServiceProvider extends ServiceProvider {
 
         adapterInstance[method]({
           resolve: resolver(this.core, {session: mockSession})
-        })(...args)
+        })(...args);
       }
     }));
 

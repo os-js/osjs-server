@@ -27,11 +27,6 @@
  * @author  Anders Evenrud <andersevenrud@gmail.com>
  * @licence Simplified BSD License
  */
-const CoreServiceProvider = require('./providers/core.js');
-const PackageServiceProvider = require('./providers/packages.js');
-const AuthServiceProvider = require('./providers/auth.js');
-const SettingsServiceProvider = require('./providers/settings.js');
-const VFSServiceProvider = require('./providers/vfs.js');
 
 const defaultConfiguration = {
   development: !(process.env.NODE_ENV || '').match(/^prod/i),

@@ -83,7 +83,7 @@ module.exports = (core) => ({
     Promise.resolve(vfs.resolve(root))
       .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
       .then(({realPath, files}) => {
-        const promises = files.map(f => createFileIter(realPath, root.replace(/\/?$/, '/') + f))
+        const promises = files.map(f => createFileIter(realPath, root.replace(/\/?$/, '/') + f));
         return Promise.all(promises);
       }),
 
@@ -148,8 +148,8 @@ module.exports = (core) => ({
       realSource: vfs.resolve(src),
       realDest: vfs.resolve(dest)
     })
-    .then(({realSource, realDest}) => fs.rename(realSource, realDest))
-    .then(() => true),
+      .then(({realSource, realDest}) => fs.rename(realSource, realDest))
+      .then(() => true),
 
   /**
    * Copies given file or directory
@@ -162,8 +162,8 @@ module.exports = (core) => ({
       realSource: vfs.resolve(src),
       realDest: vfs.resolve(dest)
     })
-    .then(({realSource, realDest}) => fs.copy(realSource, realDest))
-    .then(() => true),
+      .then(({realSource, realDest}) => fs.copy(realSource, realDest))
+      .then(() => true),
 
   /**
    * Removes given file or directory

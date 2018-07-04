@@ -64,7 +64,7 @@ class PackageServiceProvider extends ServiceProvider {
   }
 
   async init() {
-    const {app, session, configuration} = this.core;
+    const {configuration} = this.core;
     const readJson = async (f) => JSON.parse(await promisify(fs.readFile)(f, {encoding: 'utf8'}));
     const metadataFile = path.join(configuration.root, 'src/packages/*/metadata.json');
     const distDir = path.join(this.core.config('public'), 'metadata.json');

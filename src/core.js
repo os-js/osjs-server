@@ -33,7 +33,6 @@ const express = require('express');
 const express_session = require('express-session');
 const express_ws = require('express-ws');
 const symbols = require('log-symbols');
-const session_file_store = require('session-file-store');
 
 const {CoreBase} = require('@osjs/common');
 const {defaultConfiguration} = require('./config.js');
@@ -75,11 +74,6 @@ class Core extends CoreBase {
    * @param {Object} [options] Options
    */
   constructor(cfg, options = {}) {
-    const createDefaultSession = (ref) => {
-      const classRef = session_file_store(ref);
-      return new classRef({});
-    };
-
     options = Object.assign({}, {
       root: process.cwd()
     }, options);
