@@ -95,7 +95,17 @@ class CoreServiceProvider extends ServiceProvider {
     // Handle Websocket stuff
     app.ws('/', (ws, req) => {
       ws._osjs_client = true;
+      ws.send(JSON.stringify({
+        name: 'osjs/core:connected',
+        params: [{
+          cookie: {
+            maxAge: this.core.config('session.options.cookie.maxAge')
+          }
+        }]
+      }));
     });
+
+    app.get('/ping', (req, res) => res.status(200).send('ok'));
 
     proxies.forEach(item => {
       console.log(symbols.info, `Proxying ${item.source} -> ${item.destination}`);

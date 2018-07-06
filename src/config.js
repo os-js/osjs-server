@@ -59,7 +59,8 @@ const defaultConfiguration = {
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: 'auto'
+        secure: 'auto',
+        maxAge: 1000 * 60 * 60 * 12
       }
     }
   },
