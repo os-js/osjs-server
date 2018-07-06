@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.25
+
+* Added 'ping' endpoint + cookie maxAge
+* Added missing .eslintrc, cleanup
+
 ## 3.0.0-alpha.24
 
 * Added group-based permissions to VFS
