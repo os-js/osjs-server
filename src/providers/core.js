@@ -94,7 +94,8 @@ class CoreServiceProvider extends ServiceProvider {
 
     // Handle Websocket stuff
     app.ws('/', (ws, req) => {
-      ws._osjs_client = true;
+      ws._osjs_client = Object.assign({}, req.session.user);
+
       ws.send(JSON.stringify({
         name: 'osjs/core:connected',
         params: [{

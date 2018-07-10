@@ -33,6 +33,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const formidable = require('formidable');
+const chokidar = require('chokidar');
 const sanitizeFilename = require('sanitize-filename');
 const {ServiceProvider} = require('@osjs/common');
 
@@ -81,19 +82,30 @@ const parseRequestWrapper = async (req, res, m) => {
  * Segment value map
  */
 const segments = {
-  root: () => process.cwd(),
-  username: req => req.session.user.username
+  root: {
+    dynamic: false,
+    fn: () => process.cwd()
+  },
+  username: {
+    dynamic: true,
+    fn: req => req.session.user.username
+  }
 };
 
 /*
  * Gets a segment value
  */
-const getSegment = (req, seg) => segments[seg] ? segments[seg](req) : '';
+const getSegment = (req, seg) => segments[seg] ? segments[seg].fn(req) : '';
+
+/*
+ * Matches a string for segments
+ */
+const matchSegments = str => (str.match(/(\{\w+\})/g) || []);
 
 /*
  * Resolves a string with segments
  */
-const resolveSegments = (req, str) => (str.match(/(\{\w+\})/g) || [])
+const resolveSegments = (req, str) => matchSegments(str)
   .reduce((result, current) => result.replace(current, getSegment(req, current.replace(/(\{|\})/g, ''))), str);
 
 /*
@@ -248,7 +260,7 @@ class VFSServiceProvider extends ServiceProvider {
 
   request(iter, req, res) {
 
-    const respondError = (msg, code) => res.status(403).json({error: msg});
+    const respondError = (msg, code) => res.status(code).json({error: msg});
 
     return parseRequestWrapper(req, res, iter.method)
       .then(({files, fields}) => {
@@ -312,15 +324,72 @@ class VFSServiceProvider extends ServiceProvider {
 
     console.log('Mounted', mount.name, mount.attributes);
 
-    this.mountpoints.push(Object.assign({
+    const mountpoint = Object.assign({
+      _watch: null,
       _adapter: adapter(this.core)
-    }, mount));
+    }, mount);
+
+    this.mountpoints.push(mountpoint);
+
+    this.watch(mountpoint);
   }
 
-  unmount() {
+  unmount(name) {
+    const index = this.mountpoints.findIndex(m => m.name === name);
+    if (index !== -1) {
+      const mountpoint = this.mountpoints[index];
 
+      if (mountpoint._watch) {
+        mountpoint._watch.close();
+      }
+
+      this.mountpoints.splice(index, 1);
+    }
   }
 
+  watch(mountpoint) {
+    if (mountpoint.attributes.watch === false) {
+      return;
+    }
+
+    const dest = resolveSegments({
+      session: {
+        user: {
+          username: '**'
+        }
+      }
+    }, mountpoint.attributes.root);
+
+    console.log('Watching', dest);
+
+    const watch = chokidar.watch(dest);
+    const restr = dest.replace(/\*\*/g, '([^/]*)');
+    const re = new RegExp(restr + '/(.*)');
+    const seg =  matchSegments(mountpoint.attributes.root)
+      .map(s => s.replace(/\{|\}/g, ''))
+      .filter(s => segments[s].dynamic);
+
+    watch.on('change', file => {
+      const test = re.exec(file);
+      const args = seg.reduce((res, k, i) => {
+        return Object.assign({}, {[k]: test[i + 1]});
+      }, {});
+
+      if (test.length > 0) {
+        const target = mountpoint.name + ':/' + test[test.length - 1];
+        const keys = Object.keys(args);
+        const filter = keys.length === 0
+          ? () => true
+          : ws => keys.every(k => ws._osjs_client[k] === args[k]);
+
+        this.core.broadcast('osjs/vfs:watch:change', [{
+          path: target
+        }, args], filter);
+      }
+    });
+
+    mountpoint._watch = watch;
+  }
 }
 
 module.exports = VFSServiceProvider;
