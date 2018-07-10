@@ -34,6 +34,7 @@ const path = require('path');
 const url = require('url');
 const formidable = require('formidable');
 const chokidar = require('chokidar');
+const signale = require('signale').scope('vfs');
 const sanitizeFilename = require('sanitize-filename');
 const {ServiceProvider} = require('@osjs/common');
 
@@ -245,7 +246,7 @@ class VFSServiceProvider extends ServiceProvider {
       const handler = (req, res) => {
         this.request(iter, req, res)
           .catch(error => {
-            console.warn(error);
+            signale.warn(error);
             res.status(500).json({error});
           });
       };
@@ -297,13 +298,13 @@ class VFSServiceProvider extends ServiceProvider {
               res.json(result);
             }
           } catch (e) {
-            console.warn(e);
+            signale.fatal(new Error(e));
             res.status(500).send('Fatal error');
           } finally {
             cleanup();
           }
         }).catch(error => {
-          console.warn(error);
+          signale.fatal(new Error(error));
 
           if (error.code) {
             const code = errorCodes[error.code] || 400;
@@ -322,7 +323,7 @@ class VFSServiceProvider extends ServiceProvider {
       ? (typeof mount.adapter === 'function' ? mount.adapter : this.adapters[mount.adapter])
       : systemAdapter;
 
-    console.log('Mounted', mount.name, mount.attributes);
+    signale.success('Mounted', mount.name, mount.attributes);
 
     const mountpoint = Object.assign({
       _watch: null,
@@ -360,7 +361,7 @@ class VFSServiceProvider extends ServiceProvider {
       }
     }, mountpoint.attributes.root);
 
-    console.log('Watching', dest);
+    signale.watch('Watching', dest);
 
     const watch = chokidar.watch(dest);
     const restr = dest.replace(/\*\*/g, '([^/]*)');

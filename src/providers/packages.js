@@ -32,7 +32,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const globby = require('globby');
 const {promisify} = require('util');
-const symbols = require('log-symbols');
+const signale = require('signale').scope('pkg');
 const chokidar = require('chokidar');
 const {ServiceProvider} = require('@osjs/common');
 
@@ -94,12 +94,12 @@ class PackageServiceProvider extends ServiceProvider {
         watcher.on('change', () => {
           clearTimeout(this.hotReloading[metadata.name]);
           this.hotReloading[metadata.name] = setTimeout(() => {
-            console.log('Reloading', metadata.name);
+            signale.info('Reloading', metadata.name);
             this.core.broadcast('osjs/packages:package:changed', metadata.name);
           }, 500);
         });
         this.watches.push(watcher);
-        console.log(symbols.info, `Watching ${distDir}`);
+        signale.watch(distDir);
       }
 
       if (!metadata.server) {
@@ -111,7 +111,8 @@ class PackageServiceProvider extends ServiceProvider {
         continue;
       }
 
-      console.log(symbols.info, `Using ${metadata._path}/${metadata.server}`);
+      signale.await(`Loading ${metadata._path}/${metadata.server}`);
+
       try {
         const script = require(serverFile)(this.core, proc(metadata));
         if (typeof script.init === 'function') {
@@ -123,7 +124,7 @@ class PackageServiceProvider extends ServiceProvider {
           script
         });
       } catch (e) {
-        console.warn(e);
+        signale.warn(e);
       }
     }
   }

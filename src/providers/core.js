@@ -32,7 +32,7 @@ const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const proxy = require('express-http-proxy');
-const symbols = require('log-symbols');
+const signale = require('signale').scope('core');
 const {ServiceProvider} = require('@osjs/common');
 
 const validateGroups = (req, groups) => {
@@ -109,7 +109,7 @@ class CoreServiceProvider extends ServiceProvider {
     app.get('/ping', (req, res) => res.status(200).send('ok'));
 
     proxies.forEach(item => {
-      console.log(symbols.info, `Proxying ${item.source} -> ${item.destination}`);
+      signale.info(`Proxying ${item.source} -> ${item.destination}`);
       app.use(item.source, proxy(item.destination, item.options));
     });
 

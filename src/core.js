@@ -32,7 +32,7 @@ const morgan = require('morgan');
 const express = require('express');
 const express_session = require('express-session');
 const express_ws = require('express-ws');
-const symbols = require('log-symbols');
+const signale = require('signale').scope('core');
 
 const {CoreBase} = require('@osjs/common');
 const {defaultConfiguration} = require('./config.js');
@@ -84,6 +84,7 @@ class Core extends CoreBase {
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
+    this.logger = signale;
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
@@ -98,7 +99,7 @@ class Core extends CoreBase {
       return;
     }
 
-    console.log(symbols.warning, 'Stopping server...');
+    signale.pause('Shutting down server');
 
     super.destroy();
 
@@ -113,20 +114,19 @@ class Core extends CoreBase {
       return;
     }
 
-    console.log(symbols.info, 'Starting server...');
+    signale.start('Starting server');
 
     await super.start();
 
     try {
       this.httpServer = this.app.listen(this.configuration.port, () => {
         const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-        console.log(symbols.info, 'Using directory', this.configuration.public.replace(process.cwd(), ''));
-        console.log(symbols.success, `WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
-        console.log(symbols.success, `HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
-        console.log(symbols.success, 'Running...');
+        signale.watch('Using directory', this.configuration.public.replace(process.cwd(), ''));
+        signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
+        signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
       });
     } catch (e) {
-      console.error(symbols.error, e);
+      signale.fatal(new Error(e));
       process.exit(1);
     }
   }
@@ -135,7 +135,7 @@ class Core extends CoreBase {
    * Initializes the server
    */
   async boot() {
-    console.log(symbols.info, 'Initializing server...');
+    signale.await('Initializing core');
 
     this.emit('osjs/core:start');
 
@@ -143,8 +143,8 @@ class Core extends CoreBase {
       const wss = this.ws.getWss();
 
       wss.on('connection', (c) => {
-        console.log('WS Connection opened');
-        c.on('close', () => console.log('WS Connection closed'));
+        signale.start('WS Connection opened');
+        c.on('close', () => signale.pause('WS Connection closed'));
       });
 
       if (this.configuration.morgan) {
@@ -152,7 +152,7 @@ class Core extends CoreBase {
       }
     }
 
-    console.log(symbols.info, 'Initializing providers...');
+    signale.await('Initializing providers');
 
     await super.boot();
 
@@ -161,6 +161,8 @@ class Core extends CoreBase {
     await this.start();
 
     this.emit('osjs/core:started');
+
+    signale.success('Initialized');
   }
 
   /**

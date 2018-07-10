@@ -28,6 +28,7 @@
  * @licence Simplified BSD License
  */
 
+const signale = require('signale').scope('auth');
 const {ServiceProvider} = require('@osjs/common');
 
 const nullAdapter = (core, options) => ({
@@ -92,7 +93,7 @@ class AuthServiceProvider extends ServiceProvider {
         .filter(k => typeof result[k] === 'undefined');
 
       if (missing.length) {
-        console.warn('Missing user attributes', missing);
+        signale.warn('Missing user attributes', missing);
       } else {
         const useResult = Object.assign({}, template, Object.keys(result)
           .filter(k => ignores.indexOf(k) === -1)
@@ -115,7 +116,7 @@ class AuthServiceProvider extends ServiceProvider {
     try {
       req.session.destroy();
     } catch (e) {
-      console.warn(e);
+      signale.warn(e);
     }
 
     res.json({});
