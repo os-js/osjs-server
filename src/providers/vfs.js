@@ -353,6 +353,10 @@ class VFSServiceProvider extends ServiceProvider {
       return;
     }
 
+    if (this.core.config('vfs.watch') === false) {
+      return;
+    }
+
     const dest = resolveSegments({
       session: {
         user: {

@@ -65,6 +65,7 @@ const defaultConfiguration = {
     }
   },
   vfs: {
+    watch: false,
     mountpoints: [{
       name: 'osjs',
       attributes: {
