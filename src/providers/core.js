@@ -83,7 +83,9 @@ class CoreServiceProvider extends ServiceProvider {
     app.use(session);
 
     // Handle bodies
-    app.use(bodyParser.urlencoded());
+    app.use(bodyParser.urlencoded({
+      extended: false
+    }));
     app.use(bodyParser.json());
 
     // Handle index file
