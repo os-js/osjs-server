@@ -68,7 +68,8 @@ const defaultConfiguration = {
     mountpoints: [{
       name: 'osjs',
       attributes: {
-        root: '{root}/dist'
+        root: '{root}/dist',
+        readOnly: true
       }
     }, {
       name: 'home',

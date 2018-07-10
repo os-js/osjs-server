@@ -144,20 +144,41 @@ const validateGroups = (req, method, mountpoint) => {
 };
 
 /*
+ * Gets the prefix of a vfs path
+ */
+const getPrefix = str => String(str).split(':')[0];
+
+/*
+ * Checks if destination is readOnly
+ */
+const checkReadOnly = (method, mountpoint, fields) => {
+  if (mountpoint.attributes.readOnly) {
+    const {ro} = method;
+
+    return typeof ro === 'function'
+      ? getPrefix(ro(fields)) === mountpoint.name
+      : ro;
+  }
+
+  return false;
+};
+
+/*
  * A list of methods and how to use an incoming request
  */
 const methods = [
-  {name: 'exists', method: 'get', args: ['path']},
-  {name: 'stat', method: 'get', args: ['path']},
-  {name: 'readdir', method: 'get', args: ['path']},
-  {name: 'readfile', method: 'get', args: ['path'], pipe: true},
+  {name: 'exists', method: 'get', args: ['path'], ro: false},
+  {name: 'stat', method: 'get', args: ['path'], ro: false},
+  {name: 'readdir', method: 'get', args: ['path'], ro: false},
+  {name: 'readfile', method: 'get', args: ['path'], pipe: true, ro: false},
   {name: 'writefile', method: 'post', args: [
     'path',
     (fields, files) => fs.createReadStream(files.upload.path)
-  ]},
-  {name: 'mkdir', method: 'get', args: ['path']},
-  {name: 'rename', method: 'get', args: ['from', 'to']},
-  {name: 'unlink', method: 'get', args: ['path']}
+  ], ro: true},
+  {name: 'mkdir', method: 'get', args: ['path'], ro: true},
+  {name: 'rename', method: 'get', args: ['from', 'to'], ro: true},
+  {name: 'copy', method: 'get', args: ['from', 'to'], ro: args => args.to},
+  {name: 'unlink', method: 'get', args: ['path'], ro: true}
 ];
 
 /*
@@ -226,10 +247,13 @@ class VFSServiceProvider extends ServiceProvider {
   }
 
   request(iter, req, res) {
+
+    const respondError = (msg, code) => res.status(403).json({error: msg});
+
     return parseRequestWrapper(req, res, iter.method)
       .then(({files, fields}) => {
         const args = createMethodArgs(fields, files, iter);
-        const prefix = String(args[0]).split(':')[0];
+        const prefix = getPrefix(args[0]);
         const mountpoint = prefix ? this.mountpoints.find(m => m.name === prefix) : null;
         const cleanup = () => {
           // Remove uploads
@@ -239,12 +263,16 @@ class VFSServiceProvider extends ServiceProvider {
         };
 
         if (!mountpoint) {
-          return Promise.reject(new Error(`Mountpoint not found for '${prefix}'`));
+          return respondError(`Mountpoint not found for '${prefix}'`, 403);
+        }
+
+        const m = methods.find(meth => meth.name === iter.name);
+        if (checkReadOnly(m, mountpoint, fields)) {
+          return respondError(`Mountpoint '${prefix} is read-only'`, 403);
         }
 
         if (!validateGroups(req, iter.name, mountpoint)) {
-          return res.status(403)
-            .json({error: `Permission was denied for '${iter.method}' in '${prefix}'`});
+          return respondError(`Permission was denied for '${iter.method}' in '${prefix}'`, 403);
         }
 
         return mountpoint._adapter[iter.name]({
@@ -269,7 +297,7 @@ class VFSServiceProvider extends ServiceProvider {
             const code = errorCodes[error.code] || 400;
             res.status(code).json({error: error.code});
           } else {
-            res.status(500).json({error}); // FIXME
+            respondError(error, 500); // FIXME
           }
 
           cleanup();
