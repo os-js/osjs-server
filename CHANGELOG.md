@@ -1,5 +1,14 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.26
+
+* Updated dependencies
+* Remove 'extended' usage in body-parser
+* Added 'vfs.watch' config option
+* Updated logging
+* Added vfs change/watch events broadcasting over WS
+* Added read-only support for mountpoints
+
 ## 3.0.0-alpha.25
 
 * Added 'ping' endpoint + cookie maxAge
