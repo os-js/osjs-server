@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.28
+
+* Allow override certain configurations via argv
+
 ## 3.0.0-alpha.27
 
 * Updated @osjs/common dependency
