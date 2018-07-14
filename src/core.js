@@ -96,10 +96,10 @@ class Core extends CoreBase {
     }, options);
 
     const argv = minimist(options.argv);
-    const val = k => argvToConfig[k](argv[k]);
+    const val = k => argvToConfig[k](JSON.parse(argv[k]));
     const keys = Object.keys(argvToConfig).filter(k => argv.hasOwnProperty(k));
     const argvConfig = keys.reduce((o, k) => {
-      signale.info(`CLI argument '--${k}' overrides config`, val(k));
+      signale.fav(`CLI argument '--${k}' overrides`, val(k));
 
       return Object.assign(o, deepmerge(o, val(k)));
     }, {});
