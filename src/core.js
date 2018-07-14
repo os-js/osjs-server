@@ -33,10 +33,25 @@ const morgan = require('morgan');
 const express = require('express');
 const express_session = require('express-session');
 const express_ws = require('express-ws');
+const minimist = require('minimist');
+const deepmerge = require('deepmerge');
 const signale = require('signale').scope('core');
 
 const {CoreBase} = require('@osjs/common');
 const {defaultConfiguration} = require('./config.js');
+
+/*
+ * Converts an input argument to configuration entry
+ * Overrides the user-created configuration file
+ */
+const argvToConfig = {
+  'logging': logging => ({logging}),
+  'development': development => ({development}),
+  'port': port => ({port}),
+  'ws-port': port => ({ws: {port}}),
+  'secret': secret => ({session: {options: {secret}}}),
+  'morgan': morgan => ({morgan})
+};
 
 /*
  * Create session parser
@@ -76,16 +91,26 @@ class Core extends CoreBase {
    */
   constructor(cfg, options = {}) {
     options = Object.assign({}, {
+      argv: process.argv.splice(2),
       root: process.cwd()
     }, options);
 
-    super(defaultConfiguration, cfg, options);
+    const argv = minimist(options.argv);
+    const val = k => argvToConfig[k](argv[k]);
+    const keys = Object.keys(argvToConfig).filter(k => argv.hasOwnProperty(k));
+    const argvConfig = keys.reduce((o, k) => {
+      signale.info(`CLI argument '--${k}' overrides config`, val(k));
+
+      return Object.assign(o, deepmerge(o, val(k)));
+    }, {});
+
+    super(defaultConfiguration, deepmerge(cfg, argvConfig), options);
 
     this.httpServer = null;
+    this.logger = signale;
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
-    this.logger = signale;
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
