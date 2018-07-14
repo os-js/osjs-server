@@ -26,6 +26,7 @@
     "@osjs/common": "^3.0.0-alpha.10",
     "body-parser": "^1.18.2",
     "chokidar": "^2.0.4",
+    "connect-loki": "^1.1.0",
     "express": "^4.16.2",
     "express-http-proxy": "^1.2.0",
     "express-session": "^1.15.6",
@@ -36,7 +37,6 @@
     "mime-types": "^2.1.18",
     "morgan": "^1.9.0",
     "sanitize-filename": "^1.6.1",
-    "session-file-store": "^1.2.0",
     "signale": "^1.2.1"
   }
 }

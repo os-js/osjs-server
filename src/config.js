@@ -28,6 +28,8 @@
  * @licence Simplified BSD License
  */
 
+const maxAge = 60 * 60 * 12;
+
 const defaultConfiguration = {
   development: !(process.env.NODE_ENV || '').match(/^prod/i),
   logging: true,
@@ -50,8 +52,11 @@ const defaultConfiguration = {
   ],
   session: {
     store: {
-      module: require.resolve('session-file-store'),
-      options: {}
+      module: require.resolve('connect-loki'),
+      options: {
+        autosave: true,
+        ttl: maxAge
+      }
     },
     options: {
       name: 'osjs.sid',
@@ -60,7 +65,7 @@ const defaultConfiguration = {
       saveUninitialized: false,
       cookie: {
         secure: 'auto',
-        maxAge: 1000 * 60 * 60 * 12
+        maxAge: 1000 * maxAge
       }
     }
   },

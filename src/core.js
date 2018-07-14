@@ -28,6 +28,7 @@
  * @licence Simplified BSD License
  */
 
+const path = require('path');
 const morgan = require('morgan');
 const express = require('express');
 const express_session = require('express-session');
@@ -121,7 +122,9 @@ class Core extends CoreBase {
     try {
       this.httpServer = this.app.listen(this.configuration.port, () => {
         const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-        signale.watch('Using directory', this.configuration.public.replace(process.cwd(), ''));
+        const sess = path.basename(path.dirname(this.configuration.session.store.module));
+        signale.success('Using session store', sess);
+        signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
         signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
         signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
       });
