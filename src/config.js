@@ -39,7 +39,7 @@ const defaultConfiguration = {
   public: null,
   morgan: 'tiny',
   ws: {
-    port: undefined
+    port: null
   },
   proxy: [
     /*
