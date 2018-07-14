@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
-    "@osjs/common": "^3.0.0-alpha.10",
+    "@osjs/common": "^3.0.0-alpha.11",
     "body-parser": "^1.18.2",
     "chokidar": "^2.0.4",
     "connect-loki": "^1.1.0",
