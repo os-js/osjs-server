@@ -1,5 +1,11 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.27
+
+* Updated @osjs/common dependency
+* Updated default configuration
+* Use 'connect-loki' instead of 'session-file-store' (#2)
+
 ## 3.0.0-alpha.26
 
 * Updated dependencies
