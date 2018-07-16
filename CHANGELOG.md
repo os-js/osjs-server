@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.29
+
+* Added 'download' for 'readfile' in system vfs
+
 ## 3.0.0-alpha.28
 
 * Allow override certain configurations via argv
