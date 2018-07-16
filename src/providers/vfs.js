@@ -183,7 +183,15 @@ const methods = [
   {name: 'exists', method: 'get', args: ['path'], ro: false},
   {name: 'stat', method: 'get', args: ['path'], ro: false},
   {name: 'readdir', method: 'get', args: ['path'], ro: false},
-  {name: 'readfile', method: 'get', args: ['path'], pipe: true, ro: false},
+  {name: 'readfile', method: 'get', args: ['path', (fields) => {
+    try {
+      return JSON.parse(fields.options || '');
+    } catch (e) {
+      /* noop */
+    }
+
+    return {};
+  }], pipe: true, ro: false},
   {name: 'writefile', method: 'post', args: [
     'path',
     (fields, files) => fs.createReadStream(files.upload.path)
@@ -289,6 +297,8 @@ class VFSServiceProvider extends ServiceProvider {
         }
 
         return mountpoint._adapter[iter.name]({
+          req,
+          res,
           resolve: resolver(this.core, req)
         })(...args).then(result => {
           try {

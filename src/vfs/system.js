@@ -92,12 +92,24 @@ module.exports = (core) => ({
    * @param {String} file The file path from client
    * @return {stream.Readable}
    */
-  readfile: vfs => file =>
+  readfile: vfs => (file, options = {}) =>
     Promise.resolve(vfs.resolve(file))
       .then(realPath => fs.stat(realPath).then(stat => ({realPath, stat})))
-      .then(({realPath, stat}) => stat.isFile() ? fs.createReadStream(realPath, {
-        flags: 'r'
-      }) : false),
+      .then(({realPath, stat}) => {
+        if (!stat.isFile()) {
+          return false;
+        }
+
+        const stream = fs.createReadStream(realPath, {
+          flags: 'r'
+        });
+
+        if (options.download) {
+          vfs.res.attachment(path.basename(file));
+        }
+
+        return stream;
+      }),
 
   /**
    * Creates directory
