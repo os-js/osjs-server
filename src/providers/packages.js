@@ -30,24 +30,107 @@
 
 const path = require('path');
 const fs = require('fs-extra');
-const globby = require('globby');
-const {promisify} = require('util');
+const fg = require('fast-glob');
 const signale = require('signale').scope('pkg');
 const chokidar = require('chokidar');
 const {ServiceProvider} = require('@osjs/common');
 
 /*
- * Creates a helper passed on to application methods
+ * Loads all packages as a stream
  */
-const proc = metadata => ({
-  metadata,
-  resource: (path) => {
-    if (path.substr(0, 1) !== '/') {
-      path = '/' + path;
+const loader = (core, manifest) => {
+  const {configuration} = core;
+  const sources = path.join(configuration.root, 'src/packages/*/metadata.json');
+  const metadataInManifest = metadata => !!manifest.find(iter => iter.name === metadata.name);
+  const validateMetadata = metadata => !!metadata.server && metadataInManifest(metadata);
+  const validateScript = script => script && typeof script.init === 'function';
+
+  const createWatch = (metadata, cb) => {
+    const dist = path.join(configuration.public, 'apps', metadata.name);
+    const watcher = chokidar.watch(dist);
+    watcher.on('change', () => cb(metadata));
+    signale.watch(dist);
+    return watcher;
+  };
+
+  const createInstance = (filename, metadata) => {
+    try {
+      const server = path.resolve(path.dirname(filename), metadata.server);
+      signale.await(`Loading ${server}`);
+
+      return require(server)(core, {
+        filename,
+        metadata,
+        resource: (path) => {
+          if (path.substr(0, 1) !== '/') {
+            path = '/' + path;
+          }
+          return `/apps/${metadata._path}${path}`;
+        }
+      });
+    } catch (e) {
+      signale.warn(e);
     }
-    return `/apps/${metadata._path}${path}`;
-  }
-});
+
+    return null;
+  };
+
+  return cb => new Promise((resolve, reject) => {
+    const stream = fg.stream(sources, {
+      extension: false,
+      brace: false,
+      deep: 1,
+      case: false
+    });
+
+    let result = [];
+    let watches = [];
+
+    stream.on('data', filename => {
+      const promise = fs.readJson(filename)
+        .then(metadata => {
+          let script;
+
+          const done = error => {
+            if (error) {
+              signale.warn(error);
+            }
+
+            return Promise.resolve({filename, metadata, script});
+          };
+
+          if (configuration.development) {
+            watches.push(createWatch(metadata, cb));
+          }
+
+          if (validateMetadata(metadata)) {
+            script = createInstance(filename, metadata);
+          }
+
+          if (validateScript(script)) {
+            return script.init()
+              .then(() => done())
+              .catch(done);
+          }
+
+          return done();
+        });
+
+      result.push(promise);
+    });
+
+    stream.on('error', error => {
+      signale.warn(error);
+    });
+
+    stream.once('end', () => {
+      Promise.all(result)
+        .then(result => ({result, watches}))
+        .then(resolve)
+        .catch(reject);
+    });
+  });
+};
 
 /**
  * OS.js Package Service Provider
@@ -63,11 +146,10 @@ class PackageServiceProvider extends ServiceProvider {
     this.hotReloading = {};
   }
 
-  async init() {
+  init() {
     const {configuration} = this.core;
-    const readJson = async (f) => JSON.parse(await promisify(fs.readFile)(f, {encoding: 'utf8'}));
-    const metadataFile = path.join(configuration.root, 'src/packages/*/metadata.json');
-    const distDir = path.join(this.core.config('public'), 'metadata.json');
+    const distDir = path.join(configuration.public, 'metadata.json');
+    const manifestFile = path.join(configuration.public, 'metadata.json');
 
     if (this.core.config('development')) {
       const watcher = chokidar.watch(distDir);
@@ -77,56 +159,21 @@ class PackageServiceProvider extends ServiceProvider {
       this.watches.push(watcher);
     }
 
-    const files = await globby(metadataFile);
-    const manifest = await readJson(path.join(configuration.public, 'metadata.json'));
-    const dev = this.core.config('development');
+    return fs.readJson(manifestFile)
+      .then(manifest => {
+        const load = loader(this.core, manifest);
 
-    for (let i = 0; i < files.length; i++) {
-      const file = await readJson(files[i]);
-      const metadata = manifest.find(m => m.name == file.name);
-      if (!metadata) {
-        continue;
-      }
-
-      if (dev) {
-        const distDir = path.join(this.core.config('public'), 'apps', metadata.name);
-        const watcher = chokidar.watch(distDir);
-        watcher.on('change', () => {
+        return load(metadata => {
           clearTimeout(this.hotReloading[metadata.name]);
           this.hotReloading[metadata.name] = setTimeout(() => {
             signale.info('Reloading', metadata.name);
             this.core.broadcast('osjs/packages:package:changed', metadata.name);
           }, 500);
+        }).then(({result, watches}) => {
+          this.watches = watches;
+          this.packages = this.packages.concat(result);
         });
-        this.watches.push(watcher);
-        signale.watch(distDir);
-      }
-
-      if (!metadata.server) {
-        continue;
-      }
-
-      const serverFile = path.join(path.dirname(files[i]), metadata.server);
-      if (!fs.existsSync(serverFile)) {
-        continue;
-      }
-
-      signale.await(`Loading ${metadata._path}/${metadata.server}`);
-
-      try {
-        const script = require(serverFile)(this.core, proc(metadata));
-        if (typeof script.init === 'function') {
-          await script.init();
-        }
-
-        this.packages.push({
-          metadata,
-          script
-        });
-      } catch (e) {
-        signale.warn(e);
-      }
-    }
+      });
   }
 
   start() {
