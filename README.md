@@ -13,6 +13,8 @@
 
 This is the main node server module for OS.js.
 
+[![Build Status](https://travis-ci.org/os-js/osjs-server.svg?branch=master)](https://travis-ci.org/os-js/osjs-server)
+
 Contains all services and interfaces required to run a node server for OS.js
 
 **PLEASE NOTE THAT THIS IS AN ALPHA PRE-RELEASE AND SUBJECT TO CHANGE WITHOUT NOTICE**
