@@ -1,5 +1,13 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.30
+
+* Added VFS search() method
+* Updated travis-ci
+* Added travis-ci badge to README
+* Added initial travis-ci config
+* Better package loading on boot
+
 ## 3.0.0-alpha.29
 
 * Added 'download' for 'readfile' in system vfs
