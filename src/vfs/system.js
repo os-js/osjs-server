@@ -31,6 +31,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const mime = require('mime-types');
+const fh = require('filehound');
 
 /*
  * Creates an object readable by client
@@ -185,5 +186,28 @@ module.exports = (core) => ({
   unlink: vfs => file =>
     Promise.resolve(vfs.resolve(file))
       .then(realPath => fs.unlink(realPath))
-      .then(() => true)
+      .then(() => true),
+
+  /**
+   * Searches for files and folders
+   * @param {String} file The file path from client
+   * @return {boolean}
+   */
+  search: vfs => (root, pattern) =>
+    Promise.resolve(vfs.resolve(root))
+      .then(realPath => {
+        return fh.create()
+          .paths(realPath)
+          .match(pattern)
+          .find()
+          .then(files => ({realPath, files}));
+      })
+      .then(({realPath, files}) => {
+        const promises = files.map(f => {
+          const rf = f.substr(realPath.length);
+          return createFileIter(realPath, root.replace(/\/?$/, '/') + rf);
+        });
+        return Promise.all(promises);
+      })
+
 });

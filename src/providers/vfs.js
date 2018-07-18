@@ -199,7 +199,8 @@ const methods = [
   {name: 'mkdir', method: 'get', args: ['path'], ro: true},
   {name: 'rename', method: 'get', args: ['from', 'to'], ro: true},
   {name: 'copy', method: 'get', args: ['from', 'to'], ro: args => args.to},
-  {name: 'unlink', method: 'get', args: ['path'], ro: true}
+  {name: 'unlink', method: 'get', args: ['path'], ro: true},
+  {name: 'search', method: 'get', args: ['root', (fields) => fields.pattern], ro: false}
 ];
 
 /*
