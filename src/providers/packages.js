@@ -65,7 +65,7 @@ const loader = (core, manifest) => {
           if (path.substr(0, 1) !== '/') {
             path = '/' + path;
           }
-          return `/apps/${metadata._path}${path}`;
+          return `/apps/${metadata.name}${path}`;
         }
       });
     } catch (e) {
