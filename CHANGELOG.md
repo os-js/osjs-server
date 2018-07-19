@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.31
+
+* Updated @osjs/common dependency
+
 ## 3.0.0-alpha.30
 
 * Added VFS search() method
