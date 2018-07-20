@@ -197,7 +197,7 @@ module.exports = (core) => ({
    */
   unlink: vfs => file =>
     Promise.resolve(vfs.resolve(file))
-      .then(realPath => fs.unlink(realPath))
+      .then(realPath => fs.remove(realPath))
       .then(() => true),
 
   /**
