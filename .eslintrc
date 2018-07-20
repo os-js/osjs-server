@@ -1,5 +1,6 @@
 {
   "env": {
+    "browser": false,
     "node": true
   },
   "parserOptions": {
@@ -7,10 +8,15 @@
     "ecmaVersion": 8
   },
   "globals": {
-    "Promise": true
+    "Promise": true,
+    "ArrayBuffer": true,
+    "File": true,
+    "Blob": true
   },
   "extends": "eslint:recommended",
   "rules": {
+    "eqeqeq": ["error", "always"],
+    "quotes": ["error", "single"],
     "linebreak-style": ["error", "unix"],
     "semi": ["error", "always"],
     "indent": ["error", 2],
@@ -31,6 +37,7 @@
     "prefer-spread": 1,
     "prefer-rest-params": 1,
     "template-curly-spacing": ["warn", "never"],
+    "no-multiple-empty-lines": ["error"],
     "no-unused-vars": ["error", {"vars": "all", "args": "none"}],
     "no-useless-constructor": 1,
     "no-var": 2,
