@@ -40,7 +40,7 @@ const createFileIter = (realRoot, file) => {
   const filename = path.basename(file);
   const realPath = path.join(realRoot, filename);
 
-  return fs.stat(realPath).then(stat => ({
+  const createStat = stat => ({
     isDirectory: stat.isDirectory(),
     isFile: stat.isFile(),
     mime: stat.isFile()
@@ -50,7 +50,19 @@ const createFileIter = (realRoot, file) => {
     path: file,
     filename,
     stat
-  }));
+  });
+
+  return fs.stat(realPath)
+    .then(createStat)
+    .catch(error => {
+      console.warn(error);
+
+      return createStat({
+        isDirectory: () => false,
+        isFile: () => true,
+        size: 0
+      });
+    });
 };
 
 module.exports = (core) => ({
@@ -205,7 +217,10 @@ module.exports = (core) => ({
       .then(({realPath, files}) => {
         const promises = files.map(f => {
           const rf = f.substr(realPath.length);
-          return createFileIter(realPath, root.replace(/\/?$/, '/') + rf);
+          return createFileIter(
+            path.dirname(realPath.replace(/\/?$/, '/') + rf),
+            root.replace(/\/?$/, '/') + rf
+          );
         });
         return Promise.all(promises);
       })
