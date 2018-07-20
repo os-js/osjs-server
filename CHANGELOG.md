@@ -1,5 +1,11 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.32
+
+* Fixed removal of directories in system VFS adapter
+* VFS search improvements
+* Updated eslintrc
+
 ## 3.0.0-alpha.31
 
 * Updated @osjs/common dependency
