@@ -168,7 +168,7 @@ class PackageServiceProvider extends ServiceProvider {
           clearTimeout(this.hotReloading[metadata.name]);
           this.hotReloading[metadata.name] = setTimeout(() => {
             signale.info('Reloading', metadata.name);
-            this.core.broadcast('osjs/packages:package:changed', metadata.name);
+            this.core.broadcast('osjs/packages:package:changed', [metadata.name]);
           }, 500);
         }).then(({result, watches}) => {
           this.watches = watches;
