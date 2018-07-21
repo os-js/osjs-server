@@ -125,6 +125,7 @@ const loader = (core, manifest) => {
 
     stream.once('end', () => {
       Promise.all(result)
+        .then(result => result.filter(iter => !!iter.script))
         .then(result => ({result, watches}))
         .then(resolve)
         .catch(reject);
