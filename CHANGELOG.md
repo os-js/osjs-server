@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.33
+
+* Add extra filtering in package script loading
+
 ## 3.0.0-alpha.32
 
 * Fixed removal of directories in system VFS adapter
