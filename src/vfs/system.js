@@ -32,6 +32,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const mime = require('mime-types');
 const fh = require('filehound');
+const chokidar = require('chokidar');
 
 /*
  * Creates an object readable by client
@@ -65,7 +66,76 @@ const createFileIter = (realRoot, file) => {
     });
 };
 
+/*
+ * Segment value map
+ */
+const segments = {
+  root: {
+    dynamic: false,
+    fn: () => process.cwd()
+  },
+  username: {
+    dynamic: true,
+    fn: req => req.session.user.username
+  }
+};
+
+/*
+ * Gets a segment value
+ */
+const getSegment = (req, seg) => segments[seg] ? segments[seg].fn(req) : '';
+
+/*
+ * Matches a string for segments
+ */
+const matchSegments = str => (str.match(/(\{\w+\})/g) || []);
+
+/*
+ * Resolves a string with segments
+ */
+const resolveSegments = (req, str) => matchSegments(str)
+  .reduce((result, current) => result.replace(current, getSegment(req, current.replace(/(\{|\})/g, ''))), str);
+
+/*
+ * Resolves a given file path based on a request
+ * Will take out segments from the resulting string
+ * and replace them with a list of defined variables
+ */
+const getRealPath = (req, mount, file) => {
+  const root = resolveSegments(req, mount.attributes.root);
+  // FIXME
+  const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
+  return path.join(root, str);
+};
+
 module.exports = (core) => ({
+  watch: (mount, callback) => {
+    const dest = resolveSegments({
+      session: {
+        user: {
+          username: '**'
+        }
+      }
+    }, mount.attributes.root);
+
+    const watch = chokidar.watch(dest);
+    const restr = dest.replace(/\*\*/g, '([^/]*)');
+    const re = new RegExp(restr + '/(.*)');
+    const seg =  matchSegments(mount.attributes.root)
+      .map(s => s.replace(/\{|\}/g, ''))
+      .filter(s => segments[s].dynamic);
+
+    watch.on('change', file => {
+      const test = re.exec(file);
+      const args = seg.reduce((res, k, i) => {
+        return Object.assign({}, {[k]: test[i + 1]});
+      }, {});
+
+      if (test.length > 0) {
+        callback(args, test[test.length - 1]);
+      }
+    });
+  },
 
   /**
    * Checks if file exists
@@ -73,7 +143,7 @@ module.exports = (core) => ({
    * @return {Promise<boolean, Error>}
    */
   exists: vfs => file => 
-    Promise.resolve(vfs.resolve(file))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
       .then(realPath => fs.access(realPath, fs.F_OK))
       .catch(() => false)
       .then(() => true),
@@ -84,7 +154,7 @@ module.exports = (core) => ({
    * @return {Object}
    */
   stat: vfs => file =>
-    Promise.resolve(vfs.resolve(file))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
       .then(realPath => createFileIter(path.dirname(realPath), realPath)),
 
   /**
@@ -93,7 +163,7 @@ module.exports = (core) => ({
    * @return {Object[]}
    */
   readdir: vfs => root =>
-    Promise.resolve(vfs.resolve(root))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, root))
       .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
       .then(({realPath, files}) => {
         const promises = files.map(f => createFileIter(realPath, root.replace(/\/?$/, '/') + f));
@@ -106,7 +176,7 @@ module.exports = (core) => ({
    * @return {stream.Readable}
    */
   readfile: vfs => (file, options = {}) =>
-    Promise.resolve(vfs.resolve(file))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
       .then(realPath => fs.stat(realPath).then(stat => ({realPath, stat})))
       .then(({realPath, stat}) => {
         if (!stat.isFile()) {
@@ -130,7 +200,7 @@ module.exports = (core) => ({
    * @return {boolean}
    */
   mkdir: vfs => file => 
-    Promise.resolve(vfs.resolve(file))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
       .then(realPath => fs.mkdir(realPath))
       .then(() => true),
 
@@ -144,7 +214,7 @@ module.exports = (core) => ({
     // FIXME: Currently this actually copies the file because
     // formidable will put this in a temporary directory.
     // It would probably be better to do a "rename()" on local filesystems
-    const realPath = vfs.resolve(file);
+    const realPath = getRealPath(vfs.req, vfs.mount, file);
 
     const write = () => {
       const stream = fs.createWriteStream(realPath);
@@ -170,8 +240,8 @@ module.exports = (core) => ({
    */
   rename: vfs => (src, dest) =>
     Promise.resolve({
-      realSource: vfs.resolve(src),
-      realDest: vfs.resolve(dest)
+      realSource: getRealPath(vfs.req, vfs.mount, src),
+      realDest: getRealPath(vfs.req, vfs.mount, dest)
     })
       .then(({realSource, realDest}) => fs.rename(realSource, realDest))
       .then(() => true),
@@ -184,8 +254,8 @@ module.exports = (core) => ({
    */
   copy: vfs => (src, dest) =>
     Promise.resolve({
-      realSource: vfs.resolve(src),
-      realDest: vfs.resolve(dest)
+      realSource: getRealPath(vfs.req, vfs.mount, src),
+      realDest: getRealPath(vfs.req, vfs.mount, dest)
     })
       .then(({realSource, realDest}) => fs.copy(realSource, realDest))
       .then(() => true),
@@ -196,7 +266,7 @@ module.exports = (core) => ({
    * @return {boolean}
    */
   unlink: vfs => file =>
-    Promise.resolve(vfs.resolve(file))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
       .then(realPath => fs.remove(realPath))
       .then(() => true),
 
@@ -206,7 +276,7 @@ module.exports = (core) => ({
    * @return {boolean}
    */
   search: vfs => (root, pattern) =>
-    Promise.resolve(vfs.resolve(root))
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, root))
       .then(realPath => {
         return fh.create()
           .paths(realPath)
