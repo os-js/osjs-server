@@ -33,6 +33,7 @@ const signale = require('signale').scope('vfs');
 const {ServiceProvider} = require('@osjs/common');
 const {request} = require('../utils/vfs');
 const vfsMethods = require('../vfs/methods');
+const uuid = require('uuid/v1');
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -49,9 +50,8 @@ class VFSServiceProvider extends ServiceProvider {
     super(core, options);
 
     this.mountpoints = [];
-    this.adapters = Object.assign({
-      system: systemAdapter
-    }, options.adapters);
+    this.adapters = [];
+    this.watches = [];
   }
 
   async init() {
@@ -73,6 +73,18 @@ class VFSServiceProvider extends ServiceProvider {
     this.core.singleton('osjs/vfs', () => ({
       request: vfsMethods
     }));
+  }
+
+  start() {
+    const adapters = Object.assign({
+      system: systemAdapter
+    }, this.options.adapters);
+
+    this.adapters = Object.keys(adapters).reduce((result, iter) => {
+      return Object.assign({
+        [iter]: adapters[iter](this.core)
+      }, result);
+    }, {});
 
     // Mountpoints
     this.core.config('vfs.mountpoints')
@@ -80,32 +92,28 @@ class VFSServiceProvider extends ServiceProvider {
   }
 
   mount(mount) {
-    const adapter = mount.adapter
-      ? this.adapters[mount.adapter]
-      : systemAdapter;
-
-    signale.success('Mounted', mount.name, mount.attributes);
-
     const mountpoint = Object.assign({
-      root: `${mount.name}:/`,
-      _watch: null,
-      _adapter: adapter(this.core)
+      id: uuid(),
+      root: `${mount.name}:/`
     }, mount);
 
     this.mountpoints.push(mountpoint);
 
+    signale.success('Mounted', mount.name, mount.attributes);
+
     this.watch(mountpoint);
   }
 
-  unmount(name) {
-    const index = this.mountpoints.findIndex(m => m.name === name);
+  unmount(mountpoint) {
+    const found = this.watches.find(w => w.id === mountpoint.id);
+
+    if (found) {
+      found.watch.close();
+    }
+
+    const index = this.mountpoints.indexOf(mountpoint);
+
     if (index !== -1) {
-      const mountpoint = this.mountpoints[index];
-
-      if (mountpoint._watch) {
-        mountpoint._watch.close();
-      }
-
       this.mountpoints.splice(index, 1);
     }
   }
@@ -123,9 +131,12 @@ class VFSServiceProvider extends ServiceProvider {
       return;
     }
 
+    const adapter = mountpoint.adapter
+      ? this.adapters[mountpoint.adapter]
+      : this.adapters.system;
 
-    if (typeof mountpoint._adapter.watch === 'function') {
-      const watch = mountpoint._adapter.watch(mountpoint, (args, dir) => {
+    if (typeof adapter.watch === 'function') {
+      const watch = adapter.watch(mountpoint, (args, dir) => {
         const target = mountpoint.name + ':/' + dir;
         const keys = Object.keys(args);
         const filter = keys.length === 0
@@ -137,7 +148,10 @@ class VFSServiceProvider extends ServiceProvider {
         }, args], filter);
       });
 
-      mountpoint._watch = watch;
+      this.watches.push({
+        id: mountpoint.id,
+        watch
+      });
 
       signale.watch('Watching mountpoint', mountpoint.name);
     }

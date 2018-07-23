@@ -115,6 +115,12 @@ const parseFields = req => new Promise((resolve, reject) => {
   }
 });
 
+// Get adapter from mountpoint
+const getAdapter = (provider, mountpoint) => mountpoint.adapter
+  ? provider.adapters[mountpoint.adapter]
+  : provider.adapters.system;
+
+// Resolves mountpoint from fields
 const resolveMountpoint = provider => (endpoint, fields, userGroups, ro) => {
   const known = ['path', 'from', 'root'];
   const field = Object.keys(fields).find(key => known.indexOf(key) !== -1);
@@ -133,11 +139,13 @@ const resolveMountpoint = provider => (endpoint, fields, userGroups, ro) => {
     throw new VFSError(`Permission was denied for '${endpoint}' in '${prefix}'`, 403);
   }
 
-  if (typeof vfsMethods[endpoint] === 'undefined' ||  typeof mountpoint._adapter[endpoint] === 'undefined') {
+  const adapter = getAdapter(provider, mountpoint);
+
+  if (typeof vfsMethods[endpoint] === 'undefined' ||  typeof adapter[endpoint] === 'undefined') {
     throw new VFSError(`VFS Endpoint '${endpoint} was not valid for this mountpoint.'`, 401);
   }
 
-  return mountpoint;
+  return [adapter, mountpoint];
 };
 
 // Performs a vfs request
@@ -152,8 +160,8 @@ module.exports.request = provider => (endpoint, ro) => (req, res) => {
 
   const userGroups = req.session.user.groups;
   const resolve = resolveMountpoint(provider);
-  const request = (method, fields, files, mountpoint) =>
-    vfsMethods[method](req, res, fields, files)(provider.core, mountpoint._adapter, mountpoint);
+  const request = (method, fields, files) => (adapter, mountpoint) =>
+    vfsMethods[method](req, res, fields, files)(provider.core, adapter, mountpoint);
 
   return parseFields(req)
     .then(({fields, files}) => {
@@ -167,24 +175,24 @@ module.exports.request = provider => (endpoint, ro) => (req, res) => {
 
       try {
         if (['rename', 'copy'].indexOf(endpoint) !== -1) {
-          const srcMount = resolve('readfile', {path: fields.from}, userGroups, false);
-          const dstMount = resolve('writefile', {path: fields.to}, userGroups, true);
+          const [srcAdapter, srcMount] = resolve('readfile', {path: fields.from}, userGroups, false);
+          const [dstAdapter, dstMount] = resolve('writefile', {path: fields.to}, userGroups, true);
           const sameAdapter = srcMount.adapter === dstMount.adapter;
 
           if (!sameAdapter) {
-            promise = request('readfile', {path: fields.from}, {}, srcMount)
-              .then(ab => request('writefile', {path: fields.to}, {upload: ab}, dstMount))
+            promise = request('readfile', {path: fields.from}, {})(srcAdapter, srcMount)
+              .then(ab => request('writefile', {path: fields.to}, {upload: ab})(dstAdapter, dstMount))
               .then(result => {
                 return endpoint === 'rename'
-                  ? request('unlink', {path: fields.from}, {}, srcMount).then(() => true)
+                  ? request('unlink', {path: fields.from}, {})(srcAdapter, srcMount).then(() => true)
                   : true;
               });
           }
         }
 
         if (!promise) {
-          const mountpoint = resolve(endpoint, fields, userGroups, ro);
-          promise = request(endpoint, fields, files, mountpoint);
+          const [adapter, mountpoint] = resolve(endpoint, fields, userGroups, ro);
+          promise = request(endpoint, fields, files)(adapter, mountpoint);
         }
       } catch (e) {
         promise = Promise.reject(new Error(e));
