@@ -65,7 +65,7 @@ class Filesystem {
   /**
    * Initializes Filesystem
    */
-  init() {
+  async init() {
     const adapters = Object.assign({
       system: systemAdapter
     }, this.options.adapters);
