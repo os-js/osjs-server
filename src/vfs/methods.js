@@ -29,8 +29,7 @@
  */
 
 const fs = require('fs-extra');
-const _jsonResponse = (req, res, fields, files) => result => res.json(result);
-const _binaryResponse = (req, res, fields, files) => result => result.pipe(res);
+const {Stream} = require('stream');
 
 /**
  * Read a directory
@@ -40,8 +39,7 @@ const _binaryResponse = (req, res, fields, files) => result => result.pipe(res);
  * @return {Object[]} A list of files
  */
 module.exports.readdir = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .readdir(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .readdir(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Reads a file
@@ -51,8 +49,7 @@ module.exports.readdir = (req, res, fields, files) => (core, adapter, mount) => 
  * @return {Stream}
  */
 module.exports.readfile = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .readfile(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(_binaryResponse(req, res, fields, files));
+  .readfile(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Writes a file
@@ -61,15 +58,15 @@ module.exports.readfile = (req, res, fields, files) => (core, adapter, mount) =>
  * @param {Object} [options] Options
  * @return {Number} File size
  */
-module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .writefile(({req, res, mount}))(fields.path, fs.createReadStream(files.upload.path), fields.options, mount)
-  .then(result => {
-    for (let fieldname in files) {
-      fs.unlink(files[fieldname].path, () => ({/* noop */}));
-    }
+module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) => {
+  const isStream = files.upload instanceof Stream;
+  const stream = isStream
+    ? files.upload
+    : fs.createReadStream(files.upload.path);
 
-    return _jsonResponse(req, res, fields, files)(result);
-  });
+  return adapter
+    .writefile(({req, res, mount}))(fields.path, stream, fields.options, mount);
+};
 
 /**
  * Copies a file or directory (move)
@@ -79,8 +76,7 @@ module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) =
  * @return {Boolean}
  */
 module.exports.copy = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .copy(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .copy(({req, res, mount}))(fields.from, fields.to, fields.options, mount);
 
 /**
  * Renames a file or directory (move)
@@ -90,8 +86,7 @@ module.exports.copy = (req, res, fields, files) => (core, adapter, mount) => ada
  * @return {Boolean}
  */
 module.exports.rename = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .rename(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .rename(({req, res, mount}))(fields.from, fields.to, fields.options, mount);
 
 /**
  * Creates a directory
@@ -100,8 +95,7 @@ module.exports.rename = (req, res, fields, files) => (core, adapter, mount) => a
  * @return {Boolean}
  */
 module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .mkdir(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .mkdir(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Removes a file or directory
@@ -110,8 +104,7 @@ module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => ad
  * @return {Boolean}
  */
 module.exports.unlink = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .unlink(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .unlink(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Checks if path exists
@@ -120,8 +113,7 @@ module.exports.unlink = (req, res, fields, files) => (core, adapter, mount) => a
  * @return {Boolean}
  */
 module.exports.exists = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .exists(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .exists(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Gets the stats of the file or directory
@@ -130,8 +122,7 @@ module.exports.exists = (req, res, fields, files) => (core, adapter, mount) => a
  * @return {Object}
  */
 module.exports.stat = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .stat(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .stat(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Searches for files and folders
@@ -141,5 +132,4 @@ module.exports.stat = (req, res, fields, files) => (core, adapter, mount) => ada
  * @return {String}
  */
 module.exports.search = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount)
-  .then(_jsonResponse(req, res, fields, files));
+  .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount);

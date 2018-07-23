@@ -81,7 +81,7 @@ class VFSServiceProvider extends ServiceProvider {
 
   mount(mount) {
     const adapter = mount.adapter
-      ? (typeof mount.adapter === 'function' ? mount.adapter : this.adapters[mount.adapter])
+      ? this.adapters[mount.adapter]
       : systemAdapter;
 
     signale.success('Mounted', mount.name, mount.attributes);

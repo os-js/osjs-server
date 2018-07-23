@@ -28,11 +28,19 @@
  * @licence Simplified BSD License
  */
 
+const fs = require('fs-extra');
 const url = require('url');
 const formidable = require('formidable');
 const sanitizeFilename = require('sanitize-filename');
 const vfsMethods = require('../vfs/methods');
 const signale = require('signale').scope('vfs');
+
+class VFSError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+  }
+}
 
 const errorCodes = {
   ENOENT: 404,
@@ -105,47 +113,97 @@ const parseFields = req => new Promise((resolve, reject) => {
   }
 });
 
+const resolveMountpoint = (provider, fields, files) => (endpoint, ro) => (req, res) => {
+  const known = ['path', 'from', 'root'];
+  const field = Object.keys(fields).find(key => known.indexOf(key) !== -1);
+  const prefix = getPrefix(fields[field]);
+  const mountpoint = prefix ? provider.mountpoints.find(m => m.name === prefix) : null;
+  const userGroups = req.session.user.groups;
+
+  if (!mountpoint) {
+    throw new VFSError(`Mountpoint not found for '${prefix}'`, 403);
+  }
+
+  if (checkReadOnly(ro, mountpoint, fields)) {
+    throw new VFSError(`Mountpoint '${prefix} is read-only'`, 403);
+  }
+
+  if (!validateGroups(userGroups, endpoint, mountpoint)) {
+    throw new VFSError(`Permission was denied for '${endpoint}' in '${prefix}'`, 403);
+  }
+
+  if (typeof vfsMethods[endpoint] === 'undefined' ||  typeof mountpoint._adapter[endpoint] === 'undefined') {
+    throw new VFSError(`VFS Endpoint '${endpoint} was not valid for this mountpoint.'`, 401);
+  }
+
+  return mountpoint;
+};
+
 // Performs a vfs request
-module.exports.request = provider => (endpoint, ro) => (req, res) => parseFields(req)
-  .then(({fields, files}) => {
-    const known = ['path', 'from', 'root'];
-    const field = Object.keys(fields).find(key => known.indexOf(key) !== -1);
-    const prefix = getPrefix(fields[field]);
-    const mountpoint = prefix ? provider.mountpoints.find(m => m.name === prefix) : null;
-    const respondError = (msg, code) => res.status(code).json({error: msg});
-    const userGroups = req.session.user.groups;
+module.exports.request = provider => (endpoint, ro) => (req, res) => {
+  const respondError = error => {
+    const code = typeof error.code === 'number'
+      ? error.code
+      : (errorCodes[error.code] || 400);
 
-    if (!mountpoint) {
-      return respondError(`Mountpoint not found for '${prefix}'`, 403);
-    }
+    res.status(code).json({error: error.toString()});
+  };
 
-    if (checkReadOnly(ro, mountpoint, fields)) {
-      return respondError(`Mountpoint '${prefix} is read-only'`, 403);
-    }
+  const request = (method, fields, files, mountpoint) =>
+    vfsMethods[method](req, res, fields, files)(provider.core, mountpoint._adapter, mountpoint);
 
-    if (!validateGroups(userGroups, endpoint, mountpoint)) {
-      return respondError(`Permission was denied for '${endpoint}' in '${prefix}'`, 403);
-    }
-
-    if (typeof vfsMethods[endpoint] === 'undefined' ||  typeof mountpoint._adapter[endpoint] === 'undefined') {
-      return respondError(`VFS Endpoint '${endpoint} was not valid for this mountpoint.'`, 401);
-    }
-
-    ['path', 'from', 'to', 'root'].forEach(key => {
-      if (typeof fields[key] !== 'undefined') {
-        fields[key] = sanitize(fields[key]);
-      }
-    });
-
-    return vfsMethods[endpoint](req, res, fields, files)(provider.core, mountpoint._adapter, mountpoint)
-      .catch(error => {
-        signale.fatal(new Error(error));
-
-        if (error.code) {
-          const code = errorCodes[error.code] || 400;
-          res.status(code).json({error: error.code});
-        } else {
-          respondError(error, 500); // FIXME
+  return parseFields(req)
+    .then(({fields, files}) => {
+      ['path', 'from', 'to', 'root'].forEach(key => {
+        if (typeof fields[key] !== 'undefined') {
+          fields[key] = sanitize(fields[key]);
         }
       });
-  });
+
+      let promise;
+
+      try {
+        if (['rename', 'copy'].indexOf(endpoint) !== -1) {
+          const srcMount = resolveMountpoint(provider, {path: fields.from})('readfile', false)(req, res);
+          const dstMount = resolveMountpoint(provider, {path: fields.to})('writefile', true)(req, res);
+          const sameAdapter = srcMount.adapter === dstMount.adapter;
+
+          if (!sameAdapter) {
+            promise = request('readfile', {path: fields.from}, {}, srcMount)
+              .then(ab => request('writefile', {path: fields.to}, {upload: ab}, dstMount))
+              .then(result => {
+                return endpoint === 'rename'
+                  ? request('unlink', {path: fields.from}, {}, srcMount).then(() => result)
+                  : result;
+              });
+          }
+        }
+
+        if (!promise) {
+          const mountpoint = resolveMountpoint(provider, fields, files)(endpoint, ro)(req, res);
+          promise = request(endpoint, fields, files, mountpoint);
+        }
+      } catch (e) {
+        promise = Promise.reject(new Error(e));
+      }
+
+      return promise
+        .then(result => {
+          if (endpoint === 'writefile') {
+            for (let fieldname in files) {
+              fs.unlink(files[fieldname].path, () => ({/* noop */}));
+            }
+          }
+
+          if (endpoint === 'readfile') {
+            return result.pipe(res);
+          }
+
+          return res.json(result);
+        })
+        .catch(error => {
+          signale.fatal(error);
+          respondError(error);
+        });
+    });
+};
