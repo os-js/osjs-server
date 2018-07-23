@@ -28,12 +28,9 @@
  * @licence Simplified BSD License
  */
 
-const fs = require('fs-extra');
 const url = require('url');
 const formidable = require('formidable');
-const sanitizeFilename = require('sanitize-filename');
 const vfsMethods = require('../vfs/methods');
-const signale = require('signale').scope('vfs');
 
 // A custom exception
 class VFSError extends Error {
@@ -42,19 +39,6 @@ class VFSError extends Error {
     this.code = code;
   }
 }
-
-// FS error code map
-const errorCodes = {
-  ENOENT: 404,
-  EACCES: 401
-};
-
-// Sanitizes a file path
-const sanitize = filename => {
-  const [name, str] = (filename.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
-  const sane = str.split('/').map(s => sanitizeFilename(s)).join('/').replace(/\/+/g, '/');
-  return name + ':' + sane;
-};
 
 // Validates a mountpoint groups to the user groups
 const validateGroups = (userGroups, method, mountpoint) => {
@@ -97,24 +81,6 @@ const checkReadOnly = (ro, mountpoint, fields) => {
   return false;
 };
 
-// Parses request fields
-const parseFields = req => new Promise((resolve, reject) => {
-  if (req.method.toLowerCase() === 'get') {
-    const {query} = url.parse(req.url, true);
-
-    resolve({fields: query, files: {}});
-  } else {
-    const form = new formidable.IncomingForm();
-    form.parse(req, (err, fields, files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({fields, files});
-      }
-    });
-  }
-});
-
 // Get adapter from mountpoint
 const getAdapter = (provider, mountpoint) => mountpoint.adapter
   ? provider.adapters[mountpoint.adapter]
@@ -149,72 +115,60 @@ const resolveMountpoint = provider => (endpoint, fields, userGroups, ro) => {
 };
 
 // Performs a vfs request
-module.exports.request = provider => (endpoint, ro) => (req, res) => {
-  const respondError = error => {
-    const code = typeof error.code === 'number'
-      ? error.code
-      : (errorCodes[error.code] || 400);
-
-    res.status(code).json({error: error.toString()});
-  };
-
-  const userGroups = req.session.user.groups;
+module.exports.request = provider => (endpoint, ro) => {
   const resolve = resolveMountpoint(provider);
-  const request = (method, fields, files) => (adapter, mountpoint) =>
-    vfsMethods[method](req, res, fields, files)(provider.core, adapter, mountpoint);
 
-  return parseFields(req)
-    .then(({fields, files}) => {
-      ['path', 'from', 'to', 'root'].forEach(key => {
-        if (typeof fields[key] !== 'undefined') {
-          fields[key] = sanitize(fields[key]);
+  return ({req, res, fields, files}) => {
+    const userGroups = req.session.user.groups;
+
+    const request = (method, fields, files) => (adapter, mountpoint) =>
+      vfsMethods[method](req, res, fields, files)(provider.core, adapter, mountpoint);
+
+    let promise;
+
+    try {
+      if (['rename', 'copy'].indexOf(endpoint) !== -1) {
+        const [srcAdapter, srcMount] = resolve('readfile', {path: fields.from}, userGroups, false);
+        const [dstAdapter, dstMount] = resolve('writefile', {path: fields.to}, userGroups, true);
+        const sameAdapter = srcMount.adapter === dstMount.adapter;
+
+        if (!sameAdapter) {
+          promise = request('readfile', {path: fields.from}, {})(srcAdapter, srcMount)
+            .then(ab => request('writefile', {path: fields.to}, {upload: ab})(dstAdapter, dstMount))
+            .then(result => {
+              return endpoint === 'rename'
+                ? request('unlink', {path: fields.from}, {})(srcAdapter, srcMount).then(() => true)
+                : true;
+            });
         }
-      });
-
-      let promise;
-
-      try {
-        if (['rename', 'copy'].indexOf(endpoint) !== -1) {
-          const [srcAdapter, srcMount] = resolve('readfile', {path: fields.from}, userGroups, false);
-          const [dstAdapter, dstMount] = resolve('writefile', {path: fields.to}, userGroups, true);
-          const sameAdapter = srcMount.adapter === dstMount.adapter;
-
-          if (!sameAdapter) {
-            promise = request('readfile', {path: fields.from}, {})(srcAdapter, srcMount)
-              .then(ab => request('writefile', {path: fields.to}, {upload: ab})(dstAdapter, dstMount))
-              .then(result => {
-                return endpoint === 'rename'
-                  ? request('unlink', {path: fields.from}, {})(srcAdapter, srcMount).then(() => true)
-                  : true;
-              });
-          }
-        }
-
-        if (!promise) {
-          const [adapter, mountpoint] = resolve(endpoint, fields, userGroups, ro);
-          promise = request(endpoint, fields, files)(adapter, mountpoint);
-        }
-      } catch (e) {
-        promise = Promise.reject(new Error(e));
       }
 
-      return promise
-        .then(result => {
-          if (endpoint === 'writefile') {
-            for (let fieldname in files) {
-              fs.unlink(files[fieldname].path, () => ({/* noop */}));
-            }
-          }
+      if (!promise) {
+        const [adapter, mountpoint] = resolve(endpoint, fields, userGroups, ro);
+        promise = request(endpoint, fields, files)(adapter, mountpoint);
+      }
+    } catch (e) {
+      promise = Promise.reject(new Error(e));
+    }
 
-          if (endpoint === 'readfile') {
-            return result.pipe(res);
-          }
-
-          return res.json(result);
-        })
-        .catch(error => {
-          signale.fatal(error);
-          respondError(error);
-        });
-    });
+    return promise;
+  };
 };
+
+// Parses request fields
+module.exports.parseFields = req => new Promise((resolve, reject) => {
+  if (req.method.toLowerCase() === 'get') {
+    const {query} = url.parse(req.url, true);
+
+    resolve({fields: query, files: {}});
+  } else {
+    const form = new formidable.IncomingForm();
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({fields, files});
+      }
+    });
+  }
+});

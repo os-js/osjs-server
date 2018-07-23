@@ -28,12 +28,9 @@
  * @licence Simplified BSD License
  */
 
-const systemAdapter = require('../vfs/system');
-const signale = require('signale').scope('vfs');
 const {ServiceProvider} = require('@osjs/common');
-const {request} = require('../utils/vfs');
 const vfsMethods = require('../vfs/methods');
-const uuid = require('uuid/v1');
+const Filesystem = require('../filesystem');
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -43,31 +40,25 @@ const uuid = require('uuid/v1');
 class VFSServiceProvider extends ServiceProvider {
 
   constructor(core, options = {}) {
-    options = Object.assign({
-      adapters: {}
-    }, options);
-
     super(core, options);
 
-    this.mountpoints = [];
-    this.adapters = [];
-    this.watches = [];
+    this.filesystem = new Filesystem(core, options);
   }
 
   async init() {
     const {routeAuthenticated} = this.core.make('osjs/express');
 
     // HTTP routes
-    routeAuthenticated('get', '/vfs/exists', request(this)('exists'));
-    routeAuthenticated('get', '/vfs/stat', request(this)('stat'));
-    routeAuthenticated('get', '/vfs/readdir', request(this)('readdir'));
-    routeAuthenticated('get', '/vfs/readfile', request(this)('readfile'));
-    routeAuthenticated('post', '/vfs/writefile', request(this)('writefile', true));
-    routeAuthenticated('get', '/vfs/mkdir', request(this)('mkdir', true));
-    routeAuthenticated('get', '/vfs/rename', request(this)('rename', true));
-    routeAuthenticated('get', '/vfs/copy', request(this)('copy', fields => fields.to));
-    routeAuthenticated('get', '/vfs/unlink', request(this)('unlink', true));
-    routeAuthenticated('get', '/vfs/search', request(this)('search'));
+    routeAuthenticated('get', '/vfs/exists', this.filesystem.route('exists'));
+    routeAuthenticated('get', '/vfs/stat', this.filesystem.route('stat'));
+    routeAuthenticated('get', '/vfs/readdir', this.filesystem.route('readdir'));
+    routeAuthenticated('get', '/vfs/readfile', this.filesystem.route('readfile'));
+    routeAuthenticated('post', '/vfs/writefile', this.filesystem.route('writefile', true));
+    routeAuthenticated('get', '/vfs/mkdir', this.filesystem.route('mkdir', true));
+    routeAuthenticated('get', '/vfs/rename', this.filesystem.route('rename', true));
+    routeAuthenticated('get', '/vfs/copy', this.filesystem.route('copy', fields => fields.to));
+    routeAuthenticated('get', '/vfs/unlink', this.filesystem.route('unlink', true));
+    routeAuthenticated('get', '/vfs/search', this.filesystem.route('search'));
 
     // Expose VFS as service
     this.core.singleton('osjs/vfs', () => ({
@@ -76,85 +67,7 @@ class VFSServiceProvider extends ServiceProvider {
   }
 
   start() {
-    const adapters = Object.assign({
-      system: systemAdapter
-    }, this.options.adapters);
-
-    this.adapters = Object.keys(adapters).reduce((result, iter) => {
-      return Object.assign({
-        [iter]: adapters[iter](this.core)
-      }, result);
-    }, {});
-
-    // Mountpoints
-    this.core.config('vfs.mountpoints')
-      .forEach(mount => this.mount(mount));
-  }
-
-  mount(mount) {
-    const mountpoint = Object.assign({
-      id: uuid(),
-      root: `${mount.name}:/`
-    }, mount);
-
-    this.mountpoints.push(mountpoint);
-
-    signale.success('Mounted', mount.name, mount.attributes);
-
-    this.watch(mountpoint);
-  }
-
-  unmount(mountpoint) {
-    const found = this.watches.find(w => w.id === mountpoint.id);
-
-    if (found) {
-      found.watch.close();
-    }
-
-    const index = this.mountpoints.indexOf(mountpoint);
-
-    if (index !== -1) {
-      this.mountpoints.splice(index, 1);
-    }
-  }
-
-  watch(mountpoint) {
-    if (mountpoint.attributes.watch === false) {
-      return;
-    }
-
-    if (this.core.config('vfs.watch') === false) {
-      return;
-    }
-
-    if (!mountpoint.attributes.root) {
-      return;
-    }
-
-    const adapter = mountpoint.adapter
-      ? this.adapters[mountpoint.adapter]
-      : this.adapters.system;
-
-    if (typeof adapter.watch === 'function') {
-      const watch = adapter.watch(mountpoint, (args, dir) => {
-        const target = mountpoint.name + ':/' + dir;
-        const keys = Object.keys(args);
-        const filter = keys.length === 0
-          ? () => true
-          : ws => keys.every(k => ws._osjs_client[k] === args[k]);
-
-        this.core.broadcast('osjs/vfs:watch:change', [{
-          path: target
-        }, args], filter);
-      });
-
-      this.watches.push({
-        id: mountpoint.id,
-        watch
-      });
-
-      signale.watch('Watching mountpoint', mountpoint.name);
-    }
+    this.filesystem.init();
   }
 }
 
