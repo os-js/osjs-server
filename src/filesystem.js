@@ -50,7 +50,6 @@ const sanitize = filename => {
 
 /**
  * OS.js Virtual Filesystem
- *
  */
 class Filesystem {
   constructor(core, options) {
