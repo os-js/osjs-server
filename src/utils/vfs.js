@@ -35,6 +35,7 @@ const sanitizeFilename = require('sanitize-filename');
 const vfsMethods = require('../vfs/methods');
 const signale = require('signale').scope('vfs');
 
+// A custom exception
 class VFSError extends Error {
   constructor(message, code) {
     super(message);
@@ -42,6 +43,7 @@ class VFSError extends Error {
   }
 }
 
+// FS error code map
 const errorCodes = {
   ENOENT: 404,
   EACCES: 401
@@ -113,12 +115,11 @@ const parseFields = req => new Promise((resolve, reject) => {
   }
 });
 
-const resolveMountpoint = (provider, fields, files) => (endpoint, ro) => (req, res) => {
+const resolveMountpoint = provider => (endpoint, fields, userGroups, ro) => {
   const known = ['path', 'from', 'root'];
   const field = Object.keys(fields).find(key => known.indexOf(key) !== -1);
   const prefix = getPrefix(fields[field]);
   const mountpoint = prefix ? provider.mountpoints.find(m => m.name === prefix) : null;
-  const userGroups = req.session.user.groups;
 
   if (!mountpoint) {
     throw new VFSError(`Mountpoint not found for '${prefix}'`, 403);
@@ -149,6 +150,8 @@ module.exports.request = provider => (endpoint, ro) => (req, res) => {
     res.status(code).json({error: error.toString()});
   };
 
+  const userGroups = req.session.user.groups;
+  const resolve = resolveMountpoint(provider);
   const request = (method, fields, files, mountpoint) =>
     vfsMethods[method](req, res, fields, files)(provider.core, mountpoint._adapter, mountpoint);
 
@@ -164,8 +167,8 @@ module.exports.request = provider => (endpoint, ro) => (req, res) => {
 
       try {
         if (['rename', 'copy'].indexOf(endpoint) !== -1) {
-          const srcMount = resolveMountpoint(provider, {path: fields.from})('readfile', false)(req, res);
-          const dstMount = resolveMountpoint(provider, {path: fields.to})('writefile', true)(req, res);
+          const srcMount = resolve('readfile', {path: fields.from}, userGroups, false);
+          const dstMount = resolve('writefile', {path: fields.to}, userGroups, true);
           const sameAdapter = srcMount.adapter === dstMount.adapter;
 
           if (!sameAdapter) {
@@ -173,14 +176,14 @@ module.exports.request = provider => (endpoint, ro) => (req, res) => {
               .then(ab => request('writefile', {path: fields.to}, {upload: ab}, dstMount))
               .then(result => {
                 return endpoint === 'rename'
-                  ? request('unlink', {path: fields.from}, {}, srcMount).then(() => result)
-                  : result;
+                  ? request('unlink', {path: fields.from}, {}, srcMount).then(() => true)
+                  : true;
               });
           }
         }
 
         if (!promise) {
-          const mountpoint = resolveMountpoint(provider, fields, files)(endpoint, ro)(req, res);
+          const mountpoint = resolve(endpoint, fields, userGroups, ro);
           promise = request(endpoint, fields, files, mountpoint);
         }
       } catch (e) {

@@ -87,6 +87,7 @@ class VFSServiceProvider extends ServiceProvider {
     signale.success('Mounted', mount.name, mount.attributes);
 
     const mountpoint = Object.assign({
+      root: `${mount.name}:/`,
       _watch: null,
       _adapter: adapter(this.core)
     }, mount);

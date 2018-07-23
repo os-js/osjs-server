@@ -33,30 +33,21 @@ const {Stream} = require('stream');
 
 /**
  * Read a directory
- *
- * @param {String} path The path to read
- * @param {Object} [options] Options
- * @return {Object[]} A list of files
+ * @return {Promise<Error, Object[]>} A list of files
  */
 module.exports.readdir = (req, res, fields, files) => (core, adapter, mount) => adapter
   .readdir(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Reads a file
- *
- * @param {String} path The path to read
- * @param {Object} [options] Options
- * @return {Stream}
+ * @return {Promise<Error, Stream>}
  */
 module.exports.readfile = (req, res, fields, files) => (core, adapter, mount) => adapter
   .readfile(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Writes a file
- * @param {String} path The path to write
- * @param {ArrayBuffer|Blob|String} data The data
- * @param {Object} [options] Options
- * @return {Number} File size
+ * @return {Promise<Error, Number>} File size
  */
 module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) => {
   const isStream = files.upload instanceof Stream;
@@ -65,71 +56,60 @@ module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) =
     : fs.createReadStream(files.upload.path);
 
   return adapter
-    .writefile(({req, res, mount}))(fields.path, stream, fields.options, mount);
+    .writefile(({req, res, mount}))(fields.path, stream, fields.options, mount)
+    .then(result => typeof result === 'number' ? result : -1);
 };
 
 /**
  * Copies a file or directory (move)
- * @param {String} from The source (from)
- * @param {String} to The destination (to)
- * @param {Object} [options] Options
- * @return {Boolean}
+ * @return {Promise<Error, Boolean>}
  */
 module.exports.copy = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .copy(({req, res, mount}))(fields.from, fields.to, fields.options, mount);
+  .copy(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
+  .then(result => typeof result === 'boolean' ? result : !!result);
 
 /**
  * Renames a file or directory (move)
- * @param {String} from The source (from)
- * @param {String} to The destination (to)
- * @param {Object} [options] Options
- * @return {Boolean}
+ * @return {Promise<Error, Boolean>}
  */
 module.exports.rename = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .rename(({req, res, mount}))(fields.from, fields.to, fields.options, mount);
+  .rename(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
+  .then(result => typeof result === 'boolean' ? result : !!result);
 
 /**
  * Creates a directory
- * @param {String} path The path to new directory
- * @param {Object} [options] Options
- * @return {Boolean}
+ * @return {Promise<Error, Boolean>}
  */
 module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .mkdir(({req, res, mount}))(fields.path, fields.options, mount);
+  .mkdir(({req, res, mount}))(fields.path, fields.options, mount)
+  .then(result => typeof result === 'boolean' ? result : !!result);
 
 /**
  * Removes a file or directory
- * @param {String} path The path to remove
- * @param {Object} [options] Options
- * @return {Boolean}
+ * @return {Promise<Error, Boolean>}
  */
 module.exports.unlink = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .unlink(({req, res, mount}))(fields.path, fields.options, mount);
+  .unlink(({req, res, mount}))(fields.path, fields.options, mount)
+  .then(result => typeof result === 'boolean' ? result : !!result);
 
 /**
  * Checks if path exists
- * @param {String} path The path to check
- * @param {Object} [options] Options
- * @return {Boolean}
+ * @return {Promise<Error, Boolean>}
  */
 module.exports.exists = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .exists(({req, res, mount}))(fields.path, fields.options, mount);
+  .exists(({req, res, mount}))(fields.path, fields.options, mount)
+  .then(result => typeof result === 'boolean' ? result : !!result);
 
 /**
  * Gets the stats of the file or directory
- * @param {String} path The path to check
- * @param {Object} [options] Options
- * @return {Object}
+ * @return {Promise<Error, Object>}
  */
 module.exports.stat = (req, res, fields, files) => (core, adapter, mount) => adapter
   .stat(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Searches for files and folders
- * @param {String} root The root
- * @param {String} pattern Search pattern
- * @param {Object} [options] Options
- * @return {String}
+ * @return {Promise<Error, Object[]>}
  */
 module.exports.search = (req, res, fields, files) => (core, adapter, mount) => adapter
   .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount);

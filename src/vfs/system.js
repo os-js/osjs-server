@@ -103,8 +103,7 @@ const resolveSegments = (req, str) => matchSegments(str)
  */
 const getRealPath = (req, mount, file) => {
   const root = resolveSegments(req, mount.attributes.root);
-  // FIXME
-  const [name, str] = (file.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
+  const str = file.substr(mount.root.length - 1);
   return path.join(root, str);
 };
 
