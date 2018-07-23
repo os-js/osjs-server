@@ -179,28 +179,31 @@ const checkReadOnly = (method, mountpoint, fields) => {
 /*
  * A list of methods and how to use an incoming request
  */
-const methods = [
-  {name: 'exists', method: 'get', args: ['path'], ro: false},
-  {name: 'stat', method: 'get', args: ['path'], ro: false},
-  {name: 'readdir', method: 'get', args: ['path'], ro: false},
-  {name: 'readfile', method: 'get', args: ['path', (fields) => {
-    try {
-      return JSON.parse(fields.options || '');
-    } catch (e) {
-      /* noop */
-    }
+const getOptions = fields => {
+  try {
+    return JSON.parse(fields.options || '');
+  } catch (e) {
+    /* noop */
+  }
 
-    return {};
-  }], pipe: true, ro: false},
+  return {};
+};
+
+const methods = [
+  {name: 'exists', method: 'get', args: ['path', getOptions], ro: false},
+  {name: 'stat', method: 'get', args: ['path', getOptions], ro: false},
+  {name: 'readdir', method: 'get', args: ['path', getOptions], ro: false},
+  {name: 'readfile', method: 'get', args: ['path', getOptions], pipe: true, ro: false},
   {name: 'writefile', method: 'post', args: [
     'path',
-    (fields, files) => fs.createReadStream(files.upload.path)
+    (fields, files) => fs.createReadStream(files.upload.path),
+    getOptions
   ], ro: true},
-  {name: 'mkdir', method: 'get', args: ['path'], ro: true},
-  {name: 'rename', method: 'get', args: ['from', 'to'], ro: true},
-  {name: 'copy', method: 'get', args: ['from', 'to'], ro: args => args.to},
-  {name: 'unlink', method: 'get', args: ['path'], ro: true},
-  {name: 'search', method: 'get', args: ['root', (fields) => fields.pattern], ro: false}
+  {name: 'mkdir', method: 'get', args: ['path', getOptions], ro: true},
+  {name: 'rename', method: 'get', args: ['from', 'to', getOptions], ro: true},
+  {name: 'copy', method: 'get', args: ['from', 'to', getOptions], ro: args => args.to},
+  {name: 'unlink', method: 'get', args: ['path', getOptions], ro: true},
+  {name: 'search', method: 'get', args: ['root', (fields) => fields.pattern, getOptions], ro: false}
 ];
 
 /*
@@ -297,6 +300,8 @@ class VFSServiceProvider extends ServiceProvider {
           return respondError(`Permission was denied for '${iter.method}' in '${prefix}'`, 403);
         }
 
+        args.push(mountpoint);
+
         return mountpoint._adapter[iter.name]({
           req,
           res,
@@ -365,6 +370,10 @@ class VFSServiceProvider extends ServiceProvider {
     }
 
     if (this.core.config('vfs.watch') === false) {
+      return;
+    }
+
+    if (!mountpoint.attributes.root) {
       return;
     }
 
