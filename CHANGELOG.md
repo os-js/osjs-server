@@ -1,5 +1,16 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.35
+
+* Split up Settings provider
+* Split up Package Provider
+* Split up VFS Provider / Filesystem
+* Detach some VFS mountpoint properties
+* Misc cleanups after VFS changes
+* Support for operations between different adapters
+* Cleaned up VFS request binding etc.
+* Match VFS parameters from client in adapter methods
+
 ## 3.0.0-alpha.34
 
 * Fixed package reload (dev mode)
