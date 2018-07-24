@@ -164,7 +164,7 @@ class Packages {
       ? fs.readJsonSync(manifestFile)
       : [];
 
-    const discovered = fs.exitsSync(discoveryFile)
+    const discovered = fs.existsSync(discoveredFile)
       ? fs.readJsonSync(discoveredFile)
       : [];
 
