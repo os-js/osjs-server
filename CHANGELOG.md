@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.36
+
+* Fixed some syntax errors
+* Fixed eslint comment warnings
+
 ## 3.0.0-alpha.35
 
 * Split up Settings provider
