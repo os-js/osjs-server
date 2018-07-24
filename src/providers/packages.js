@@ -1,4 +1,4 @@
-/*!
+/**
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
  * Copyright (c) 2011-2018, Anders Evenrud <andersevenrud@gmail.com>
@@ -47,8 +47,9 @@ class PackageServiceProvider extends ServiceProvider {
     const {configuration} = this.core;
     const distDir = path.join(configuration.public, 'metadata.json');
     const manifestFile = path.join(configuration.public, 'metadata.json');
+    const discoveredFile = path.join(configuration.root, 'packages.json');
 
-    return this.packages.init(distDir, manifestFile);
+    return this.packages.init(distDir, manifestFile, discoveredFile);
   }
 
   start() {

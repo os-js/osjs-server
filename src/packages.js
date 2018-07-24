@@ -36,9 +36,9 @@ const chokidar = require('chokidar');
 /*
  * Loads all packages as a stream
  */
-const loader = (core, manifest) => {
+const loader = (core, manifest, discovered) => {
   const {configuration} = core;
-  const sources = path.join(configuration.root, 'src/packages/*/metadata.json');
+  const sources = discovered.map(d => path.join(d, 'metadata.json'));
   const metadataInManifest = metadata => !!manifest.find(iter => iter.name === metadata.name);
   const validateMetadata = metadata => !!metadata.server && metadataInManifest(metadata);
   const validateScript = script => script && typeof script.init === 'function';
@@ -151,7 +151,7 @@ class Packages {
   /**
    * Initializes packages
    */
-  init(distDir, manifestFile) {
+  init(distDir, manifestFile, discoveredFile) {
     if (this.core.config('development')) {
       const watcher = chokidar.watch(distDir);
       watcher.on('change', () => {
@@ -160,21 +160,26 @@ class Packages {
       this.watches.push(watcher);
     }
 
-    return fs.readJson(manifestFile)
-      .then(manifest => {
-        const load = loader(this.core, manifest);
+    const manifest = fs.existsSync(manifestFile)
+      ? fs.readJsonSync(manifestFile)
+      : [];
 
-        return load(metadata => {
-          clearTimeout(this.hotReloading[metadata.name]);
-          this.hotReloading[metadata.name] = setTimeout(() => {
-            signale.info('Reloading', metadata.name);
-            this.core.broadcast('osjs/packages:package:changed', [metadata.name]);
-          }, 500);
-        }).then(({result, watches}) => {
-          this.watches = watches;
-          this.packages = this.packages.concat(result);
-        });
-      });
+    const discovered = fs.exitsSync(discoveryFile)
+      ? fs.readJsonSync(discoveredFile)
+      : [];
+
+    const load = loader(this.core, manifest, discovered);
+
+    return load(metadata => {
+      clearTimeout(this.hotReloading[metadata.name]);
+      this.hotReloading[metadata.name] = setTimeout(() => {
+        signale.info('Reloading', metadata.name);
+        this.core.broadcast('osjs/packages:package:changed', [metadata.name]);
+      }, 500);
+    }).then(({result, watches}) => {
+      this.watches = watches;
+      this.packages = this.packages.concat(result);
+    });
   }
 
   /**
