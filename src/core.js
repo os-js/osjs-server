@@ -35,6 +35,7 @@ const express_session = require('express-session');
 const express_ws = require('express-ws');
 const minimist = require('minimist');
 const deepmerge = require('deepmerge');
+const chokidar = require('chokidar');
 const signale = require('signale').scope('core');
 
 const {CoreBase} = require('@osjs/common');
@@ -185,6 +186,27 @@ class Core extends CoreBase {
     await super.boot();
 
     this.emit('init');
+
+    if (this.configuration.development) {
+      try {
+        const watchdir = path.resolve(this.configuration.public);
+        const watcher = chokidar.watch(watchdir);
+
+        watcher.on('change', filename => {
+          // NOTE: 'ignored' does not work as expected with callback
+          // ignored: str => str.match(/\.(js|css)$/) === null
+          // for unknown reasons
+          if (!filename.match(/\.(js|css)$/)) {
+            return;
+          }
+
+          const relative = filename.replace(watchdir, '');
+          this.broadcast('osjs/dist:changed', [relative]);
+        });
+      } catch (e) {
+        console.warn(e);
+      }
+    }
 
     await this.start();
 
