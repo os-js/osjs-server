@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.37
+
+* Broadcast dist file changes in dev mode
+
 ## 3.0.0-alpha.36
 
 * Fixed some syntax errors
