@@ -30,6 +30,7 @@
 
 const fs = require('fs-extra');
 const path = require('path');
+const {Readable} = require('stream');
 
 const nullAdapter = (core, options) => ({
   save: (req, res) => Promise.resolve(true),
@@ -38,25 +39,62 @@ const nullAdapter = (core, options) => ({
 
 const fsAdapter = (core, options) => {
   const fsOptions = Object.assign({
-    path: 'home:/.osjs/settings.json',
-    resolve: (req, dest) => core.make('osjs/vfs').resolve(req, dest)
+    system: false,
+    path: 'home:/.osjs',
+    filename: 'settings.json'
   }, options || {});
 
-  const getAdapterPath = req => Promise.resolve(
-    fsOptions.resolve(req, fsOptions.path)
-  );
+  const request = (method, req, res, fields = {}, files = {}) => core
+    .make('osjs/vfs').request(method, {req, res, fields, files});
 
-  const ensureDir = p => fs.ensureDir(path.dirname(p))
-    .then(() => p);
-
-  return {
-    save: (req, res) => getAdapterPath(req)
-      .then(p => ensureDir(p))
-      .then(p => fs.writeJson(p, req.body)),
-    load: (req, res) => getAdapterPath(req)
-      .then(p => ensureDir(p))
-      .then(p => fs.readJson(p))
+  const createStream = json => {
+    const s = new Readable();
+    s.push(json);
+    s.push(null);
+    return s;
   };
+
+  const dest = fsOptions.system
+    ? path.join(fsOptions.path, fsOptions.filename)
+    : `${fsOptions.path}/${fsOptions.filename}`;
+
+  const mkdir = (req, res) => fsOptions.system
+    ? fs.ensureDir(fsOptions.path)
+    : request('mkdir', req, res, {
+      path: fsOptions.path,
+      options: {}
+    }).catch(() => true);
+
+  const write = (req, res) => fsOptions.system
+    ? fs.writeJson(dest, req.body)
+    : request('writefile', req, res, {
+      path: dest,
+      options: {}
+    },  {
+      upload: createStream(JSON.stringify(req.body))
+    });
+
+  const read = (req, res) => fsOptions.system
+    ? fs.readJson(dest)
+    : request('readfile', req, res, {
+      path: dest,
+      options: {}
+    }).then(stream => new Promise((resolve, reject) => {
+      const chunks = [];
+      stream.on('data', buf => chunks.push(buf));
+      stream.on('error', err => reject(err));
+      stream.on('end', () => {
+        resolve(JSON.parse(chunks.join('')));
+      });
+    }));
+
+  const save = (req, res) => mkdir(req, res)
+    .then(() => write(req, res));
+
+  const load = (req, res) => mkdir(req, res)
+    .then(() => read(req, res));
+
+  return {save, load};
 };
 
 /**
