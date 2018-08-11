@@ -1,5 +1,11 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.38
+
+* Added updated 'fs' settings adapter
+* Add proper VFS exposure in provider
+* Add some extra adapter error handling and fallback
+
 ## 3.0.0-alpha.37
 
 * Broadcast dist file changes in dev mode
