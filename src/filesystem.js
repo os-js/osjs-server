@@ -98,7 +98,7 @@ class Filesystem {
   }
 
   /**
-   * Creates a VFS request
+   * Creates a VFS HTTP request
    */
   request(method, ro, {req, res, fields, files}) {
     return request(this)(method, ro)({req, res, fields, files})
@@ -124,6 +124,13 @@ class Filesystem {
 
         res.status(code).json({error: error.toString()});
       });
+  }
+
+  /**
+   * Creates a VFS Raw request
+   */
+  _request(method, {req, res, fields, files}) {
+    return request(this)(method, false)({req, res, fields, files});
   }
 
   /**

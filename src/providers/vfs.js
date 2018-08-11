@@ -62,7 +62,7 @@ class VFSServiceProvider extends ServiceProvider {
 
     // Expose VFS as service
     this.core.singleton('osjs/vfs', () => ({
-      request: vfsMethods
+      request: (...args) => this.filesystem._request(...args)
     }));
   }
 
