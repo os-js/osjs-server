@@ -74,7 +74,12 @@ class Settings {
       this.options.adapter = fsAdapter;
     }
 
-    this.adapter = this.options.adapter(core, this.options.config);
+    try {
+      this.adapter = this.options.adapter(core, this.options.config);
+    } catch (e) {
+      console.warn(e);
+      this.adapter = nullAdapter(core, this.options.config);
+    }
   }
 
   destroy() {

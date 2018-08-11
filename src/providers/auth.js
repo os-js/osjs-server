@@ -53,7 +53,12 @@ class AuthServiceProvider extends ServiceProvider {
 
     super(core, options);
 
-    this.adapter = options.adapter(core, options.config);
+    try {
+      this.adapter = options.adapter(core, options.config);
+    } catch (e) {
+      console.warn(e);
+      this.adapter = nullAdapter(core, options.config);
+    }
   }
 
   destroy() {
