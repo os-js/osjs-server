@@ -29,7 +29,6 @@
  */
 
 const {ServiceProvider} = require('@osjs/common');
-const vfsMethods = require('../vfs/methods');
 const Filesystem = require('../filesystem');
 
 /**
