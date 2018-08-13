@@ -292,6 +292,16 @@ module.exports = (core) => ({
           );
         });
         return Promise.all(promises);
-      })
+      }),
 
+
+  /**
+   * Touches a file
+   * @param {String} file The file path from client
+   * @return {boolean}
+   */
+  thouch: vfs => file =>
+    Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
+      .then(realPath => fs.touch(realPath))
+      .then(() => true)
 });

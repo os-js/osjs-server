@@ -58,6 +58,7 @@ class VFSServiceProvider extends ServiceProvider {
     routeAuthenticated('get', '/vfs/copy', this.filesystem.route('copy', fields => fields.to));
     routeAuthenticated('get', '/vfs/unlink', this.filesystem.route('unlink', true));
     routeAuthenticated('get', '/vfs/search', this.filesystem.route('search'));
+    routeAuthenticated('post', '/vfs/touch', this.filesystem.route('touch'));
 
     // Expose VFS as service
     this.core.singleton('osjs/vfs', () => ({

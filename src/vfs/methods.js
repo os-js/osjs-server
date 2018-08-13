@@ -113,3 +113,10 @@ module.exports.stat = (req, res, fields, files) => (core, adapter, mount) => ada
  */
 module.exports.search = (req, res, fields, files) => (core, adapter, mount) => adapter
   .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount);
+
+/**
+ * Touches a file
+ * @return {Promise<Error, Object[]>}
+ */
+module.exports.touch = (req, res, fields, files) => (core, adapter, mount) => adapter
+  .touch(({req, res, mount}))(fields.path, fields.options, mount);
