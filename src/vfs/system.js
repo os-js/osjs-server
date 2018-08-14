@@ -300,8 +300,8 @@ module.exports = (core) => ({
    * @param {String} file The file path from client
    * @return {boolean}
    */
-  thouch: vfs => file =>
+  touch: vfs => file =>
     Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
-      .then(realPath => fs.touch(realPath))
+      .then(realPath => fs.ensureFile(realPath))
       .then(() => true)
 });
