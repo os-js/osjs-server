@@ -32,6 +32,7 @@ const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const proxy = require('express-http-proxy');
+const nocache = require('nocache');
 const signale = require('signale').scope('core');
 const {ServiceProvider} = require('@osjs/common');
 
@@ -78,6 +79,10 @@ class CoreServiceProvider extends ServiceProvider {
       destination: null,
       options: {}
     }, item)).filter(item => item.source && item.destination);
+
+    if (configuration.development) {
+      app.use(nocache());
+    }
 
     // Handle sessions
     app.use(session);
