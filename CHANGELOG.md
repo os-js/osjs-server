@@ -1,5 +1,13 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.39
+
+* Added 'nocache' package in development mode
+* Added 'ensure' to mkdir VFS method options
+* Updated some VFS method HTTP methods
+* Ensure JSON vfs posts are not going through formidable
+* Added 'touch' VFS endpoint
+
 ## 3.0.0-alpha.38
 
 * Added updated 'fs' settings adapter
