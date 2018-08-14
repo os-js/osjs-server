@@ -162,13 +162,21 @@ module.exports.parseFields = req => new Promise((resolve, reject) => {
 
     resolve({fields: query, files: {}});
   } else {
-    const form = new formidable.IncomingForm();
-    form.parse(req, (err, fields, files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({fields, files});
-      }
-    });
+    const isJson = req.headers['content-type'] &&
+      req.headers['content-type'].indexOf('application/json') !== -1;
+
+    if (isJson) {
+      resolve({fields: req.body, files: {}});
+    } else {
+      const form = new formidable.IncomingForm();
+
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({fields, files});
+        }
+      });
+    }
   }
 });
