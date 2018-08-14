@@ -80,9 +80,20 @@ module.exports.rename = (req, res, fields, files) => (core, adapter, mount) => a
  * Creates a directory
  * @return {Promise<Error, Boolean>}
  */
-module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .mkdir(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(result => typeof result === 'boolean' ? result : !!result);
+module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => {
+  const options = fields.options || {};
+
+  return adapter
+    .mkdir(({req, res, mount}))(fields.path, options, mount)
+    .then(result => typeof result === 'boolean' ? result : !!result)
+    .catch(error => {
+      if (options.ensure && error.code === 'EEXIST') {
+        return true;
+      }
+
+      return Promise.reject(error);
+    });
+};
 
 /**
  * Removes a file or directory
