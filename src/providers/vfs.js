@@ -53,11 +53,11 @@ class VFSServiceProvider extends ServiceProvider {
     routeAuthenticated('get', '/vfs/readdir', this.filesystem.route('readdir'));
     routeAuthenticated('get', '/vfs/readfile', this.filesystem.route('readfile'));
     routeAuthenticated('post', '/vfs/writefile', this.filesystem.route('writefile', true));
-    routeAuthenticated('get', '/vfs/mkdir', this.filesystem.route('mkdir', true));
-    routeAuthenticated('get', '/vfs/rename', this.filesystem.route('rename', true));
-    routeAuthenticated('get', '/vfs/copy', this.filesystem.route('copy', fields => fields.to));
-    routeAuthenticated('get', '/vfs/unlink', this.filesystem.route('unlink', true));
-    routeAuthenticated('get', '/vfs/search', this.filesystem.route('search'));
+    routeAuthenticated('post', '/vfs/mkdir', this.filesystem.route('mkdir', true));
+    routeAuthenticated('post', '/vfs/rename', this.filesystem.route('rename', true));
+    routeAuthenticated('post', '/vfs/copy', this.filesystem.route('copy', fields => fields.to));
+    routeAuthenticated('post', '/vfs/unlink', this.filesystem.route('unlink', true));
+    routeAuthenticated('post', '/vfs/search', this.filesystem.route('search'));
     routeAuthenticated('post', '/vfs/touch', this.filesystem.route('touch'));
 
     // Expose VFS as service
