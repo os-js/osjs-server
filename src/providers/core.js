@@ -82,6 +82,8 @@ class CoreServiceProvider extends ServiceProvider {
 
     if (configuration.development) {
       app.use(nocache());
+    } else {
+      app.disable('x-powered-by');
     }
 
     // Handle sessions
