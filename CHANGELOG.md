@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.40
+
+* Updated dependencies
+
 ## 3.0.0-alpha.39
 
 * Added 'nocache' package in development mode
