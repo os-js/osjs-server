@@ -1,6 +1,6 @@
 {
   "name": "@osjs/server",
-  "version": "3.0.0-alpha.40",
+  "version": "3.0.0-alpha.41",
   "description": "OS.js v3 Server",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
-    "@osjs/common": "^3.0.0-alpha.20",
+    "@osjs/common": "^3.0.0-alpha.21",
     "body-parser": "^1.18.2",
     "chokidar": "^2.0.4",
     "connect-loki": "^1.1.0",
