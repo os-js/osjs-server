@@ -47,23 +47,51 @@ class VFSServiceProvider extends ServiceProvider {
   async init() {
     const {routeAuthenticated} = this.core.make('osjs/express');
 
+    const methods = {
+      exists: {method: 'get'},
+      stat: {method: 'get'},
+      readdir: {method: 'get'},
+      readfile: {method: 'get'},
+      writefile: {method: 'post', ro: true},
+      mkdir: {method: 'post', ro: true},
+      rename: {method: 'post', ro: true},
+      copy: {method: 'post', ro: fields => fields.to},
+      unlink: {method: 'post', ro: true},
+      search: {method: 'post'},
+      touch: {method: 'post'}
+    };
+
+
     // HTTP routes
-    routeAuthenticated('get', '/vfs/exists', this.filesystem.route('exists'));
-    routeAuthenticated('get', '/vfs/stat', this.filesystem.route('stat'));
-    routeAuthenticated('get', '/vfs/readdir', this.filesystem.route('readdir'));
-    routeAuthenticated('get', '/vfs/readfile', this.filesystem.route('readfile'));
-    routeAuthenticated('post', '/vfs/writefile', this.filesystem.route('writefile', true));
-    routeAuthenticated('post', '/vfs/mkdir', this.filesystem.route('mkdir', true));
-    routeAuthenticated('post', '/vfs/rename', this.filesystem.route('rename', true));
-    routeAuthenticated('post', '/vfs/copy', this.filesystem.route('copy', fields => fields.to));
-    routeAuthenticated('post', '/vfs/unlink', this.filesystem.route('unlink', true));
-    routeAuthenticated('post', '/vfs/search', this.filesystem.route('search'));
-    routeAuthenticated('post', '/vfs/touch', this.filesystem.route('touch'));
+    Object.keys(methods)
+      .forEach(name => {
+        const {method, ro} = methods[name];
+
+        routeAuthenticated(method, `/vfs/${name}`, this.filesystem.route(name, ro));
+      });
 
     // Expose VFS as service
-    this.core.singleton('osjs/vfs', () => ({
-      request: (...args) => this.filesystem._request(...args)
-    }));
+    const expose = Object.keys(methods)
+      .reduce((result, name) => {
+        const {method, ro} = methods[name];
+
+        return Object.assign(result, {
+          [name]: (fields, files, session) => {
+            const req = {method, fields, files, session};
+            const res = {};
+
+            return this.filesystem.routeInternal(name, ro)(req, res, true);
+          }
+        });
+      }, {});
+
+    this.core.singleton('osjs/vfs', () => Object.assign({
+      request: (name, req, res) => {
+        const ro = methods[name].ro;
+
+        return this.filesystem.routeInternal(name, ro)(req, res);
+      }
+    }, expose));
   }
 
   start() {

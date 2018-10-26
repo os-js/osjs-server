@@ -87,13 +87,34 @@ class Filesystem {
   route(method, ro) {
     return (req, res) => parseFields(req)
       .then(({fields, files}) => {
-        ['path', 'from', 'to', 'root'].forEach(key => {
-          if (typeof fields[key] !== 'undefined') {
-            fields[key] = sanitize(fields[key]);
-          }
-        });
+        try {
+          ['path', 'from', 'to', 'root'].forEach(key => {
+            if (typeof fields[key] !== 'undefined') {
+              fields[key] = sanitize(fields[key]);
+            }
+          });
 
-        return this.request(method, ro, {req, res, fields, files});
+          return this.request(method, ro, {req, res, fields, files});
+        } catch (e) {
+          return Promise.reject(e);
+        }
+      });
+  }
+
+  routeInternal(method, ro) {
+    return (req, res, dummy = false) => parseFields(req, dummy)
+      .then(({fields, files}) => {
+        try {
+          ['path', 'from', 'to', 'root'].forEach(key => {
+            if (typeof fields[key] !== 'undefined') {
+              fields[key] = sanitize(fields[key]);
+            }
+          });
+
+          return request(this)(method, ro)({req, res, fields, files});
+        } catch (e) {
+          return Promise.reject(e);
+        }
       });
   }
 
@@ -124,13 +145,6 @@ class Filesystem {
 
         res.status(code).json({error: error.toString()});
       });
-  }
-
-  /**
-   * Creates a VFS Raw request
-   */
-  _request(method, {req, res, fields, files}) {
-    return request(this)(method, false)({req, res, fields, files});
   }
 
   /**

@@ -156,8 +156,13 @@ module.exports.request = provider => (endpoint, ro) => {
 };
 
 // Parses request fields
-module.exports.parseFields = req => new Promise((resolve, reject) => {
-  if (req.method.toLowerCase() === 'get') {
+module.exports.parseFields = (req, dummy = false) => new Promise((resolve, reject) => {
+  if (dummy) {
+    resolve({
+      fields: req.fields,
+      files: req.files
+    });
+  } else if (req.method.toLowerCase() === 'get') {
     const {query} = url.parse(req.url, true);
 
     resolve({fields: query, files: {}});
