@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.0-alpha.42
+
+* Better VFS service exposure
+
 ## 3.0.0-alpha.41
 
 * Updated @osjs/common
