@@ -30,23 +30,21 @@
 
 const fs = require('fs-extra');
 const path = require('path');
-const mime = require('mime-types');
 const fh = require('filehound');
 const chokidar = require('chokidar');
 
 /*
  * Creates an object readable by client
  */
-const createFileIter = (realRoot, file) => {
+const createFileIter = (core, realRoot, file) => {
   const filename = path.basename(file);
   const realPath = path.join(realRoot, filename);
+  const {mime} = core.make('osjs/vfs');
 
   const createStat = stat => ({
     isDirectory: stat.isDirectory(),
     isFile: stat.isFile(),
-    mime: stat.isFile()
-      ? mime.lookup(realPath) || 'application/octet-stream'
-      : null,
+    mime: stat.isFile() ? mime(realPath) : null,
     size: stat.size,
     path: file,
     filename,
@@ -154,7 +152,7 @@ module.exports = (core) => ({
    */
   stat: vfs => file =>
     Promise.resolve(getRealPath(vfs.req, vfs.mount, file))
-      .then(realPath => createFileIter(path.dirname(realPath), realPath)),
+      .then(realPath => createFileIter(core, path.dirname(realPath), realPath)),
 
   /**
    * Reads directory
@@ -165,7 +163,7 @@ module.exports = (core) => ({
     Promise.resolve(getRealPath(vfs.req, vfs.mount, root))
       .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
       .then(({realPath, files}) => {
-        const promises = files.map(f => createFileIter(realPath, root.replace(/\/?$/, '/') + f));
+        const promises = files.map(f => createFileIter(core, realPath, root.replace(/\/?$/, '/') + f));
         return Promise.all(promises);
       }),
 
@@ -287,6 +285,7 @@ module.exports = (core) => ({
         const promises = files.map(f => {
           const rf = f.substr(realPath.length);
           return createFileIter(
+            core,
             path.dirname(realPath.replace(/\/?$/, '/') + rf),
             root.replace(/\/?$/, '/') + rf
           );

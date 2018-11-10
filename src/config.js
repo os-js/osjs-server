@@ -50,6 +50,13 @@ const defaultConfiguration = {
     }
     */
   ],
+  mime: {
+    define: {
+      /*
+      'mime/type': ['ext']
+      */
+    }
+  },
   session: {
     store: {
       module: require.resolve('connect-loki'),

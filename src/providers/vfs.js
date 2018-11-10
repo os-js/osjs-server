@@ -30,6 +30,7 @@
 
 const {ServiceProvider} = require('@osjs/common');
 const Filesystem = require('../filesystem');
+const mime = require('mime');
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -45,6 +46,9 @@ class VFSServiceProvider extends ServiceProvider {
   }
 
   async init() {
+    const defineMime = this.core.config('mime.define', {});
+    mime.define(defineMime, {force: true});
+
     const {routeAuthenticated} = this.core.make('osjs/express');
 
     const methods = {
@@ -86,6 +90,8 @@ class VFSServiceProvider extends ServiceProvider {
       }, {});
 
     this.core.singleton('osjs/vfs', () => Object.assign({
+      mime: path => mime.getType(path) || 'application/octet-stream',
+
       request: (name, req, res) => {
         const ro = methods[name].ro;
 
