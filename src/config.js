@@ -77,7 +77,11 @@ const defaultConfiguration = {
     }
   },
   packages: {
-    discovery: 'packages.json'
+    // Resolves to root by default
+    discovery: 'packages.json',
+
+    // Resolves to dist/ by default
+    metadata: 'metadata.json'
   },
   vfs: {
     watch: false,

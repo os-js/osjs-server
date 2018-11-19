@@ -52,7 +52,8 @@ const argvToConfig = {
   'ws-port': port => ({ws: {port}}),
   'secret': secret => ({session: {options: {secret}}}),
   'morgan': morgan => ({morgan}),
-  'discovery': discovery => ({packages: {discovery}})
+  'discovery': discovery => ({packages: {discovery}}),
+  'manifest': manifest => ({packages: {manifest}})
 };
 
 /*
