@@ -51,7 +51,8 @@ const argvToConfig = {
   'port': port => ({port}),
   'ws-port': port => ({ws: {port}}),
   'secret': secret => ({session: {options: {secret}}}),
-  'morgan': morgan => ({morgan})
+  'morgan': morgan => ({morgan}),
+  'discovery': discovery => ({packages: {discovery}})
 };
 
 /*

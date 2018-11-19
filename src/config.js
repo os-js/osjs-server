@@ -76,6 +76,9 @@ const defaultConfiguration = {
       }
     }
   },
+  packages: {
+    discovery: 'packages.json'
+  },
   vfs: {
     watch: false,
     mountpoints: [{

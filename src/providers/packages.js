@@ -46,7 +46,9 @@ class PackageServiceProvider extends ServiceProvider {
   init() {
     const {configuration} = this.core;
     const manifestFile = path.join(configuration.public, 'metadata.json');
-    const discoveredFile = path.join(configuration.root, 'packages.json');
+    const discoveredFile = path.resolve(configuration.root, configuration.packages.discovery);
+
+    this.core.logger.info('Using package discovery file', discoveredFile);
 
     return this.packages.init(manifestFile, discoveredFile);
   }
