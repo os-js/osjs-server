@@ -151,13 +151,15 @@ class Packages {
   /**
    * Initializes packages
    */
-  init(distDir, manifestFile, discoveredFile) {
+  init(manifestFile, discoveredFile) {
     if (this.core.config('development')) {
-      const watcher = chokidar.watch(distDir);
-      watcher.on('change', () => {
-        this.core.broadcast('osjs/packages:metadata:changed');
-      });
-      this.watches.push(watcher);
+      if (fs.existsSync(manifestFile)) {
+        const watcher = chokidar.watch(manifestFile);
+        watcher.on('change', () => {
+          this.core.broadcast('osjs/packages:metadata:changed');
+        });
+        this.watches.push(watcher);
+      }
     }
 
     const manifest = fs.existsSync(manifestFile)
