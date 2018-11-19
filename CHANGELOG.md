@@ -1,5 +1,11 @@
 # Changelog for osjs-server
 
+## 3.0.3
+
+* Added configurable 'manifest' file
+* Added configurable 'discovery' file usage
+* Removed unused Packages#constructor argument
+
 ## 3.0.2
 
 * Added support for custom mime resolution in VFS
