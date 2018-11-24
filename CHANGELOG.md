@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.4
+
+* Added configuration of form/file post size limits
+
 ## 3.0.3
 
 * Added configurable 'manifest' file
