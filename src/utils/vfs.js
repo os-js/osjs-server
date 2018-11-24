@@ -156,7 +156,7 @@ module.exports.request = provider => (endpoint, ro) => {
 };
 
 // Parses request fields
-module.exports.parseFields = (req, dummy = false) => new Promise((resolve, reject) => {
+module.exports.parseFields = (core, req, dummy = false) => new Promise((resolve, reject) => {
   if (dummy) {
     resolve({
       fields: req.fields,
@@ -173,7 +173,10 @@ module.exports.parseFields = (req, dummy = false) => new Promise((resolve, rejec
     if (isJson) {
       resolve({fields: req.body, files: {}});
     } else {
+      const {maxFieldsSize, maxFileSize} = core.config('express');
       const form = new formidable.IncomingForm();
+      form.maxFieldsSize = maxFieldsSize;
+      form.maxFileSize = maxFileSize;
 
       form.parse(req, (err, fields, files) => {
         if (err) {

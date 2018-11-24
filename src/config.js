@@ -29,6 +29,7 @@
  */
 
 const maxAge = 60 * 60 * 12;
+const mb = m => m * 1024 * 1024;
 
 const defaultConfiguration = {
   development: !(process.env.NODE_ENV || '').match(/^prod/i),
@@ -38,6 +39,10 @@ const defaultConfiguration = {
   port: 8000,
   public: null,
   morgan: 'tiny',
+  express: {
+    maxFieldsSize: mb(20),
+    maxFileSize: mb(200)
+  },
   ws: {
     port: null
   },

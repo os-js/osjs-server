@@ -85,7 +85,7 @@ class Filesystem {
    * Creates a HTTP route
    */
   route(method, ro) {
-    return (req, res) => parseFields(req)
+    return (req, res) => parseFields(this.core, req)
       .then(({fields, files}) => {
         try {
           ['path', 'from', 'to', 'root'].forEach(key => {
@@ -98,11 +98,12 @@ class Filesystem {
         } catch (e) {
           return Promise.reject(e);
         }
-      });
+      })
+      .catch(error => res.status(500).json({error: error.message}));
   }
 
   routeInternal(method, ro) {
-    return (req, res, dummy = false) => parseFields(req, dummy)
+    return (req, res, dummy = false) => parseFields(this.core, req, dummy)
       .then(({fields, files}) => {
         try {
           ['path', 'from', 'to', 'root'].forEach(key => {
@@ -115,7 +116,8 @@ class Filesystem {
         } catch (e) {
           return Promise.reject(e);
         }
-      });
+      })
+      .catch(error => res.status(500).json({error: error.message}));
   }
 
   /**
