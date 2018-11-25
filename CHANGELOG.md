@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.5
+
+* Updated dependencies
+* Updated mime support
+
 ## 3.0.4
 
 * Added configuration of form/file post size limits
