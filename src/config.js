@@ -58,7 +58,8 @@ const defaultConfiguration = {
   mime: {
     filenames: {
       // 'filename': 'mime/type'
-      'Makefile': 'text/x-makefile'
+      'Makefile': 'text/x-makefile',
+      '.gitignore': 'text/plain'
     },
     define: {
       // 'mime/type': ['ext']
