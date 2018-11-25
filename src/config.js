@@ -56,10 +56,13 @@ const defaultConfiguration = {
     */
   ],
   mime: {
+    filenames: {
+      // 'filename': 'mime/type'
+      'Makefile': 'text/x-makefile'
+    },
     define: {
-      /*
-      'mime/type': ['ext']
-      */
+      // 'mime/type': ['ext']
+      'text/x-python': ['py']
     }
   },
   session: {
