@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.6
+
+* Added 'engines' to package.json
+
 ## 3.0.5
 
 * Updated dependencies
