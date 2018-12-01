@@ -155,12 +155,13 @@ class Filesystem {
   mount(mount) {
     const mountpoint = Object.assign({
       id: uuid(),
-      root: `${mount.name}:/`
+      root: `${mount.name}:/`,
+      attributes: {}
     }, mount);
 
     this.mountpoints.push(mountpoint);
 
-    signale.success('Mounted', mount.name, mount.attributes);
+    signale.success('Mounted', mountpoint.name, mountpoint.attributes);
 
     this.watch(mountpoint);
   }
