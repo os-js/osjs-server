@@ -122,8 +122,14 @@ module.exports.stat = (req, res, fields, files) => (core, adapter, mount) => ada
  * Searches for files and folders
  * @return {Promise<Error, Object[]>}
  */
-module.exports.search = (req, res, fields, files) => (core, adapter, mount) => adapter
-  .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount);
+module.exports.search = (req, res, fields, files) => (core, adapter, mount) => {
+  if (mount.attributes && mount.attributes.searchable === false) {
+    return Promise.resolve([]);
+  }
+
+  return adapter
+    .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount);
+};
 
 /**
  * Touches a file

@@ -20,7 +20,7 @@
     "url": "https://github.com/os-js/osjs-server/issues"
   },
   "engines": {
-    "node": ">=8.0"
+    "node": ">=8.0.0"
   },
   "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
@@ -47,8 +47,5 @@
   },
   "devDependencies": {
     "eslint": "^5.9.0"
-  },
-  "engines": {
-    "node": ">=8.0.0"
   }
 }
