@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+## 3.0.7
+
+* Added a workaround from filehound blowing up
+* Added 'searchable' vfs mountpoint attribute<Paste>
+
 ## 3.0.6
 
 * Added 'engines' to package.json
