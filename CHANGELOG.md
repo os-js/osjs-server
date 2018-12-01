@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.8
+
+* Make sure 'attributes' is set in a mountpoint
+
 ## 3.0.7
 
 * Added a workaround from filehound blowing up
