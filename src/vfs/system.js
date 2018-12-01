@@ -279,7 +279,12 @@ module.exports = (core) => ({
           .paths(realPath)
           .match(pattern)
           .find()
-          .then(files => ({realPath, files}));
+          .then(files => ({realPath, files}))
+          .catch(err => {
+            console.warn(err);
+
+            return {realPath, files: []};
+          });
       })
       .then(({realPath, files}) => {
         const promises = files.map(f => {
