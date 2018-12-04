@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.9
+
+* Updated filehound dependency (fixes #3)
+
 ## 3.0.8
 
 * Make sure 'attributes' is set in a mountpoint
