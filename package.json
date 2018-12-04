@@ -34,7 +34,7 @@
     "express-session": "^1.15.6",
     "express-ws": "^4.0.0",
     "fast-glob": "^2.2.4",
-    "filehound": "^1.16.4",
+    "filehound": "^1.16.5",
     "formidable": "^1.2.1",
     "fs-extra": "^7.0.0",
     "mime": "^2.3.1",
