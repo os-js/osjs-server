@@ -218,6 +218,21 @@ class Packages {
     this.packages = [];
     this.watches = [];
   }
+
+  install(options, session) {
+    const {readfile} = this.core.make('osjs/vfs');
+
+    const file = typeof options.file === 'string'
+      ? {path: options.file}
+      : options.file;
+
+    return readfile(file, {}, session)
+      .then(stream => {
+        // TODO: Unpack stream
+        // TODO: Write manifest
+        return {success: true, errors: []};
+      });
+  }
 }
 
 module.exports = Packages;

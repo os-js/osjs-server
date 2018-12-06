@@ -51,6 +51,20 @@ class PackageServiceProvider extends ServiceProvider {
     this.core.logger.info('Using package discovery file', discoveredFile);
     this.core.logger.info('Using package manifest file', manifestFile);
 
+    this.core.app.post('/packages/install', (req, res) => {
+      return this.packages
+        .install(req.body, req.session)
+        .then(({success, errors}) => res.json({success, errors}))
+        .catch(err => {
+          console.warn(err);
+
+          return res.status(400).json({
+            success: false,
+            errors: [err]
+          });
+        });
+    });
+
     return this.packages.init(manifestFile, discoveredFile);
   }
 
