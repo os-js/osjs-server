@@ -116,8 +116,7 @@ class Filesystem {
         } catch (e) {
           return Promise.reject(e);
         }
-      })
-      .catch(error => res.status(500).json({error: error.message}));
+      });
   }
 
   /**
