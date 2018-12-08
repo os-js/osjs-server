@@ -28,6 +28,7 @@
  * @licence Simplified BSD License
  */
 
+const path = require('path');
 const maxAge = 60 * 60 * 12;
 const mb = m => m * 1024 * 1024;
 
@@ -92,8 +93,11 @@ const defaultConfiguration = {
     // Resolves to dist/ by default
     metadata: 'metadata.json'
   },
+
   vfs: {
     watch: false,
+    root: path.join(process.cwd(), 'vfs'),
+
     mountpoints: [{
       name: 'osjs',
       attributes: {
@@ -103,7 +107,7 @@ const defaultConfiguration = {
     }, {
       name: 'home',
       attributes: {
-        root: '{root}/vfs/{username}'
+        root: '{vfs}/{username}'
       }
     }]
   }
