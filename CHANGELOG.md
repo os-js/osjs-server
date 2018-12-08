@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.0.11
+
+* Added configurable VFS root directory
+
 ## 3.0.9
 
 * Updated filehound dependency (fixes #3)
