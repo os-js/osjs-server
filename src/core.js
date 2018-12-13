@@ -220,7 +220,7 @@ class Core extends CoreBase {
   /**
    * Broadcast given event to client
    * @param {string} name Event name
-   * @param {Object} params Message
+   * @param {Array} params A list of parameters to send to client
    * @param {Function} [filter] A function to filter clients
    */
   broadcast(name, params, filter) {
