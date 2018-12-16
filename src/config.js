@@ -64,7 +64,8 @@ const defaultConfiguration = {
     },
     define: {
       // 'mime/type': ['ext']
-      'text/x-python': ['py']
+      'text/x-python': ['py'],
+      'application/tar+gzip': ['tgz']
     }
   },
   session: {
