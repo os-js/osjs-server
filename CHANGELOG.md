@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+# 3.0.12
+
+* Updated MIME definitions
+
 ## 3.0.11
 
 * Added configurable VFS root directory
