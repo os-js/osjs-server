@@ -162,7 +162,7 @@ module.exports.parseFields = (core, req, dummy = false) => new Promise((resolve,
       fields: req.fields,
       files: req.files
     });
-  } else if (req.method.toLowerCase() === 'get') {
+  } else if (['get', 'head'].indexOf(req.method.toLowerCase()) !== -1) {
     const {query} = url.parse(req.url, true);
 
     resolve({fields: query, files: {}});
