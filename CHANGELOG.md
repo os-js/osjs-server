@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+# 3.0.13
+
+* Handle HEAD requests properly in VFS calls
+* Make sure route helpers cast method to lowercase<Paste>
+
 # 3.0.12
 
 * Updated MIME definitions
