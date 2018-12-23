@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+# 3.0.14
+
+* Added configurable default auth groups
+
 # 3.0.13
 
 * Handle HEAD requests properly in VFS calls
