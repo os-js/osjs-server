@@ -56,6 +56,9 @@ const defaultConfiguration = {
     }
     */
   ],
+  auth: {
+    defaultGroups: []
+  },
   mime: {
     filenames: {
       // 'filename': 'mime/type'

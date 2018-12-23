@@ -91,7 +91,7 @@ class AuthServiceProvider extends ServiceProvider {
         id: 0,
         username: req.body.username,
         name: req.body.username,
-        groups: []
+        groups: this.core.config('auth.defaultGroups', [])
       };
 
       const missing = required
