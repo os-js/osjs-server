@@ -103,6 +103,7 @@ class CoreServiceProvider extends ServiceProvider {
 
     // Handle Websocket stuff
     app.ws('/', (ws, req) => {
+      ws.upgradeReq = ws.upgradeReq || req;
       ws._osjs_client = Object.assign({}, req.session.user);
 
       ws.send(JSON.stringify({

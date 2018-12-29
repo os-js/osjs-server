@@ -242,6 +242,27 @@ class Core extends CoreBase {
         });
     }
   }
+
+  /**
+   * Broadcast given event to all clients
+   * @param {string} name Event name
+   * @param {Array} ...params A list of parameters to send to client
+   */
+  broadcastAll(name, ...params) {
+    return this.broadcast(name, params);
+  }
+
+  /**
+   * Broadcast given event to client filtered by username
+   * @param {String} username Username to send to
+   * @param {string} name Event name
+   * @param {Array} ...params A list of parameters to send to client
+   */
+  broadcastUser(username, name, ...params) {
+    return this.broadcast(name, params, client => {
+      return client._osjs_client.username === username;
+    });
+  }
 }
 
 module.exports = Core;
