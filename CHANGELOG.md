@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+# 3.0.15
+
+* Additional ws broadcast methods (#4)
+* Force session touch on ping (#6)
+
 # 3.0.14
 
 * Added configurable default auth groups
