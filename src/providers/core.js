@@ -115,7 +115,15 @@ class CoreServiceProvider extends ServiceProvider {
       }));
     });
 
-    app.get('/ping', (req, res) => res.status(200).send('ok'));
+    app.get('/ping', (req, res) => {
+      try {
+        req.session.touch();
+      } catch (e) {
+        console.warn(e);
+      }
+
+      res.status(200).send('ok');
+    });
 
     proxies.forEach(item => {
       signale.info(`Proxying ${item.source} -> ${item.destination}`);
