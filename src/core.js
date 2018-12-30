@@ -128,6 +128,8 @@ class Core extends CoreBase {
       return;
     }
 
+    this.emit('osjs/core:destroy');
+
     signale.pause('Shutting down server');
 
     super.destroy();
