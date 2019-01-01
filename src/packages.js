@@ -218,6 +218,32 @@ class Packages {
     this.packages = [];
     this.watches = [];
   }
+
+  /**
+   * Handles an incoming message and signals an application
+   * @desc This will call the 'onmessage' event in your application server script
+   * @param {Object} ws Websocket Connection client
+   * @param {Array} params A list of incoming parameters
+   */
+  handleMessage(ws, params) {
+    const {pid, name, args} = params[0];
+    const found = this.packages.findIndex(({metadata}) => metadata.name === name);
+
+    if (found !== -1) {
+      const {script} = this.packages[found];
+      if (script && typeof script.onmessage === 'function') {
+        const respond = (...respondParams) => ws.send(JSON.stringify({
+          name: 'osjs/application:socket:message',
+          params: [{
+            pid,
+            args: respondParams
+          }]
+        }));
+
+        script.onmessage(ws, respond, args);
+      }
+    }
+  }
 }
 
 module.exports = Packages;

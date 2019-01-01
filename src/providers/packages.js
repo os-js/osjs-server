@@ -51,6 +51,8 @@ class PackageServiceProvider extends ServiceProvider {
     this.core.logger.info('Using package discovery file', discoveredFile);
     this.core.logger.info('Using package manifest file', manifestFile);
 
+    this.core.singleton('osjs/packages', () => this.packages);
+
     return this.packages.init(manifestFile, discoveredFile);
   }
 
