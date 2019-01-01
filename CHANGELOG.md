@@ -1,5 +1,10 @@
 # Changelog for osjs-server
 
+# 3.0.16
+
+* Added direct support for core websocket in applications
+* Emit even on destruction
+
 # 3.0.15
 
 * Additional ws broadcast methods (#4)
