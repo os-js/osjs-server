@@ -1,6 +1,6 @@
 {
   "env": {
-    "browser": false,
+    "browser": true,
     "node": true
   },
   "parserOptions": {
@@ -11,7 +11,9 @@
     "Promise": true,
     "ArrayBuffer": true,
     "File": true,
-    "Blob": true
+    "Blob": true,
+    "OSJS_VERSION": true,
+    "OSjs"
   },
   "extends": "eslint:recommended",
   "rules": {
@@ -53,5 +55,8 @@
     "no-multi-assign": 1,
     "no-new-object": 2,
     "no-tabs": 1,
+    "no-trailing-spaces": 2,
+    "comma-spacing": ["error", { "before": false, "after": true }],
+    "object-curly-spacing": ["error", "never"]
   }
 }
