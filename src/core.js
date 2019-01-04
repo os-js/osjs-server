@@ -178,7 +178,9 @@ class Core extends CoreBase {
       wss.on('connection', (c) => {
         signale.start('WS Connection opened');
 
-        c.on('message', msg => this.handleMessage(c, JSON.parse(msg)));
+        if (c._osjs_client) {
+          c.on('message', msg => this.handleMessage(c, JSON.parse(msg)));
+        }
 
         c.on('close', () => signale.pause('WS Connection closed'));
       });
