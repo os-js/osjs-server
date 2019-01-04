@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.18
+
+* Updated internal socket message handling
+
 ## 3.0.17
 
 * Fixed issue with non-client socket messaging
