@@ -1,25 +1,29 @@
-# Changelog for osjs-server
+## Changelog for osjs-server
 
-# 3.0.16
+## 3.0.17
+
+* Fixed issue with non-client socket messaging
+
+## 3.0.16
 
 * Added direct support for core websocket in applications
 * Emit even on destruction
 
-# 3.0.15
+## 3.0.15
 
 * Additional ws broadcast methods (#4)
 * Force session touch on ping (#6)
 
-# 3.0.14
+## 3.0.14
 
 * Added configurable default auth groups
 
-# 3.0.13
+## 3.0.13
 
 * Handle HEAD requests properly in VFS calls
 * Make sure route helpers cast method to lowercase<Paste>
 
-# 3.0.12
+## 3.0.12
 
 * Updated MIME definitions
 
