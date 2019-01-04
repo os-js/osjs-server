@@ -103,8 +103,18 @@ class CoreServiceProvider extends ServiceProvider {
 
     // Handle Websocket stuff
     app.ws('/', (ws, req) => {
+      const pman = this.core.make('osjs/packages');
+
       ws.upgradeReq = ws.upgradeReq || req;
       ws._osjs_client = Object.assign({}, req.session.user);
+
+      ws.on('message', msg => {
+        try {
+          pman.handleMessage(ws, JSON.parse(msg).params);
+        } catch (e) {
+          console.warn(e);
+        }
+      });
 
       ws.send(JSON.stringify({
         name: 'osjs/core:connected',

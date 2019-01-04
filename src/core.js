@@ -178,10 +178,6 @@ class Core extends CoreBase {
       wss.on('connection', (c) => {
         signale.start('WS Connection opened');
 
-        if (c._osjs_client) {
-          c.on('message', msg => this.handleMessage(c, JSON.parse(msg)));
-        }
-
         c.on('close', () => signale.pause('WS Connection closed'));
       });
 
@@ -222,14 +218,6 @@ class Core extends CoreBase {
     this.emit('osjs/core:started');
 
     signale.success('Initialized');
-  }
-
-  handleMessage(ws, msg) {
-    if (msg.name === 'osjs/application:socket:message') {
-      const pman = this.make('osjs/packages');
-
-      pman.handleMessage(ws, msg.params);
-    }
   }
 
   /**
