@@ -67,6 +67,7 @@ const defaultConfiguration = {
     },
     define: {
       // 'mime/type': ['ext']
+      'text/x-lilypond': ['ly', 'ily'],
       'text/x-python': ['py'],
       'application/tar+gzip': ['tgz']
     }
