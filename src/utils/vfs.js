@@ -148,7 +148,7 @@ module.exports.request = provider => (endpoint, ro) => {
         promise = request(endpoint, fields, files)(adapter, mountpoint);
       }
     } catch (e) {
-      promise = Promise.reject(new Error(e));
+      promise = Promise.reject(e);
     }
 
     return promise;

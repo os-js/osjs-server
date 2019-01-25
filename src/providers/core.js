@@ -141,10 +141,25 @@ class CoreServiceProvider extends ServiceProvider {
       app.use(item.source, proxy(item.destination, item.options));
     });
 
+    const middleware = {
+      route: [],
+      routeAuthenticated: []
+    };
+
     this.core.singleton('osjs/express', () => ({
-      route: (method, uri, cb) => app[method.toLowerCase()](uri, cb),
+      middleware: (authentication, cb) => {
+        middleware[authentication ? 'routeAuthenticated' : 'route'].push(cb);
+      },
+
+      route: (method, uri, cb) => app[method.toLowerCase()](uri, [
+        ...middleware.route
+      ], cb),
+
       routeAuthenticated: (method, uri, cb, groups = []) =>
-        app[method.toLowerCase()](uri, isAuthenticated(groups), cb)
+        app[method.toLowerCase()](uri, [
+          ...middleware.routeAuthenticated,
+          isAuthenticated(groups)
+        ], cb)
     }));
   }
 
