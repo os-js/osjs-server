@@ -172,6 +172,10 @@ class Packages {
 
     const load = loader(this.core, manifest, discovered);
 
+    this.core.on('osjs/application:socket:message', (ws, ...params) => {
+      this.handleMessage(ws, params);
+    });
+
     return load(metadata => {
       clearTimeout(this.hotReloading[metadata.name]);
       this.hotReloading[metadata.name] = setTimeout(() => {
