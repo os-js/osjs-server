@@ -1,5 +1,16 @@
 ## Changelog for osjs-server
 
+## 3.0.20
+
+* Addded 'call' method to expres service
+* Added support for injecting middleware for routes
+
+## 3.0.19
+
+* Updated dependencies
+* Update config.js (#10)
+* Updated README
+
 ## 3.0.18
 
 * Updated internal socket message handling
