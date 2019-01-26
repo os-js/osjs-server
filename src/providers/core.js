@@ -147,6 +147,8 @@ class CoreServiceProvider extends ServiceProvider {
     };
 
     this.core.singleton('osjs/express', () => ({
+      call: (method, ...args) => app[method](...args),
+
       middleware: (authentication, cb) => {
         middleware[authentication ? 'routeAuthenticated' : 'route'].push(cb);
       },
