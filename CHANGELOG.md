@@ -1,5 +1,13 @@
 ## Changelog for osjs-server
 
+## 3.0.22
+
+* Updated routeAuthenticated group gating (#13)
+
+## 3.0.21
+
+* Update websocket message handling
+
 ## 3.0.20
 
 * Addded 'call' method to expres service
