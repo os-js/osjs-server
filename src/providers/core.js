@@ -40,7 +40,7 @@ const validateGroups = (req, groups) => {
   if (groups.length) {
     const userGroups = req.session.user.groups;
 
-    return groups.every(g => userGroups.indexOf(g) !== -1);
+    return groups.some(g => userGroups.indexOf(g) !== -1);
   }
 
   return true;
