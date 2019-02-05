@@ -304,7 +304,6 @@ module.exports = (core) => ({
         return Promise.all(promises);
       }),
 
-
   /**
    * Touches a file
    * @param {String} file The file path from client
@@ -313,5 +312,13 @@ module.exports = (core) => ({
   touch: vfs => file =>
     Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
       .then(realPath => fs.ensureFile(realPath))
-      .then(() => true)
+      .then(() => true),
+
+  /**
+   * Gets the real filesystem path (internal only)
+   * @param {String} file The file path from client
+   * @return {string}
+   */
+  realpath: vfs => file =>
+    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
 });

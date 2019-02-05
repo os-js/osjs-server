@@ -97,8 +97,19 @@ class VFSServiceProvider extends ServiceProvider {
           : mime.getType(filename) || 'application/octet-stream';
       },
 
+      realpath: (filename, user) => {
+        return this.filesystem.routeInternal('realpath',  true)({
+          session: {
+            user
+          },
+          fields: {
+            path: filename
+          }
+        }, {}, true);
+      },
+
       request: (name, req, res) => {
-        const ro = methods[name].ro;
+        const ro = methods[name] ? methods[name].ro : true;
 
         return this.filesystem.routeInternal(name, ro)(req, res);
       }

@@ -137,3 +137,10 @@ module.exports.search = (req, res, fields, files) => (core, adapter, mount) => {
  */
 module.exports.touch = (req, res, fields, files) => (core, adapter, mount) => adapter
   .touch(({req, res, mount}))(fields.path, fields.options, mount);
+
+/**
+ * Gets the real filesystem path if available (internal only)
+ * @return {Promise<Error, string>}
+ */
+module.exports.realpath = (req, res, fields, files) => (core, adapter, mount) => adapter
+  .realpath(({req, res, mount}))(fields.path, fields.options, mount);
