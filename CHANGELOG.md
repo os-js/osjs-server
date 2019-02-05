@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.23
+
+* Added 'realpath' method to VFS (for internal usage)
+
 ## 3.0.22
 
 * Updated routeAuthenticated group gating (#13)
