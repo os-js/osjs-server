@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.24
+
+* Added Core.getInstance
+
 ## 3.0.23
 
 * Added 'realpath' method to VFS (for internal usage)
