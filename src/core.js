@@ -81,12 +81,15 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   })
 });
 
+let _instance;
+
 /**
  * Server Core
  *
  * @desc Provides the OS.js Server Core
  */
 class Core extends CoreBase {
+
   /**
    * Creates a new instance
    * @param {Object} cfg Configuration tree
@@ -118,6 +121,8 @@ class Core extends CoreBase {
     if (!this.configuration.public) {
       throw new Error('The public option is required');
     }
+
+    _instance = this;
   }
 
   /**
@@ -265,6 +270,14 @@ class Core extends CoreBase {
     return this.broadcast(name, params, client => {
       return client._osjs_client.username === username;
     });
+  }
+
+  /**
+   * Gets the server instance
+   * @return {Core}
+   */
+  static getInstance() {
+    return _instance;
   }
 }
 
