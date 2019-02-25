@@ -30,69 +30,37 @@
 
 const fs = require('fs-extra');
 const path = require('path');
-const {Readable} = require('stream');
 
 const nullAdapter = (core, options) => ({
-  save: (req, res) => Promise.resolve(true),
-  load: (req, res) => Promise.resolve({})
+  save: () => Promise.resolve(true),
+  load: () => Promise.resolve({})
 });
 
 const fsAdapter = (core, options) => {
   const fsOptions = Object.assign({
     system: false,
-    path: 'home:/.osjs',
-    filename: 'settings.json'
+    path: 'home:/.osjs/settings.json'
   }, options || {});
 
-  const request = (method, req, res, fields = {}, files = {}) => core
-    .make('osjs/vfs').request(method, {req, res, fields, files});
+  const getRealFilename = (req) => fsOptions.system
+    ? Promise.resolve(fsOptions.path)
+    : core.make('osjs/vfs')
+      .realpath(fsOptions.path, req.session.user);
 
-  const createStream = json => {
-    const s = new Readable();
-    s.push(json);
-    s.push(null);
-    return s;
-  };
+  const before = req => getRealFilename(req)
+    .then(filename => fs.ensureDir(path.dirname(filename))
+      .then(() => filename));
 
-  const dest = fsOptions.system
-    ? path.join(fsOptions.path, fsOptions.filename)
-    : `${fsOptions.path}/${fsOptions.filename}`;
+  const save = req => before(req)
+    .then(filename => fs.writeJson(filename, req.body))
+    .then(() => true);
 
-  const mkdir = (req, res) => fsOptions.system
-    ? fs.ensureDir(fsOptions.path)
-    : request('mkdir', req, res, {
-      path: fsOptions.path,
-      options: {}
-    }).catch(() => true);
-
-  const write = (req, res) => fsOptions.system
-    ? fs.writeJson(dest, req.body)
-    : request('writefile', req, res, {
-      path: dest,
-      options: {}
-    },  {
-      upload: createStream(JSON.stringify(req.body))
+  const load = req => before(req)
+    .then(filename => fs.readJson(filename))
+    .catch(error => {
+      console.warn(error);
+      return {};
     });
-
-  const read = (req, res) => fsOptions.system
-    ? fs.readJson(dest)
-    : request('readfile', req, res, {
-      path: dest,
-      options: {}
-    }).then(stream => new Promise((resolve, reject) => {
-      const chunks = [];
-      stream.on('data', buf => chunks.push(buf));
-      stream.on('error', err => reject(err));
-      stream.on('end', () => {
-        resolve(JSON.parse(chunks.join('')));
-      });
-    }));
-
-  const save = (req, res) => mkdir(req, res)
-    .then(() => write(req, res));
-
-  const load = (req, res) => mkdir(req, res)
-    .then(() => read(req, res));
 
   return {save, load};
 };
