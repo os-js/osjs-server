@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.25
+
+* Fixed 'fs' Settings adapter (fixes #14)
+
 ## 3.0.24
 
 * Added Core.getInstance
