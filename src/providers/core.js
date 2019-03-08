@@ -72,13 +72,47 @@ const isAuthenticated = groups => (req, res, next) => {
 class CoreServiceProvider extends ServiceProvider {
 
   async init() {
+    this.initService();
+    this.initExtensions();
+    this.initBaseRoutes();
+    this.initProxies();
+  }
+
+  /**
+   * Initializes the service APIs
+   */
+  initService() {
+    const {app} = this.core;
+
+    const middleware = {
+      route: [],
+      routeAuthenticated: []
+    };
+
+    this.core.singleton('osjs/express', () => ({
+      call: (method, ...args) => app[method](...args),
+
+      middleware: (authentication, cb) => {
+        middleware[authentication ? 'routeAuthenticated' : 'route'].push(cb);
+      },
+
+      route: (method, uri, cb) => app[method.toLowerCase()](uri, [
+        ...middleware.route
+      ], cb),
+
+      routeAuthenticated: (method, uri, cb, groups = []) =>
+        app[method.toLowerCase()](uri, [
+          ...middleware.routeAuthenticated,
+          isAuthenticated(groups)
+        ], cb)
+    }));
+  }
+
+  /**
+   * Initializes Express extensions
+   */
+  initExtensions() {
     const {app, session, configuration} = this.core;
-    const indexFile = path.join(configuration.public, configuration.index);
-    const proxies = (configuration.proxy || []).map(item => Object.assign({
-      source: null,
-      destination: null,
-      options: {}
-    }, item)).filter(item => item.source && item.destination);
 
     if (configuration.development) {
       app.use(nocache());
@@ -93,7 +127,16 @@ class CoreServiceProvider extends ServiceProvider {
     app.use(bodyParser.urlencoded({
       extended: false
     }));
+
     app.use(bodyParser.json());
+  }
+
+  /**
+   * Initializes Express base routes, etc
+   */
+  initBaseRoutes() {
+    const {app, configuration} = this.core;
+    const indexFile = path.join(configuration.public, configuration.index);
 
     // Handle index file
     app.get('/', (req, res) => res.sendFile(indexFile));
@@ -135,36 +178,24 @@ class CoreServiceProvider extends ServiceProvider {
 
       res.status(200).send('ok');
     });
+  }
+
+  /**
+   * Initializes Express proxies
+   */
+  initProxies() {
+    const {app, configuration} = this.core;
+    const proxies = (configuration.proxy || []).map(item => Object.assign({
+      source: null,
+      destination: null,
+      options: {}
+    }, item)).filter(item => item.source && item.destination);
 
     proxies.forEach(item => {
       signale.info(`Proxying ${item.source} -> ${item.destination}`);
       app.use(item.source, proxy(item.destination, item.options));
     });
-
-    const middleware = {
-      route: [],
-      routeAuthenticated: []
-    };
-
-    this.core.singleton('osjs/express', () => ({
-      call: (method, ...args) => app[method](...args),
-
-      middleware: (authentication, cb) => {
-        middleware[authentication ? 'routeAuthenticated' : 'route'].push(cb);
-      },
-
-      route: (method, uri, cb) => app[method.toLowerCase()](uri, [
-        ...middleware.route
-      ], cb),
-
-      routeAuthenticated: (method, uri, cb, groups = []) =>
-        app[method.toLowerCase()](uri, [
-          ...middleware.routeAuthenticated,
-          isAuthenticated(groups)
-        ], cb)
-    }));
   }
-
 }
 
 module.exports = CoreServiceProvider;

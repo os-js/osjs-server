@@ -44,7 +44,7 @@ class Auth {
   constructor(core, options) {
     this.core = core;
     this.options = Object.assign({
-
+      adapter: nullAdapter
     }, options);
 
     try {
