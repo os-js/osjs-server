@@ -27,113 +27,11 @@
  * @author  Anders Evenrud <andersevenrud@gmail.com>
  * @licence Simplified BSD License
  */
+
 const fs = require('fs-extra');
-const fg = require('fast-glob');
-const path = require('path');
 const signale = require('signale').scope('pkg');
 const chokidar = require('chokidar');
-
-/*
- * Loads all packages as a stream
- */
-const loader = (core, manifest, discovered) => {
-  const {configuration} = core;
-  const sources = discovered.map(d => path.join(d, 'metadata.json'));
-  const metadataInManifest = metadata => !!manifest.find(iter => iter.name === metadata.name);
-  const validateMetadata = metadata => !!metadata.server && metadataInManifest(metadata);
-  const validateScript = script => script && typeof script.init === 'function';
-
-  const createWatch = (metadata, cb) => {
-    const dist = path.join(configuration.public, 'apps', metadata.name);
-    const watcher = chokidar.watch(dist);
-    watcher.on('change', () => cb(metadata));
-    signale.watch(dist);
-    return watcher;
-  };
-
-  const createInstance = (filename, metadata) => {
-    try {
-      const server = path.resolve(path.dirname(filename), metadata.server);
-      signale.await(`Loading ${server}`);
-
-      return require(server)(core, {
-        filename,
-        metadata,
-        resource: (path) => {
-          if (path.substr(0, 1) !== '/') {
-            path = '/' + path;
-          }
-          return `/apps/${metadata.name}${path}`;
-        }
-      });
-    } catch (e) {
-      signale.warn(e);
-    }
-
-    return null;
-  };
-
-  return cb => new Promise((resolve, reject) => {
-    const stream = fg.stream(sources, {
-      extension: false,
-      brace: false,
-      deep: 1,
-      case: false
-    });
-
-    let result = [];
-    let watches = [];
-
-    stream.on('data', filename => {
-      const promise = fs.readJson(filename)
-        .then(metadata => {
-          let script;
-
-          const done = error => {
-            if (error) {
-              signale.warn(error);
-            }
-
-            return Promise.resolve({filename, metadata, script});
-          };
-
-          if (configuration.development) {
-            watches.push(createWatch(metadata, cb));
-          }
-
-          if (validateMetadata(metadata)) {
-            script = createInstance(filename, metadata);
-          }
-
-          if (validateScript(script)) {
-            try {
-              return script.init()
-                .then(() => done())
-                .catch(done);
-            } catch (e) {
-              return done(e);
-            }
-          }
-
-          return done();
-        });
-
-      result.push(promise);
-    });
-
-    stream.on('error', error => {
-      signale.warn(error);
-    });
-
-    stream.once('end', () => {
-      Promise.all(result)
-        .then(result => result.filter(iter => !!iter.script))
-        .then(result => ({result, watches}))
-        .then(resolve)
-        .catch(reject);
-    });
-  });
-};
+const loader = require('./utils/packageloader');
 
 /**
  * OS.js Package Management
@@ -192,35 +90,34 @@ class Packages {
    * Starts packages
    */
   start() {
-    this.packages.forEach(({script, metadata}) => {
-      try {
-        if (typeof script.start === 'function') {
-          script.start();
-        }
-      } catch (e) {
-        signale.fatal(e);
-      }
-    });
+    this._packageAction('start');
   }
 
   /**
    * Destroys packages
    */
   destroy() {
-    this.packages.forEach(({script, metadata}) => {
-      try {
-        if (typeof script.destroy === 'function') {
-          script.destroy();
-        }
-      } catch (e) {
-        console.warn(e);
-      }
-    });
-
+    this._packageAction('destroy');
     this.watches.forEach(watch => watch.close());
 
     this.packages = [];
     this.watches = [];
+  }
+
+  /**
+   * Runs an action on all registered packages
+   * @param {string} action Method name
+   */
+  _packageAction(action) {
+    this.packages.forEach(({script}) => {
+      try {
+        if (typeof script[action] === 'function') {
+          script[action]();
+        }
+      } catch (e) {
+        signale.fatal(e);
+      }
+    });
   }
 
   /**
