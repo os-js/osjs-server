@@ -31,19 +31,40 @@
 const fs = require('fs-extra');
 const {Stream} = require('stream');
 
+/*
+ * Performs an action to adapter VFS method
+ */
+const action = (method, cb) => ({req, res, fields, files, adapter, mount}) =>
+  adapter[method](({req, res, mount}))(...cb(fields, files), fields.options, mount);
+
+/*
+ * Action for VFS actions using 'path' argument
+ */
+const defaultAction = method => action(method, (fields) => ([fields.path]));
+
+/*
+ * Action for different source/target
+ */
+const divergedAction = method => action(method, (fields) => ([fields.from, fields.to]));
+
+/*
+ * Returns a boolean from VFS result
+ */
+const wrapBoolean = cb => args => cb(args)
+  .then(result => typeof result === 'boolean' ? result : !!result);
+
+
 /**
  * Read a directory
  * @return {Promise<Error, Object[]>} A list of files
  */
-module.exports.readdir = ({req, res, fields, adapter, mount}) => adapter
-  .readdir(({req, res, mount}))(fields.path, fields.options, mount);
+module.exports.readdir = defaultAction('readdir');
 
 /**
  * Reads a file
  * @return {Promise<Error, Stream>}
  */
-module.exports.readfile = ({req, res, fields, adapter, mount}) => adapter
-  .readfile(({req, res, mount}))(fields.path, fields.options, mount);
+module.exports.readfile = defaultAction('readfile');
 
 /**
  * Writes a file
@@ -64,28 +85,22 @@ module.exports.writefile = ({req, res, fields, files, adapter, mount}) => {
  * Copies a file or directory (move)
  * @return {Promise<Error, Boolean>}
  */
-module.exports.copy = ({req, res, fields, adapter, mount}) => adapter
-  .copy(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
-  .then(result => typeof result === 'boolean' ? result : !!result);
+module.exports.copy = wrapBoolean(divergedAction('copy'));
 
 /**
  * Renames a file or directory (move)
  * @return {Promise<Error, Boolean>}
  */
-module.exports.rename = ({req, res, fields, adapter, mount}) => adapter
-  .rename(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
-  .then(result => typeof result === 'boolean' ? result : !!result);
+module.exports.rename = wrapBoolean(divergedAction('rename'));
 
 /**
  * Creates a directory
  * @return {Promise<Error, Boolean>}
  */
-module.exports.mkdir = ({req, res, fields, adapter, mount}) => {
-  const options = fields.options || {};
+module.exports.mkdir = args => {
+  const options = args.fields.options || {};
 
-  return adapter
-    .mkdir(({req, res, mount}))(fields.path, options, mount)
-    .then(result => typeof result === 'boolean' ? result : !!result)
+  return wrapBoolean(defaultAction('mkdir'))(args)
     .catch(error => {
       if (options.ensure && error.code === 'EEXIST') {
         return true;
@@ -99,48 +114,40 @@ module.exports.mkdir = ({req, res, fields, adapter, mount}) => {
  * Removes a file or directory
  * @return {Promise<Error, Boolean>}
  */
-module.exports.unlink = ({req, res, fields, adapter, mount}) => adapter
-  .unlink(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(result => typeof result === 'boolean' ? result : !!result);
+module.exports.unlink = wrapBoolean(defaultAction('unlink'));
 
 /**
  * Checks if path exists
  * @return {Promise<Error, Boolean>}
  */
-module.exports.exists = ({req, res, fields, adapter, mount}) => adapter
-  .exists(({req, res, mount}))(fields.path, fields.options, mount)
-  .then(result => typeof result === 'boolean' ? result : !!result);
+module.exports.exists = wrapBoolean(defaultAction('exists'));
 
 /**
  * Gets the stats of the file or directory
  * @return {Promise<Error, Object>}
  */
-module.exports.stat = ({req, res, fields, adapter, mount}) => adapter
-  .stat(({req, res, mount}))(fields.path, fields.options, mount);
+module.exports.stat = defaultAction('stat');
 
 /**
  * Searches for files and folders
  * @return {Promise<Error, Object[]>}
  */
-module.exports.search = ({req, res, fields, adapter, mount}) => {
-  if (mount.attributes && mount.attributes.searchable === false) {
+module.exports.search = args => {
+  if (args.mount.attributes && args.mount.attributes.searchable === false) {
     return Promise.resolve([]);
   }
 
-  return adapter
-    .search(({req, res, mount}))(fields.root, fields.pattern, fields.options, mount);
+  return action('search', fields => ([fields.root, fields.pattern]))(args);
 };
 
 /**
  * Touches a file
  * @return {Promise<Error, Object[]>}
  */
-module.exports.touch = ({req, res, fields, adapter, mount}) => adapter
-  .touch(({req, res, mount}))(fields.path, fields.options, mount);
+module.exports.touch = defaultAction('touch');
 
 /**
  * Gets the real filesystem path if available (internal only)
  * @return {Promise<Error, string>}
  */
-module.exports.realpath = ({req, res, fields, adapter, mount}) => adapter
-  .realpath(({req, res, mount}))(fields.path, fields.options, mount);
+module.exports.realpath = defaultAction('realpath');
