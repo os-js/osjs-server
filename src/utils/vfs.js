@@ -121,8 +121,16 @@ module.exports.request = provider => (endpoint, ro) => {
   return ({req, res, fields, files}) => {
     const userGroups = req.session.user.groups;
 
-    const request = (method, fields, files) => (adapter, mountpoint) =>
-      vfsMethods[method](req, res, fields, files)(provider.core, adapter, mountpoint);
+    const request = (method, localFields, localFiles) => (adapter, mountpoint) =>
+      vfsMethods[method]({
+        core: provider.core,
+        fields: localFields,
+        files: localFiles,
+        mount: mountpoint,
+        req,
+        res,
+        adapter,
+      });
 
     let promise;
 

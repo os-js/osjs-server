@@ -35,21 +35,21 @@ const {Stream} = require('stream');
  * Read a directory
  * @return {Promise<Error, Object[]>} A list of files
  */
-module.exports.readdir = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.readdir = ({req, res, fields, adapter, mount}) => adapter
   .readdir(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Reads a file
  * @return {Promise<Error, Stream>}
  */
-module.exports.readfile = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.readfile = ({req, res, fields, adapter, mount}) => adapter
   .readfile(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Writes a file
  * @return {Promise<Error, Number>} File size
  */
-module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) => {
+module.exports.writefile = ({req, res, fields, files, adapter, mount}) => {
   const isStream = files.upload instanceof Stream;
   const stream = isStream
     ? files.upload
@@ -64,7 +64,7 @@ module.exports.writefile = (req, res, fields, files) => (core, adapter, mount) =
  * Copies a file or directory (move)
  * @return {Promise<Error, Boolean>}
  */
-module.exports.copy = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.copy = ({req, res, fields, adapter, mount}) => adapter
   .copy(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
   .then(result => typeof result === 'boolean' ? result : !!result);
 
@@ -72,7 +72,7 @@ module.exports.copy = (req, res, fields, files) => (core, adapter, mount) => ada
  * Renames a file or directory (move)
  * @return {Promise<Error, Boolean>}
  */
-module.exports.rename = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.rename = ({req, res, fields, adapter, mount}) => adapter
   .rename(({req, res, mount}))(fields.from, fields.to, fields.options, mount)
   .then(result => typeof result === 'boolean' ? result : !!result);
 
@@ -80,7 +80,7 @@ module.exports.rename = (req, res, fields, files) => (core, adapter, mount) => a
  * Creates a directory
  * @return {Promise<Error, Boolean>}
  */
-module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => {
+module.exports.mkdir = ({req, res, fields, adapter, mount}) => {
   const options = fields.options || {};
 
   return adapter
@@ -99,7 +99,7 @@ module.exports.mkdir = (req, res, fields, files) => (core, adapter, mount) => {
  * Removes a file or directory
  * @return {Promise<Error, Boolean>}
  */
-module.exports.unlink = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.unlink = ({req, res, fields, adapter, mount}) => adapter
   .unlink(({req, res, mount}))(fields.path, fields.options, mount)
   .then(result => typeof result === 'boolean' ? result : !!result);
 
@@ -107,7 +107,7 @@ module.exports.unlink = (req, res, fields, files) => (core, adapter, mount) => a
  * Checks if path exists
  * @return {Promise<Error, Boolean>}
  */
-module.exports.exists = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.exists = ({req, res, fields, adapter, mount}) => adapter
   .exists(({req, res, mount}))(fields.path, fields.options, mount)
   .then(result => typeof result === 'boolean' ? result : !!result);
 
@@ -115,14 +115,14 @@ module.exports.exists = (req, res, fields, files) => (core, adapter, mount) => a
  * Gets the stats of the file or directory
  * @return {Promise<Error, Object>}
  */
-module.exports.stat = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.stat = ({req, res, fields, adapter, mount}) => adapter
   .stat(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Searches for files and folders
  * @return {Promise<Error, Object[]>}
  */
-module.exports.search = (req, res, fields, files) => (core, adapter, mount) => {
+module.exports.search = ({req, res, fields, adapter, mount}) => {
   if (mount.attributes && mount.attributes.searchable === false) {
     return Promise.resolve([]);
   }
@@ -135,12 +135,12 @@ module.exports.search = (req, res, fields, files) => (core, adapter, mount) => {
  * Touches a file
  * @return {Promise<Error, Object[]>}
  */
-module.exports.touch = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.touch = ({req, res, fields, adapter, mount}) => adapter
   .touch(({req, res, mount}))(fields.path, fields.options, mount);
 
 /**
  * Gets the real filesystem path if available (internal only)
  * @return {Promise<Error, string>}
  */
-module.exports.realpath = (req, res, fields, files) => (core, adapter, mount) => adapter
+module.exports.realpath = ({req, res, fields, adapter, mount}) => adapter
   .realpath(({req, res, mount}))(fields.path, fields.options, mount);
