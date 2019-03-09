@@ -30,7 +30,7 @@
 
 const url = require('url');
 const formidable = require('formidable');
-const vfsMethods = require('../vfs/methods');
+const vfsMethods = require('../vfs');
 
 // A custom exception
 class VFSError extends Error {

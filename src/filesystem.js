@@ -28,7 +28,7 @@
  * @licence Simplified BSD License
  */
 
-const systemAdapter = require('./vfs/system');
+const systemAdapter = require('./adapters/vfs/system');
 const signale = require('signale').scope('vfs');
 const {request, parseFields} = require('./utils/vfs');
 const uuid = require('uuid/v1');
