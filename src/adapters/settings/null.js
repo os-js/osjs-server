@@ -28,63 +28,8 @@
  * @licence Simplified BSD License
  */
 
-const nullAdapter = require('./adapters/settings/null');
-const fsAdapter = require('./adapters/settings/fs');
+module.exports = (core, options) => ({
+  save: () => Promise.resolve(true),
+  load: () => Promise.resolve({})
+});
 
-/**
- * OS.js Settings Manager
- */
-class Settings {
-
-  constructor(core, options) {
-    this.core = core;
-    this.options = Object.assign({
-      adapter: nullAdapter
-    }, options);
-
-    if (this.options.adapter === 'fs') {
-      this.options.adapter = fsAdapter;
-    }
-
-    try {
-      this.adapter = this.options.adapter(core, this.options.config);
-    } catch (e) {
-      console.warn(e);
-      this.adapter = nullAdapter(core, this.options.config);
-    }
-  }
-
-  destroy() {
-    if (this.adapter.destroy) {
-      this.adapter.destroy();
-    }
-  }
-
-  /**
-   * Initializes adapter
-   */
-  async init() {
-    if (this.adapter.init) {
-      await this.adapter.init();
-    }
-  }
-
-  /**
-   * Sends save request to adapter
-   */
-  async save(req, res) {
-    const result = await this.adapter.save(req, res);
-    res.json(result);
-  }
-
-  /**
-   * Sends load request to adapter
-   */
-  async load(req, res) {
-    const result = await this.adapter.load(req, res);
-    res.json(result);
-  }
-}
-
-
-module.exports = Settings;

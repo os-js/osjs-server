@@ -27,64 +27,35 @@
  * @author  Anders Evenrud <andersevenrud@gmail.com>
  * @licence Simplified BSD License
  */
+const fs = require('fs-extra');
+const path = require('path');
 
-const nullAdapter = require('./adapters/settings/null');
-const fsAdapter = require('./adapters/settings/fs');
+module.exports = (core, options) => {
+  const fsOptions = Object.assign({
+    system: false,
+    path: 'home:/.osjs/settings.json'
+  }, options || {});
 
-/**
- * OS.js Settings Manager
- */
-class Settings {
+  const getRealFilename = (req) => fsOptions.system
+    ? Promise.resolve(fsOptions.path)
+    : core.make('osjs/vfs')
+      .realpath(fsOptions.path, req.session.user);
 
-  constructor(core, options) {
-    this.core = core;
-    this.options = Object.assign({
-      adapter: nullAdapter
-    }, options);
+  const before = req => getRealFilename(req)
+    .then(filename => fs.ensureDir(path.dirname(filename))
+      .then(() => filename));
 
-    if (this.options.adapter === 'fs') {
-      this.options.adapter = fsAdapter;
-    }
+  const save = req => before(req)
+    .then(filename => fs.writeJson(filename, req.body))
+    .then(() => true);
 
-    try {
-      this.adapter = this.options.adapter(core, this.options.config);
-    } catch (e) {
-      console.warn(e);
-      this.adapter = nullAdapter(core, this.options.config);
-    }
-  }
+  const load = req => before(req)
+    .then(filename => fs.readJson(filename))
+    .catch(error => {
+      console.warn(error);
+      return {};
+    });
 
-  destroy() {
-    if (this.adapter.destroy) {
-      this.adapter.destroy();
-    }
-  }
+  return {save, load};
+};
 
-  /**
-   * Initializes adapter
-   */
-  async init() {
-    if (this.adapter.init) {
-      await this.adapter.init();
-    }
-  }
-
-  /**
-   * Sends save request to adapter
-   */
-  async save(req, res) {
-    const result = await this.adapter.save(req, res);
-    res.json(result);
-  }
-
-  /**
-   * Sends load request to adapter
-   */
-  async load(req, res) {
-    const result = await this.adapter.load(req, res);
-    res.json(result);
-  }
-}
-
-
-module.exports = Settings;
