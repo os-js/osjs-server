@@ -48,6 +48,15 @@ const sanitize = filename => {
   return name + ':' + sane;
 };
 
+const sanitizeFields = fields => {
+  ['path', 'from', 'to', 'root'].forEach(key => {
+    if (typeof fields[key] !== 'undefined') {
+      fields[key] = sanitize(fields[key]);
+    }
+  });
+};
+
+
 /**
  * OS.js Virtual Filesystem
  */
@@ -88,11 +97,7 @@ class Filesystem {
     return (req, res) => parseFields(this.core, req)
       .then(({fields, files}) => {
         try {
-          ['path', 'from', 'to', 'root'].forEach(key => {
-            if (typeof fields[key] !== 'undefined') {
-              fields[key] = sanitize(fields[key]);
-            }
-          });
+          sanitizeFields(fields);
 
           return this.request(method, ro, {req, res, fields, files});
         } catch (e) {
@@ -106,11 +111,7 @@ class Filesystem {
     return (req, res, dummy = false) => parseFields(this.core, req, dummy)
       .then(({fields, files}) => {
         try {
-          ['path', 'from', 'to', 'root'].forEach(key => {
-            if (typeof fields[key] !== 'undefined') {
-              fields[key] = sanitize(fields[key]);
-            }
-          });
+          sanitizeFields(fields);
 
           return request(this)(method, ro)({req, res, fields, files});
         } catch (e) {
@@ -186,15 +187,11 @@ class Filesystem {
    * Set up a watch for given mountpoint
    */
   watch(mountpoint) {
-    if (mountpoint.attributes.watch === false) {
-      return;
-    }
-
-    if (this.core.config('vfs.watch') === false) {
-      return;
-    }
-
-    if (!mountpoint.attributes.root) {
+    if (
+      mountpoint.attributes.watch === false ||
+      this.core.config('vfs.watch') === false ||
+      !mountpoint.attributes.root
+    ) {
       return;
     }
 
@@ -203,25 +200,32 @@ class Filesystem {
       : this.adapters.system;
 
     if (typeof adapter.watch === 'function') {
-      const watch = adapter.watch(mountpoint, (args, dir) => {
-        const target = mountpoint.name + ':/' + dir;
-        const keys = Object.keys(args);
-        const filter = keys.length === 0
-          ? () => true
-          : ws => keys.every(k => ws._osjs_client[k] === args[k]);
-
-        this.core.broadcast('osjs/vfs:watch:change', [{
-          path: target
-        }, args], filter);
-      });
-
-      this.watches.push({
-        id: mountpoint.id,
-        watch
-      });
-
-      signale.watch('Watching mountpoint', mountpoint.name);
+      this._watch(mountpoint, adapter);
     }
+  }
+
+  /**
+   * Internal method for setting up watch for given mountpoint adapter
+   */
+  _watch(mountpoint, adapter) {
+    const watch = adapter.watch(mountpoint, (args, dir) => {
+      const target = mountpoint.name + ':/' + dir;
+      const keys = Object.keys(args);
+      const filter = keys.length === 0
+        ? () => true
+        : ws => keys.every(k => ws._osjs_client[k] === args[k]);
+
+      this.core.broadcast('osjs/vfs:watch:change', [{
+        path: target
+      }, args], filter);
+    });
+
+    this.watches.push({
+      id: mountpoint.id,
+      watch
+    });
+
+    signale.watch('Watching mountpoint', mountpoint.name);
   }
 }
 
