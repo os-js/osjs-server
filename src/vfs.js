@@ -29,125 +29,189 @@
  */
 
 const fs = require('fs-extra');
+const express = require('express');
 const {Stream} = require('stream');
+const {
+  mountpointResolver,
+  createError,
+  checkMountpointPermission,
+  validateGroups,
+  streamFromRequest,
+  sanitize,
+  getPrefix,
+  parseFields,
+  errorCodes
+} = require('./utils/vfs');
 
-/*
- * Performs an action to adapter VFS method
- */
-const action = (method, cb) => ({req, res, fields, files, adapter, mount}) =>
-  adapter[method](({req, res, mount}))(...cb(fields, files), fields.options, mount);
-
-/*
- * Action for VFS actions using 'path' argument
- */
-const defaultAction = method => action(method, (fields) => ([fields.path]));
-
-/*
- * Action for different source/target
- */
-const divergedAction = method => action(method, (fields) => ([fields.from, fields.to]));
-
-/*
- * Returns a boolean from VFS result
- */
-const wrapBoolean = cb => args => cb(args)
-  .then(result => typeof result === 'boolean' ? result : !!result);
-
+const respondNumber = result => typeof result === 'number' ? result : -1;
+const respondBoolean = result => typeof result === 'boolean' ? result : !!result;
+const requestPath = req => ([sanitize(req.fields.path)]);
+const requestSearch = req => ([sanitize(req.fields.root), req.fields.pattern]);
+const requestCross = req => ([sanitize(req.fields.from), sanitize(req.fields.to)]);
+const requestFile = req => ([sanitize(req.fields.path), streamFromRequest(req)]);
 
 /**
- * Read a directory
- * @return {Promise<Error, Object[]>} A list of files
+ * A "finally" for our chain
  */
-module.exports.readdir = defaultAction('readdir');
-
-/**
- * Reads a file
- * @return {Promise<Error, Stream>}
- */
-module.exports.readfile = defaultAction('readfile');
-
-/**
- * Writes a file
- * @return {Promise<Error, Number>} File size
- */
-module.exports.writefile = ({req, res, fields, files, adapter, mount}) => {
-  const isStream = files.upload instanceof Stream;
-  const stream = isStream
-    ? files.upload
-    : fs.createReadStream(files.upload.path);
-
-  return adapter
-    .writefile(({req, res, mount}))(fields.path, stream, fields.options, mount)
-    .then(result => typeof result === 'number' ? result : -1);
+const onDone = (req, res) => {
+  if (req.files) {
+    for (let fieldname in req.files) {
+      fs.unlink(req.files[fieldname].path, () => ({}));
+    }
+  }
 };
 
 /**
- * Copies a file or directory (move)
- * @return {Promise<Error, Boolean>}
+ * Wraps a vfs adapter request
  */
-module.exports.copy = wrapBoolean(divergedAction('copy'));
+const wrapper = fn => (req, res, next) => fn(req, res)
+  .then(result => {
+    if (result instanceof Stream) {
+      result.pipe(res);
+    } else {
+      res.json(result);
+    }
+
+    onDone(req, res);
+  })
+  .catch(error => {
+    onDone(req, res);
+
+    next(error);
+  });
 
 /**
- * Renames a file or directory (move)
- * @return {Promise<Error, Boolean>}
+ * Creates the middleware
  */
-module.exports.rename = wrapBoolean(divergedAction('rename'));
+const createMiddleware = core => {
+  const parse = parseFields(core.config('express'));
 
-/**
- * Creates a directory
- * @return {Promise<Error, Boolean>}
- */
-module.exports.mkdir = args => {
-  const options = args.fields.options || {};
+  return (req, res, next) => parse(req, res)
+    .then(({fields, files}) => {
+      req.fields = fields;
+      req.files = files;
 
-  return wrapBoolean(defaultAction('mkdir'))(args)
+      next();
+    })
     .catch(error => {
-      if (options.ensure && error.code === 'EEXIST') {
-        return true;
-      }
+      console.warn(error);
+      req.fields = {};
+      req.files = {};
 
-      return Promise.reject(error);
+      next(error);
     });
 };
 
-/**
- * Removes a file or directory
- * @return {Promise<Error, Boolean>}
+/*
+ * VFS Methods
  */
-module.exports.unlink = wrapBoolean(defaultAction('unlink'));
+const vfs = core => {
+  const findMountpoint = mountpointResolver(core);
 
-/**
- * Checks if path exists
- * @return {Promise<Error, Boolean>}
- */
-module.exports.exists = wrapBoolean(defaultAction('exists'));
+  // Standard request with only a target
+  const createRequest = (getter, method, readOnly, respond) => async (req, res) => {
+    const args = [...getter(req, res), req.fields.options || {}];
 
-/**
- * Gets the stats of the file or directory
- * @return {Promise<Error, Object>}
- */
-module.exports.stat = defaultAction('stat');
+    const found = await findMountpoint(args[0]);
+    if (method === 'search') {
+      if (found.mount.attributes && found.mount.attributes.searchable === false) {
+        return [];
+      }
+    }
 
-/**
- * Searches for files and folders
- * @return {Promise<Error, Object[]>}
- */
-module.exports.search = args => {
-  if (args.mount.attributes && args.mount.attributes.searchable === false) {
-    return Promise.resolve([]);
-  }
+    await checkMountpointPermission(req, res, method, readOnly)(found);
 
-  return action('search', fields => ([fields.root, fields.pattern]))(args);
+    const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
+
+    return respond ? respond(result) : result;
+  };
+
+  // Request that has a source and target
+  const createCrossRequest = (getter, method, respond) => async (req, res) => {
+    const [from, to, options] = [...getter(req, res), req.fields.options || {}];
+
+    const srcMount = await findMountpoint(from);
+    const destMount = await findMountpoint(to);
+    const sameAdapter = srcMount.adapter === destMount.adapter;
+
+    await checkMountpointPermission(req, res, 'readfile', false)(srcMount);
+    await checkMountpointPermission(req, res, 'writefile', true)(destMount);
+
+    if (sameAdapter) {
+      const result = await srcMount
+        .adapter[method]({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, to, options);
+
+      return !!result;
+    }
+
+    // Simulates a copy/move
+    const stream = await srcMount.adapter
+      .readfile({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
+
+    const result = await destMount.adapter
+      .writefile({req, res, adapter: destMount.adapter, mount: destMount.mount})(to, stream, options);
+
+    if (method === 'rename') {
+      await srcMount.adapter
+        .unlink({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
+    }
+
+    return !!result;
+  };
+
+  // Wire up all available VFS events
+  return {
+    realpath: createRequest(requestPath, 'realpath', false),
+    exists: createRequest(requestPath, 'exists', false, respondBoolean),
+    stat: createRequest(requestPath, 'stat', false),
+    readdir: createRequest(requestPath, 'readdir', false),
+    readfile: createRequest(requestPath, 'readfile', false),
+    writefile: createRequest(requestFile, 'writefile', true, respondNumber),
+    mkdir: createRequest(requestPath, 'mkdir', true, respondBoolean),
+    unlink: createRequest(requestPath, 'unlink', true, respondBoolean),
+    touch: createRequest(requestPath, 'touch', true, respondBoolean),
+    search: createRequest(requestSearch, 'search', true),
+    copy: createCrossRequest(requestCross, 'copy'),
+    rename: createCrossRequest(requestCross, 'rename')
+  };
 };
 
-/**
- * Touches a file
- * @return {Promise<Error, Object[]>}
+/*
+ * Creates a new VFS Express router
  */
-module.exports.touch = defaultAction('touch');
+module.exports = core => {
+  const router = express.Router();
+  const methods = vfs(core);
+  const middleware = createMiddleware(core);
+  const {isAuthenticated} = core.make('osjs/express');
 
-/**
- * Gets the real filesystem path if available (internal only)
- * @return {Promise<Error, string>}
- */
-module.exports.realpath = defaultAction('realpath');
+  // Middleware first
+  router.use(isAuthenticated([]));
+  router.use(middleware);
+
+  // Then all VFS routes (needs implementation above)
+  router.get('/exists', wrapper(methods.exists));
+  router.get('/stat', wrapper(methods.stat));
+  router.get('/readdir', wrapper(methods.readdir));
+  router.get('/readfile', wrapper(methods.readfile));
+  router.post('/writefile', wrapper(methods.writefile));
+  router.post('/rename', wrapper(methods.rename));
+  router.post('/copy', wrapper(methods.copy));
+  router.post('/mkdir', wrapper(methods.mkdir));
+  router.post('/unlink', wrapper(methods.unlink));
+  router.post('/touch', wrapper(methods.touch));
+  router.post('/search', wrapper(methods.search));
+
+  // Finally catch promise exceptions
+  router.use((error, req, res, next) => {
+    // TODO: Better error messages
+    const code = typeof error.code === 'number'
+      ? error.code
+      : (errorCodes[error.code] || 400);
+
+    res.status(code)
+      .json({error: error.toString()});
+  });
+
+  return {router, methods};
+};

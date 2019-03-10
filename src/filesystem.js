@@ -30,32 +30,10 @@
 
 const systemAdapter = require('./adapters/vfs/system');
 const signale = require('signale').scope('vfs');
-const {request, parseFields} = require('./utils/vfs');
 const uuid = require('uuid/v1');
-const fs = require('fs-extra');
-const sanitizeFilename = require('sanitize-filename');
-
-// FS error code map
-const errorCodes = {
-  ENOENT: 404,
-  EACCES: 401
-};
-
-// Sanitizes a file path
-const sanitize = filename => {
-  const [name, str] = (filename.replace(/\/+/g, '/').match(/^(\w+):(.*)/) || []).slice(1);
-  const sane = str.split('/').map(s => sanitizeFilename(s)).join('/').replace(/\/+/g, '/');
-  return name + ':' + sane;
-};
-
-const sanitizeFields = fields => {
-  ['path', 'from', 'to', 'root'].forEach(key => {
-    if (typeof fields[key] !== 'undefined') {
-      fields[key] = sanitize(fields[key]);
-    }
-  });
-};
-
+const mime = require('mime');
+const path = require('path');
+const vfs = require('./vfs');
 
 /**
  * OS.js Virtual Filesystem
@@ -64,8 +42,10 @@ class Filesystem {
   constructor(core, options) {
     this.core = core;
     this.mountpoints = [];
-    this.adapters = [];
+    this.adapters = {};
     this.watches = [];
+    this.router = null;
+    this.methods = {};
     this.options = Object.assign({
       adapters: {}
     }, options);
@@ -85,68 +65,53 @@ class Filesystem {
       }, result);
     }, {});
 
+    // Routes
+    const {router, methods} = vfs(this.core);
+    this.router = router;
+    this.methods = methods;
+
+    // Mimes
+    const {define} = this.core.config('mime', {define: {}, filenames: {}});
+    mime.define(define, {force: true});
+
     // Mountpoints
     this.core.config('vfs.mountpoints')
       .forEach(mount => this.mount(mount));
   }
 
   /**
-   * Creates a HTTP route
+   * Gets MIME
    */
-  route(method, ro) {
-    return (req, res) => parseFields(this.core, req)
-      .then(({fields, files}) => {
-        try {
-          sanitizeFields(fields);
+  mime(filename) {
+    const {filenames} = this.core.config('mime', {
+      define: {},
+      filenames: {}
+    });
 
-          return this.request(method, ro, {req, res, fields, files});
-        } catch (e) {
-          return Promise.reject(e);
-        }
-      })
-      .catch(error => res.status(500).json({error: error.message}));
-  }
-
-  routeInternal(method, ro) {
-    return (req, res, dummy = false) => parseFields(this.core, req, dummy)
-      .then(({fields, files}) => {
-        try {
-          sanitizeFields(fields);
-
-          return request(this)(method, ro)({req, res, fields, files});
-        } catch (e) {
-          return Promise.reject(e);
-        }
-      });
+    return filenames[path.basename(filename)]
+      ? filenames[path.basename(filename)]
+      : mime.getType(filename) || 'application/octet-stream';
   }
 
   /**
-   * Creates a VFS HTTP request
+   * Crates a VFS request
    */
-  request(method, ro, {req, res, fields, files}) {
-    return request(this)(method, ro)({req, res, fields, files})
-      .then(result => {
-        if (method === 'writefile') {
-          for (let fieldname in files) {
-            fs.unlink(files[fieldname].path, () => ({/* noop */}));
-          }
-        }
+  request(name, req, res) {
+    return this.methods[name](req, res);
+  }
 
-        if (method === 'readfile') {
-          return result.pipe(res);
-        }
-
-        return res.json(result);
-      })
-      .catch(error => {
-        signale.fatal(error);
-
-        const code = typeof error.code === 'number'
-          ? error.code
-          : (errorCodes[error.code] || 400);
-
-        res.status(code).json({error: error.toString()});
-      });
+  /**
+   * Creates realpath VFS request
+   */
+  realpath(filename, user) {
+    return this.methods.realpath({
+      session: {
+        user
+      },
+      fields: {
+        path: filename
+      }
+    });
   }
 
   /**

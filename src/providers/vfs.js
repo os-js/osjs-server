@@ -30,8 +30,6 @@
 
 const {ServiceProvider} = require('@osjs/common');
 const Filesystem = require('../filesystem');
-const mime = require('mime');
-const path = require('path');
 
 /**
  * OS.js Virtual Filesystem Service Provider
@@ -46,78 +44,32 @@ class VFSServiceProvider extends ServiceProvider {
     this.filesystem = new Filesystem(core, options);
   }
 
-  async init() {
-    const {filenames, define} = this.core.config('mime', {define: {}, filenames: {}});
-    mime.define(define, {force: true});
-
-    const {routeAuthenticated} = this.core.make('osjs/express');
-
-    const methods = {
-      exists: {method: 'get'},
-      stat: {method: 'get'},
-      readdir: {method: 'get'},
-      readfile: {method: 'get'},
-      writefile: {method: 'post', ro: true},
-      mkdir: {method: 'post', ro: true},
-      rename: {method: 'post', ro: true},
-      copy: {method: 'post', ro: fields => fields.to},
-      unlink: {method: 'post', ro: true},
-      search: {method: 'post'},
-      touch: {method: 'post'}
-    };
-
-
-    // HTTP routes
-    Object.keys(methods)
-      .forEach(name => {
-        const {method, ro} = methods[name];
-
-        routeAuthenticated(method, `/vfs/${name}`, this.filesystem.route(name, ro));
-      });
-
-    // Expose VFS as service
-    const expose = Object.keys(methods)
-      .reduce((result, name) => {
-        const {method, ro} = methods[name];
-
-        return Object.assign(result, {
-          [name]: (fields, files, session) => {
-            const req = {method, fields, files, session};
-            const res = {};
-
-            return this.filesystem.routeInternal(name, ro)(req, res, true);
-          }
-        });
-      }, {});
-
-    this.core.singleton('osjs/vfs', () => Object.assign({
-      mime: filename => {
-        return filenames[path.basename(filename)]
-          ? filenames[path.basename(filename)]
-          : mime.getType(filename) || 'application/octet-stream';
-      },
-
-      realpath: (filename, user) => {
-        return this.filesystem.routeInternal('realpath',  true)({
-          session: {
-            user
-          },
-          fields: {
-            path: filename
-          }
-        }, {}, true);
-      },
-
-      request: (name, req, res) => {
-        const ro = methods[name] ? methods[name].ro : true;
-
-        return this.filesystem.routeInternal(name, ro)(req, res);
-      }
-    }, expose));
+  depends() {
+    return [
+      'osjs/express'
+    ];
   }
 
-  start() {
-    this.filesystem.init();
+  async init() {
+    const filesystem = this.filesystem;
+
+    await filesystem.init();
+
+    this.core.singleton('osjs/vfs', () => ({
+      realpath: (...args) => this.filesystem.realpath(...args),
+      request: (...args) => this.filesystem.request(...args),
+      mime: (...args) => this.filesystem.mime(...args),
+
+      get adapters() {
+        return filesystem.adapters;
+      },
+
+      get mountpoints() {
+        return filesystem.mountpoints;
+      }
+    }));
+
+    this.core.app.use('/vfs', filesystem.router);
   }
 }
 

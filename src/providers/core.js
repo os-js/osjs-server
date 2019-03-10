@@ -46,7 +46,7 @@ const validateGroups = (req, groups) => {
   return true;
 };
 
-const isAuthenticated = groups => (req, res, next) => {
+const isAuthenticated = (groups = []) => (req, res, next) => {
   const deny = () => res
     .status(403)
     .send('Access denied');
@@ -90,6 +90,8 @@ class CoreServiceProvider extends ServiceProvider {
     };
 
     this.core.singleton('osjs/express', () => ({
+      isAuthenticated,
+
       call: (method, ...args) => app[method](...args),
 
       middleware: (authentication, cb) => {

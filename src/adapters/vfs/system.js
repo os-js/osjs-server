@@ -202,10 +202,17 @@ module.exports = (core) => ({
    * @param {String} file The file path from client
    * @return {boolean}
    */
-  mkdir: vfs => file =>
+  mkdir: vfs => (file, options = {}) =>
     Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
       .then(realPath => fs.mkdir(realPath))
-      .then(() => true),
+      .then(() => true)
+      .catch(e => {
+        if (options.ensure && e.code === 'EEXIST') {
+          return true;
+        }
+
+        return Promise.reject(e);
+      }),
 
   /**
    * Writes file stream

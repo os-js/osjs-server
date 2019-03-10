@@ -28,19 +28,54 @@
  * @licence Simplified BSD License
  */
 
+const fs = require('fs-extra');
 const url = require('url');
+const sanitizeFilename = require('sanitize-filename');
 const formidable = require('formidable');
-const vfsMethods = require('../vfs');
+const {Stream} = require('stream');
 
-// A custom exception
-class VFSError extends Error {
-  constructor(message, code) {
-    super(message);
-    this.code = code;
-  }
-}
+/**
+ * A map of error codes
+ */
+const errorCodes = {
+  ENOENT: 404,
+  EACCES: 401
+};
 
-// Validates a mountpoint groups to the user groups
+/**
+ * Gets prefix of a VFS path
+ */
+const getPrefix = path => String(path).split(':')[0];
+
+/**
+ * Sanitizes a path
+ */
+const sanitize = filename => {
+  const [name, str] = (filename.replace(/\/+/g, '/')
+    .match(/^(\w+):(.*)/) || [])
+    .slice(1);
+
+  const sane = str.split('/')
+    .map(s => sanitizeFilename(s))
+    .join('/')
+    .replace(/\/+/g, '/');
+
+  return name + ':' + sane;
+};
+
+/**
+ * Gets the stream from a HTTP request
+ */
+const streamFromRequest = req => {
+  const isStream = req.files.upload instanceof Stream;
+  return isStream
+    ? req.files.upload
+    : fs.createReadStream(req.files.upload.path);
+};
+
+/**
+ * Validates groups
+ */
 const validateGroups = (userGroups, method, mountpoint) => {
   const all = (arr, compare) => arr.every(g => compare.indexOf(g) !== -1);
 
@@ -66,133 +101,127 @@ const validateGroups = (userGroups, method, mountpoint) => {
   return true;
 };
 
-// Gets the prefix of vfs path
-const getPrefix = str => String(str).split(':')[0];
+/**
+ * Checks permissions for given mountpoint
+ */
+const checkMountpointPermission = (req, res, method, readOnly) => {
+  const userGroups = req.session.user.groups;
 
-// Checks if destination is readOnly
-const checkReadOnly = (ro, mountpoint, fields) => {
-  if (mountpoint.attributes.readOnly) {
+  return ({mount}) => {
+    if (readOnly) {
+      const {attributes, name} = mount;
 
-    return typeof ro === 'function'
-      ? getPrefix(ro(fields)) === mountpoint.name
-      : ro;
+      if (attributes.readOnly) {
+        const failed = typeof readOnly === 'function'
+          ? getPrefix(readOnly(req, res)) === name
+          : readOnly;
+
+        if (failed) {
+          return Promise.reject(createError(403, `Mountpoint '${name}' is read-only`));
+        }
+      }
+    }
+
+    if (validateGroups(userGroups, method, mount)) {
+      return Promise.resolve(true);
+    }
+
+    return Promise.reject(createError(403, `Permission was denied for '${method}' in '${mount.name}'`));
+  };
+};
+
+/**
+ * Creates a new custom Error
+ */
+const createError = (code, message) => {
+  const e = new Error(message);
+  e.code = code;
+  return e;
+};
+
+/**
+ * Resolves a mountpoint
+ */
+const mountpointResolver = core => (path) => {
+  const {adapters, mountpoints} = core.make('osjs/vfs');
+  const prefix = getPrefix(path);
+  const mount = prefix
+    ? mountpoints.find(m => m.name === prefix)
+    : null;
+
+  if (mount) {
+    const adapter = mount.adapter
+      ? adapters[mount.adapter]
+      : adapters.system;
+
+    return Promise.resolve({mount, adapter});
+  }
+
+  return Promise.reject(createError(403, `Mountpoint not found for '${prefix}'`));
+};
+
+/*
+ * Parses URL Body
+ */
+const parseGet = req => {
+  const {query} = url.parse(req.url, true);
+
+  return Promise.resolve({fields: query, files: {}});
+};
+
+/*
+ * Parses Json Body
+ */
+const parseJson = req => {
+  const isJson = req.headers['content-type'] &&
+    req.headers['content-type'].indexOf('application/json') !== -1;
+
+  if (isJson) {
+    return {fields: req.body, files: {}};
   }
 
   return false;
 };
 
-// Get adapter from mountpoint
-const getAdapter = (provider, mountpoint) => mountpoint.adapter
-  ? provider.adapters[mountpoint.adapter]
-  : provider.adapters.system;
+/*
+ * Parses Form Body
+ */
+const parseFormData = (req, {maxFieldsSize, maxFileSize}) => {
+  const form = new formidable.IncomingForm();
+  form.maxFieldsSize = maxFieldsSize;
+  form.maxFileSize = maxFileSize;
 
-// Resolves mountpoint from fields
-const resolveMountpoint = provider => (endpoint, fields, userGroups, ro) => {
-  const known = ['path', 'from', 'root'];
-  const field = Object.keys(fields).find(key => known.indexOf(key) !== -1);
-  const prefix = getPrefix(fields[field]);
-  const mountpoint = prefix ? provider.mountpoints.find(m => m.name === prefix) : null;
-
-  if (!mountpoint) {
-    throw new VFSError(`Mountpoint not found for '${prefix}'`, 403);
-  }
-
-  if (checkReadOnly(ro, mountpoint, fields)) {
-    throw new VFSError(`Mountpoint '${prefix} is read-only'`, 403);
-  }
-
-  if (!validateGroups(userGroups, endpoint, mountpoint)) {
-    throw new VFSError(`Permission was denied for '${endpoint}' in '${prefix}'`, 403);
-  }
-
-  const adapter = getAdapter(provider, mountpoint);
-
-  if (typeof vfsMethods[endpoint] === 'undefined' ||  typeof adapter[endpoint] === 'undefined') {
-    throw new VFSError(`VFS Endpoint '${endpoint} was not valid for this mountpoint.'`, 401);
-  }
-
-  return [adapter, mountpoint];
-};
-
-// Performs a vfs request
-module.exports.request = provider => (endpoint, ro) => {
-  const resolve = resolveMountpoint(provider);
-
-  return ({req, res, fields, files}) => {
-    const userGroups = req.session.user.groups;
-
-    const request = (method, localFields, localFiles) => (adapter, mountpoint) =>
-      vfsMethods[method]({
-        core: provider.core,
-        fields: localFields,
-        files: localFiles,
-        mount: mountpoint,
-        req,
-        res,
-        adapter,
-      });
-
-    let promise;
-
-    try {
-      if (['rename', 'copy'].indexOf(endpoint) !== -1) {
-        const [srcAdapter, srcMount] = resolve('readfile', {path: fields.from}, userGroups, false);
-        const [dstAdapter, dstMount] = resolve('writefile', {path: fields.to}, userGroups, true);
-        const sameAdapter = srcMount.adapter === dstMount.adapter;
-
-        if (!sameAdapter) {
-          promise = request('readfile', {path: fields.from}, {})(srcAdapter, srcMount)
-            .then(ab => request('writefile', {path: fields.to}, {upload: ab})(dstAdapter, dstMount))
-            .then(result => {
-              return endpoint === 'rename'
-                ? request('unlink', {path: fields.from}, {})(srcAdapter, srcMount).then(() => true)
-                : true;
-            });
-        }
-      }
-
-      if (!promise) {
-        const [adapter, mountpoint] = resolve(endpoint, fields, userGroups, ro);
-        promise = request(endpoint, fields, files)(adapter, mountpoint);
-      }
-    } catch (e) {
-      promise = Promise.reject(e);
-    }
-
-    return promise;
-  };
-};
-
-// Parses request fields
-module.exports.parseFields = (core, req, dummy = false) => new Promise((resolve, reject) => {
-  if (dummy) {
-    resolve({
-      fields: req.fields,
-      files: req.files
+  return new Promise((resolve, reject) => {
+    form.parse(req, (err, fields, files) => {
+      return err ? reject(err) : resolve({fields, files});
     });
-  } else if (['get', 'head'].indexOf(req.method.toLowerCase()) !== -1) {
-    const {query} = url.parse(req.url, true);
+  });
+};
 
-    resolve({fields: query, files: {}});
-  } else {
-    const isJson = req.headers['content-type'] &&
-      req.headers['content-type'].indexOf('application/json') !== -1;
-
-    if (isJson) {
-      resolve({fields: req.body, files: {}});
-    } else {
-      const {maxFieldsSize, maxFileSize} = core.config('express');
-      const form = new formidable.IncomingForm();
-      form.maxFieldsSize = maxFieldsSize;
-      form.maxFileSize = maxFileSize;
-
-      form.parse(req, (err, fields, files) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({fields, files});
-        }
-      });
-    }
+/**
+ * Middleware for handling HTTP requests
+ */
+const parseFields = config => (req, res) => {
+  if (['get', 'head'].indexOf(req.method.toLowerCase()) !== -1) {
+    return Promise.resolve(parseGet(req));
   }
-});
+
+  const json = parseJson(req);
+  if (json) {
+    return Promise.resolve(json);
+  }
+
+  return parseFormData(req, config);
+};
+
+module.exports = {
+  mountpointResolver,
+  createError,
+  checkMountpointPermission,
+  validateGroups,
+  streamFromRequest,
+  sanitize,
+  getPrefix,
+  parseFields,
+  errorCodes
+};
