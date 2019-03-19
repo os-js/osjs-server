@@ -148,8 +148,8 @@ module.exports = (core) => ({
   exists: vfs => file =>
     Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
       .then(realPath => fs.access(realPath, fs.F_OK))
-      .catch(() => false)
-      .then(() => true),
+      .then(() => true)
+      .catch(() => false),
 
   /**
    * Get file statistics
@@ -158,7 +158,10 @@ module.exports = (core) => ({
    */
   stat: vfs => file =>
     Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => createFileIter(core, path.dirname(realPath), realPath)),
+      .then(realPath => {
+        return fs.access(realPath, fs.F_OK)
+          .then(() => createFileIter(core, path.dirname(realPath), realPath));
+      }),
 
   /**
    * Reads directory
