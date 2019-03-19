@@ -1,5 +1,18 @@
 ## Changelog for osjs-server
 
+## 3.0.26
+
+* Added 'osjs/core:ping' event
+* Refactored VFS implementation
+* Cleaned up some methods in Filesystem class
+* Simplified some VFS method abstraction
+* Refactored VFS methods interface signatures
+* Split up adapters from Settings class
+* Split up package loading from Packages class
+* Moved some VFS files
+* Cleaned up core provider init
+* Split out Auth from AuthProvider
+
 ## 3.0.25
 
 * Fixed 'fs' Settings adapter (fixes #14)
