@@ -172,6 +172,8 @@ class CoreServiceProvider extends ServiceProvider {
     });
 
     app.get('/ping', (req, res) => {
+      this.core.emit('osjs/core:ping', req);
+
       try {
         req.session.touch();
       } catch (e) {
