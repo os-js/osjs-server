@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.27
+
+* Hotfix for some VFS methods
+
 ## 3.0.26
 
 * Added 'osjs/core:ping' event
