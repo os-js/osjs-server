@@ -80,6 +80,14 @@ const createWebsocket = (app, configuration, session) => express_ws(app, null, {
   })
 });
 
+const parseJson = str => {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return str;
+  }
+}
+
 let _instance;
 
 /**
@@ -101,7 +109,7 @@ class Core extends CoreBase {
     }, options);
 
     const argv = minimist(options.argv);
-    const val = k => argvToConfig[k](JSON.parse(argv[k]));
+    const val = k => argvToConfig[k](parseJson(argv[k]));
     const keys = Object.keys(argvToConfig).filter(k => argv.hasOwnProperty(k));
     const argvConfig = keys.reduce((o, k) => {
       signale.fav(`CLI argument '--${k}' overrides`, val(k));
