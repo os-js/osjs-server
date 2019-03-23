@@ -87,7 +87,8 @@ class CoreServiceProvider extends ServiceProvider {
   async init() {
     this.initService();
     this.initExtensions();
-    this.initBaseRoutes();
+    this.initResourceRoutes();
+    this.initSocketRoutes();
     this.initProxies();
 
     if (this.core.configuration.development) {
@@ -153,17 +154,33 @@ class CoreServiceProvider extends ServiceProvider {
   /**
    * Initializes Express base routes, etc
    */
-  initBaseRoutes() {
+  initResourceRoutes() {
     const {app, configuration} = this.core;
     const indexFile = path.join(configuration.public, configuration.index);
 
-    // Handle index file
     app.get('/', (req, res) => res.sendFile(indexFile));
-
-    // Handle static resources
     app.use('/', express.static(configuration.public));
 
-    // Handle Websocket stuff
+    // Internal ping
+    app.get('/ping', (req, res) => {
+      this.core.emit('osjs/core:ping', req);
+
+      try {
+        req.session.touch();
+      } catch (e) {
+        console.warn(e);
+      }
+
+      res.status(200).send('ok');
+    });
+  }
+
+  /**
+   * Initializes Socket routes
+   */
+  initSocketRoutes() {
+    const {app} = this.core;
+
     app.ws('/', (ws, req) => {
       ws.upgradeReq = ws.upgradeReq || req;
       ws._osjs_client = Object.assign({}, req.session.user);
@@ -171,7 +188,6 @@ class CoreServiceProvider extends ServiceProvider {
       ws.on('message', msg => {
         try {
           const {name, params} = JSON.parse(msg);
-
           this.core.emit(name, ws, ...params);
         } catch (e) {
           console.warn(e);
@@ -186,18 +202,6 @@ class CoreServiceProvider extends ServiceProvider {
           }
         }]
       }));
-    });
-
-    app.get('/ping', (req, res) => {
-      this.core.emit('osjs/core:ping', req);
-
-      try {
-        req.session.touch();
-      } catch (e) {
-        console.warn(e);
-      }
-
-      res.status(200).send('ok');
     });
   }
 
