@@ -138,8 +138,6 @@ class Core extends CoreBase {
     signale.pause('Shutting down server');
 
     super.destroy();
-
-    process.exit(0);
   }
 
   /**
@@ -154,19 +152,14 @@ class Core extends CoreBase {
 
     await super.start();
 
-    try {
-      this.httpServer = this.app.listen(this.configuration.port, () => {
-        const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-        const sess = path.basename(path.dirname(this.configuration.session.store.module));
-        signale.success('Using session store', sess);
-        signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
-        signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
-        signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
-      });
-    } catch (e) {
-      signale.fatal(new Error(e));
-      process.exit(1);
-    }
+    this.httpServer = this.app.listen(this.configuration.port, () => {
+      const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
+      const sess = path.basename(path.dirname(this.configuration.session.store.module));
+      signale.success('Using session store', sess);
+      signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
+      signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
+      signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
+    });
   }
 
   /**
