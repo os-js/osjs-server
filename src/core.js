@@ -116,6 +116,7 @@ class Core extends CoreBase {
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
+    this.wss = this.ws.getWss();
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
@@ -174,9 +175,7 @@ class Core extends CoreBase {
     this.emit('osjs/core:start');
 
     if (this.configuration.logging) {
-      const wss = this.ws.getWss();
-
-      wss.on('connection', (c) => {
+      this.wss.on('connection', (c) => {
         signale.start('WS Connection opened');
 
         c.on('close', () => signale.pause('WS Connection closed'));
@@ -210,7 +209,7 @@ class Core extends CoreBase {
     filter = filter || (() => true);
 
     if (this.ws) {
-      this.ws.getWss('/').clients // This is a Set
+      this.wss.clients // This is a Set
         .forEach(client => {
           if (!client._osjs_client) {
             return;
