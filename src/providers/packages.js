@@ -28,7 +28,9 @@
  * @licence Simplified BSD License
  */
 
+const fs = require('fs-extra');
 const path = require('path');
+const chokidar = require('chokidar');
 const {ServiceProvider} = require('@osjs/common');
 const Packages = require('../packages');
 
@@ -48,6 +50,7 @@ class PackageServiceProvider extends ServiceProvider {
     this.core.logger.info('Using package discovery file', discoveredFile);
     this.core.logger.info('Using package manifest file', manifestFile);
 
+    this.watches = [];
     this.packages = new Packages(core, {
       manifestFile,
       discoveredFile
@@ -62,10 +65,31 @@ class PackageServiceProvider extends ServiceProvider {
 
   start() {
     this.packages.start();
+
+    if (this.core.configuration.development) {
+      this.initDeveloperTools();
+    }
   }
 
   destroy() {
+    this.watches.forEach(w => w.close());
     this.packages.destroy();
+    super.destroy();
+  }
+
+  /**
+   * Initializes some developer features
+   */
+  initDeveloperTools() {
+    const {manifestFile} = this.packages.options;
+
+    if (fs.existsSync(manifestFile)) {
+      const watcher = chokidar.watch(manifestFile);
+      watcher.on('change', () => {
+        this.core.broadcast('osjs/packages:metadata:changed');
+      });
+      this.watches.push(watcher);
+    }
   }
 }
 

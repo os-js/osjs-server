@@ -30,8 +30,11 @@
 
 const fs = require('fs-extra');
 const signale = require('signale').scope('pkg');
-const chokidar = require('chokidar');
 const loader = require('./utils/packageloader');
+
+const readOrDefault = filename => fs.existsSync(filename)
+  ? fs.readJsonSync(filename)
+  : [];
 
 /**
  * OS.js Package Management
@@ -53,31 +56,21 @@ class Packages {
    * Initializes packages
    */
   init() {
-    const {manifestFile, discoveredFile} = this.options;
-
-    if (this.core.config('development')) {
-      if (fs.existsSync(manifestFile)) {
-        const watcher = chokidar.watch(manifestFile);
-        watcher.on('change', () => {
-          this.core.broadcast('osjs/packages:metadata:changed');
-        });
-        this.watches.push(watcher);
-      }
-    }
-
-    const manifest = fs.existsSync(manifestFile)
-      ? fs.readJsonSync(manifestFile)
-      : [];
-
-    const discovered = fs.existsSync(discoveredFile)
-      ? fs.readJsonSync(discoveredFile)
-      : [];
-
-    const load = loader(this.core, manifest, discovered);
-
     this.core.on('osjs/application:socket:message', (ws, ...params) => {
       this.handleMessage(ws, params);
     });
+
+    return this.load();
+  }
+
+  /**
+   * Loads packages
+   */
+  load() {
+    const {manifestFile, discoveredFile} = this.options;
+    const manifest = readOrDefault(manifestFile);
+    const discovered = readOrDefault(discoveredFile);
+    const load = loader(this.core, manifest, discovered);
 
     return load(metadata => {
       clearTimeout(this.hotReloading[metadata.name]);

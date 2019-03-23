@@ -80,7 +80,6 @@ class CoreServiceProvider extends ServiceProvider {
 
   destroy() {
     this.watches.forEach(w => w.close());
-
     super.destroy();
   }
 
@@ -90,7 +89,9 @@ class CoreServiceProvider extends ServiceProvider {
     this.initResourceRoutes();
     this.initSocketRoutes();
     this.initProxies();
+  }
 
+  start() {
     if (this.core.configuration.development) {
       this.initDeveloperTools();
     }
