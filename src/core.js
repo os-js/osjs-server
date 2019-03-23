@@ -157,7 +157,7 @@ class Core extends CoreBase {
    */
   async start() {
     if (this.started) {
-      return;
+      return true;
     }
 
     signale.start('Starting server');
@@ -172,12 +172,18 @@ class Core extends CoreBase {
       signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
       signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
     });
+
+    return true;
   }
 
   /**
    * Initializes the server
    */
   async boot() {
+    if (this.booted) {
+      return true;
+    }
+
     signale.await('Initializing core');
 
     this.emit('osjs/core:start');
@@ -205,6 +211,8 @@ class Core extends CoreBase {
     this.emit('osjs/core:started');
 
     signale.success('Initialized');
+
+    return true;
   }
 
   /**
