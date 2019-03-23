@@ -73,27 +73,40 @@ const streamFromRequest = req => {
     : fs.createReadStream(req.files.upload.path);
 };
 
+const validateAll = (arr, compare) => arr.every(g => compare.indexOf(g) !== -1);
+
+/**
+ * Validates array groups
+ */
+const validateNamedGroups = (groups, userGroups) => {
+  const namedGroups = groups
+    .filter(g => typeof g === 'string');
+
+  return namedGroups.length
+    ? validateAll(namedGroups, userGroups)
+    : true;
+};
+
+/**
+ * Validates matp of groups based on method:[group,...]
+ */
+const validateMethodGroups = (groups, userGroups, method) => {
+  const methodGroups = groups
+    .find(g => typeof g === 'string' ? false : (method in g));
+
+  return methodGroups
+    ? validateAll(methodGroups[method], userGroups)
+    : true;
+};
+
 /**
  * Validates groups
  */
 const validateGroups = (userGroups, method, mountpoint) => {
-  const all = (arr, compare) => arr.every(g => compare.indexOf(g) !== -1);
-
   const groups = mountpoint.attributes.groups || [];
   if (groups.length) {
-    const namedGroups = groups
-      .filter(g => typeof g === 'string');
-
-    const methodGroups = groups
-      .find(g => typeof g === 'string' ? false : (method in g));
-
-    const namedValid = namedGroups.length
-      ? all(namedGroups, userGroups)
-      : true;
-
-    const methodValid = methodGroups
-      ? all(methodGroups[method], userGroups)
-      : true;
+    const namedValid = validateNamedGroups(groups, userGroups, method);
+    const methodValid = validateMethodGroups(groups, userGroups, method);
 
     return namedValid && methodValid;
   }
@@ -145,9 +158,7 @@ const createError = (code, message) => {
 const mountpointResolver = core => (path) => {
   const {adapters, mountpoints} = core.make('osjs/vfs');
   const prefix = getPrefix(path);
-  const mount = prefix
-    ? mountpoints.find(m => m.name === prefix)
-    : null;
+  const mount = mountpoints.find(m => m.name === prefix);
 
   if (mount) {
     const adapter = mount.adapter
