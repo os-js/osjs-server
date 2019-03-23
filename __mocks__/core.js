@@ -28,7 +28,9 @@ module.exports = () => {
         'defined file': 'test/jest'
       }
     }
-  }, config), {});
+  }, config), {
+    kill: false
+  });
 
   osjs.logger = new Proxy({}, {
     get: () => () => {}

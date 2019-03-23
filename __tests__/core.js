@@ -14,16 +14,19 @@ describe('Core', () => {
     }
 
     const clients = [{
+      terminate: () => {},
       send: jest.fn(),
       _osjs_client: {
         username: 'jest'
       }
     }, {
+      terminate: () => {},
       send: jest.fn(),
       _osjs_client: {
         username: 'julenissen'
       }
     }, {
+      terminate: () => {},
       send: jest.fn()
     }];
 
@@ -36,6 +39,7 @@ describe('Core', () => {
       development: false,
       port: 0
     }, {
+      kill: false,
       argv: ['node', 'jest', '--secret', 'kittens']
     });
   });
