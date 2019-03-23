@@ -117,6 +117,7 @@ class Core extends CoreBase {
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
+    this.watches = [];
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
@@ -136,6 +137,8 @@ class Core extends CoreBase {
     this.emit('osjs/core:destroy');
 
     signale.pause('Shutting down server');
+
+    this.watches.forEach(w => w.close());
 
     super.destroy();
   }
@@ -206,6 +209,8 @@ class Core extends CoreBase {
           const relative = filename.replace(watchdir, '');
           this.broadcast('osjs/dist:changed', [relative]);
         });
+
+        this.watches.push(watcher);
       } catch (e) {
         console.warn(e);
       }
