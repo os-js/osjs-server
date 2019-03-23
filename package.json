@@ -8,6 +8,13 @@
     "test:coverage": "jest",
     "eslint": "eslint index.js src"
   },
+  "files": [
+    "src/",
+    "index.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/os-js/osjs-server.git"
