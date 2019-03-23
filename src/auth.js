@@ -39,9 +39,9 @@ class Auth {
   /**
    * Creates a new instance
    * @param {Core} core Core instance reference
-   * @param {Object} options Service Provider arguments
+   * @param {Object} [options={}] Service Provider arguments
    */
-  constructor(core, options) {
+  constructor(core, options = {}) {
     this.core = core;
     this.options = Object.assign({
       adapter: nullAdapter
@@ -69,8 +69,10 @@ class Auth {
    */
   async init() {
     if (this.adapter.init) {
-      await this.adapter.init();
+      return await this.adapter.init();
     }
+
+    return true;
   }
 
   /**
@@ -82,28 +84,10 @@ class Auth {
     const result = await this.adapter.login(req, res);
 
     if (result) {
-      const ignores = ['password'];
-      const required = ['username', 'id'];
-      const template = {
-        id: 0,
-        username: req.body.username,
-        name: req.body.username,
-        groups: this.core.config('auth.defaultGroups', [])
-      };
-
-      const missing = required
-        .filter(k => typeof result[k] === 'undefined');
-
-      if (missing.length) {
-        signale.warn('Missing user attributes', missing);
-      } else {
-        const useResult = Object.assign({}, template, Object.keys(result)
-          .filter(k => ignores.indexOf(k) === -1)
-          .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {}));
-
-        req.session.user = useResult;
-        req.session.save(() => res.json(useResult));
-
+      const profile = this.createUserProfile(req.body, result);
+      if (profile) {
+        req.session.user = profile;
+        req.session.save(() => res.json(profile));
         return;
       }
     }
@@ -127,6 +111,30 @@ class Auth {
     }
 
     res.json({});
+  }
+
+  createUserProfile(fields, result) {
+    const ignores = ['password'];
+    const required = ['username', 'id'];
+    const template = {
+      id: 0,
+      username: fields.username,
+      name: fields.username,
+      groups: this.core.config('auth.defaultGroups', [])
+    };
+
+    const missing = required
+      .filter(k => typeof result[k] === 'undefined');
+
+    if (missing.length) {
+      signale.warn('Missing user attributes', missing);
+    } else {
+      return Object.assign({}, template, Object.keys(result)
+        .filter(k => ignores.indexOf(k) === -1)
+        .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {}));
+    }
+
+    return false;
   }
 }
 
