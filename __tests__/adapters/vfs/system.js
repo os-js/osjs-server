@@ -119,7 +119,7 @@ describe('VFS System adapter', () => {
   test('#exists - non existing file', () => {
     return expect(request('exists', 'home:/test-copy'))
       .resolves
-      .toBe(false)
+      .toBe(false);
   });
 
   test('#search', () => {
@@ -181,6 +181,6 @@ describe('VFS System adapter', () => {
 
     return expect(request('realpath', 'home:/test'))
       .resolves
-      .toBe(realPath)
+      .toBe(realPath);
   });
 });

@@ -1,5 +1,34 @@
 ## Changelog for osjs-server
 
+## 3.0.28
+
+* Updated README
+* Split out and cleaned up some core from CoreServiceProvider
+* Some cleanups in src/utils/vfs.js
+* Some cleanups for Package class integrations
+* Minor cleanup in src/providers/core.js
+* Minor cleanup in src/vfs.fs
+* Fixed typo in package.json
+* Added 'test' script to package.json
+* Added unit tests
+* Updated package.json scripts
+* Split up some functions used in Core
+* Updated gitignore
+* Updated eslintrc
+* Updated some checks and returns in Core#boot process
+* Added JSON parse check in argv override for Core options
+* Fixed spelling error in Core#destroy check
+* Added wss property to Core
+* Moved some developer stuff from Core to provider
+* Minor fixes in Filesystem class
+* Run 'httpServer.close()' on Core#destroy
+* Updated Settings init
+* Make Settings#init return result from adapter
+* Minor cleanup in Auth class
+* Updated default adapters
+* Properly close watches on Core#destroy
+* Don't use process.exit in Core
+
 ## 3.0.27
 
 * Hotfix for some VFS methods
