@@ -30,6 +30,7 @@
 
 const path = require('path');
 const express = require('express');
+const chokidar = require('chokidar');
 const bodyParser = require('body-parser');
 const proxy = require('express-http-proxy');
 const nocache = require('nocache');
@@ -71,11 +72,27 @@ const isAuthenticated = (groups = []) => (req, res, next) => {
  */
 class CoreServiceProvider extends ServiceProvider {
 
+  constructor(core, options) {
+    super(core, options);
+
+    this.watches = [];
+  }
+
+  destroy() {
+    this.watches.forEach(w => w.close());
+
+    super.destroy();
+  }
+
   async init() {
     this.initService();
     this.initExtensions();
     this.initBaseRoutes();
     this.initProxies();
+
+    if (this.core.configuration.development) {
+      this.initDeveloperTools();
+    }
   }
 
   /**
@@ -199,6 +216,32 @@ class CoreServiceProvider extends ServiceProvider {
       signale.info(`Proxying ${item.source} -> ${item.destination}`);
       app.use(item.source, proxy(item.destination, item.options));
     });
+  }
+
+  /**
+   * Initializes some developer features
+   */
+  initDeveloperTools() {
+    try {
+      const watchdir = path.resolve(this.core.configuration.public);
+      const watcher = chokidar.watch(watchdir);
+
+      watcher.on('change', filename => {
+        // NOTE: 'ignored' does not work as expected with callback
+        // ignored: str => str.match(/\.(js|css)$/) === null
+        // for unknown reasons
+        if (!filename.match(/\.(js|css)$/)) {
+          return;
+        }
+
+        const relative = filename.replace(watchdir, '');
+        this.core.broadcast('osjs/dist:changed', [relative]);
+      });
+
+      this.watches.push(watcher);
+    } catch (e) {
+      console.warn(e);
+    }
   }
 }
 

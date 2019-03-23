@@ -35,7 +35,6 @@ const express_session = require('express-session');
 const express_ws = require('express-ws');
 const minimist = require('minimist');
 const deepmerge = require('deepmerge');
-const chokidar = require('chokidar');
 const signale = require('signale').scope('core');
 
 const {CoreBase} = require('@osjs/common');
@@ -117,7 +116,6 @@ class Core extends CoreBase {
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
-    this.watches = [];
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
@@ -141,8 +139,6 @@ class Core extends CoreBase {
     if (this.httpServer) {
       this.httpServer.close();
     }
-
-    this.watches.forEach(w => w.close());
 
     super.destroy();
   }
@@ -196,29 +192,6 @@ class Core extends CoreBase {
     await super.boot();
 
     this.emit('init');
-
-    if (this.configuration.development) {
-      try {
-        const watchdir = path.resolve(this.configuration.public);
-        const watcher = chokidar.watch(watchdir);
-
-        watcher.on('change', filename => {
-          // NOTE: 'ignored' does not work as expected with callback
-          // ignored: str => str.match(/\.(js|css)$/) === null
-          // for unknown reasons
-          if (!filename.match(/\.(js|css)$/)) {
-            return;
-          }
-
-          const relative = filename.replace(watchdir, '');
-          this.broadcast('osjs/dist:changed', [relative]);
-        });
-
-        this.watches.push(watcher);
-      } catch (e) {
-        console.warn(e);
-      }
-    }
 
     await this.start();
 
