@@ -138,6 +138,10 @@ class Core extends CoreBase {
 
     signale.pause('Shutting down server');
 
+    if (this.httpServer) {
+      this.httpServer.close();
+    }
+
     this.watches.forEach(w => w.close());
 
     super.destroy();
