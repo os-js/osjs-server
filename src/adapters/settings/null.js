@@ -29,7 +29,9 @@
  */
 
 module.exports = (core, options) => ({
-  save: () => Promise.resolve(true),
-  load: () => Promise.resolve({})
+  init: async () => true,
+  destroy: async () => true,
+  save: async () => true,
+  load: async () => ({})
 });
 

@@ -29,10 +29,9 @@
  */
 
 module.exports = (core, options) => ({
-  login: (req, res) => Promise.resolve({
-    id: 0,
-    username: req.body.username
-  }),
-  logout: (req, res) => Promise.resolve(true)
+  init: async () => true,
+  destroy: async () => true,
+  login: async (req, res) => ({id: 0, username: req.body.username}),
+  logout: async (req, res) => true
 });
 
