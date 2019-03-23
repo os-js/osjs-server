@@ -129,7 +129,7 @@ class Core extends CoreBase {
    * Destroys the instance
    */
   destroy() {
-    if (this.destroying) {
+    if (this.destroyed) {
       return;
     }
 
