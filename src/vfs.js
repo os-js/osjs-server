@@ -99,62 +99,64 @@ const createMiddleware = core => {
     });
 };
 
+// Standard request with only a target
+const createRequestFactory = findMountpoint => (getter, method, readOnly, respond) => async (req, res) => {
+  const args = [...getter(req, res), req.fields.options || {}];
+
+  const found = await findMountpoint(args[0]);
+  if (method === 'search') {
+    if (found.mount.attributes && found.mount.attributes.searchable === false) {
+      return [];
+    }
+  }
+
+  await checkMountpointPermission(req, res, method, readOnly)(found);
+
+  const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
+
+  return respond ? respond(result) : result;
+};
+
+// Request that has a source and target
+const createCrossRequestFactory = findMountpoint => (getter, method, respond) => async (req, res) => {
+  const [from, to, options] = [...getter(req, res), req.fields.options || {}];
+
+  const srcMount = await findMountpoint(from);
+  const destMount = await findMountpoint(to);
+  const sameAdapter = srcMount.adapter === destMount.adapter;
+
+  await checkMountpointPermission(req, res, 'readfile', false)(srcMount);
+  await checkMountpointPermission(req, res, 'writefile', true)(destMount);
+
+  if (sameAdapter) {
+    const result = await srcMount
+      .adapter[method]({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, to, options);
+
+    return !!result;
+  }
+
+  // Simulates a copy/move
+  const stream = await srcMount.adapter
+    .readfile({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
+
+  const result = await destMount.adapter
+    .writefile({req, res, adapter: destMount.adapter, mount: destMount.mount})(to, stream, options);
+
+  if (method === 'rename') {
+    await srcMount.adapter
+      .unlink({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
+  }
+
+  return !!result;
+};
+
 /*
  * VFS Methods
  */
 const vfs = core => {
   const findMountpoint = mountpointResolver(core);
-
-  // Standard request with only a target
-  const createRequest = (getter, method, readOnly, respond) => async (req, res) => {
-    const args = [...getter(req, res), req.fields.options || {}];
-
-    const found = await findMountpoint(args[0]);
-    if (method === 'search') {
-      if (found.mount.attributes && found.mount.attributes.searchable === false) {
-        return [];
-      }
-    }
-
-    await checkMountpointPermission(req, res, method, readOnly)(found);
-
-    const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
-
-    return respond ? respond(result) : result;
-  };
-
-  // Request that has a source and target
-  const createCrossRequest = (getter, method, respond) => async (req, res) => {
-    const [from, to, options] = [...getter(req, res), req.fields.options || {}];
-
-    const srcMount = await findMountpoint(from);
-    const destMount = await findMountpoint(to);
-    const sameAdapter = srcMount.adapter === destMount.adapter;
-
-    await checkMountpointPermission(req, res, 'readfile', false)(srcMount);
-    await checkMountpointPermission(req, res, 'writefile', true)(destMount);
-
-    if (sameAdapter) {
-      const result = await srcMount
-        .adapter[method]({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, to, options);
-
-      return !!result;
-    }
-
-    // Simulates a copy/move
-    const stream = await srcMount.adapter
-      .readfile({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
-
-    const result = await destMount.adapter
-      .writefile({req, res, adapter: destMount.adapter, mount: destMount.mount})(to, stream, options);
-
-    if (method === 'rename') {
-      await srcMount.adapter
-        .unlink({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
-    }
-
-    return !!result;
-  };
+  const createRequest = createRequestFactory(findMountpoint);
+  const createCrossRequest = createCrossRequestFactory(findMountpoint);
 
   // Wire up all available VFS events
   return {
