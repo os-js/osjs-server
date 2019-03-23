@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.29
+
+* Added back killswitch to Core
+
 ## 3.0.28
 
 * Updated README
