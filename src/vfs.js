@@ -33,12 +33,9 @@ const express = require('express');
 const {Stream} = require('stream');
 const {
   mountpointResolver,
-  createError,
   checkMountpointPermission,
-  validateGroups,
   streamFromRequest,
   sanitize,
-  getPrefix,
   parseFields,
   errorCodes
 } = require('./utils/vfs');

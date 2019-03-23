@@ -39,7 +39,7 @@ const vfs = require('./vfs');
  * OS.js Virtual Filesystem
  */
 class Filesystem {
-  constructor(core, options) {
+  constructor(core, options = {}) {
     this.core = core;
     this.mountpoints = [];
     this.adapters = {};
@@ -49,6 +49,19 @@ class Filesystem {
     this.options = Object.assign({
       adapters: {}
     }, options);
+  }
+
+  /**
+   * Destroys instance
+   */
+  destroy() {
+    this.watches.forEach(({watch}) => {
+      if (typeof watch.close === 'function') {
+        watch.close();
+      }
+    });
+
+    this.watches = [];
   }
 
   /**
@@ -77,6 +90,8 @@ class Filesystem {
     // Mountpoints
     this.core.config('vfs.mountpoints')
       .forEach(mount => this.mount(mount));
+
+    return true;
   }
 
   /**
@@ -129,6 +144,8 @@ class Filesystem {
     signale.success('Mounted', mountpoint.name, mountpoint.attributes);
 
     this.watch(mountpoint);
+
+    return mountpoint;
   }
 
   /**
@@ -145,7 +162,11 @@ class Filesystem {
 
     if (index !== -1) {
       this.mountpoints.splice(index, 1);
+
+      return true;
     }
+
+    return false;
   }
 
   /**
