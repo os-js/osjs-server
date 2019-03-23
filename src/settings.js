@@ -36,7 +36,7 @@ const fsAdapter = require('./adapters/settings/fs');
  */
 class Settings {
 
-  constructor(core, options) {
+  constructor(core, options = {}) {
     this.core = core;
     this.options = Object.assign({
       adapter: nullAdapter
@@ -65,8 +65,10 @@ class Settings {
    */
   async init() {
     if (this.adapter.init) {
-      await this.adapter.init();
+      return this.adapter.init();
     }
+
+    return true;
   }
 
   /**
