@@ -54,6 +54,7 @@ class Core extends CoreBase {
    */
   constructor(cfg, options = {}) {
     options = Object.assign({}, {
+      kill: true,
       argv: process.argv.splice(2),
       root: process.cwd()
     }, options);
@@ -91,15 +92,25 @@ class Core extends CoreBase {
       return;
     }
 
+    const done = this.options.kill
+      ? () => process.exit(0)
+      : () => {};
+
     this.emit('osjs/core:destroy');
 
     signale.pause('Shutting down server');
 
-    if (this.httpServer) {
-      this.httpServer.close();
+    if (this.wss) {
+      this.wss.close();
     }
 
     super.destroy();
+
+    if (this.httpServer) {
+      this.httpServer.close(done);
+    } else {
+      done();
+    }
   }
 
   /**
@@ -114,14 +125,24 @@ class Core extends CoreBase {
 
     await super.start();
 
-    this.httpServer = this.app.listen(this.configuration.port, () => {
-      const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-      const sess = path.basename(path.dirname(this.configuration.session.store.module));
-      signale.success('Using session store', sess);
-      signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
-      signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
-      signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
-    });
+    try {
+      this.httpServer = this.app.listen(this.configuration.port, () => {
+        const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
+        const sess = path.basename(path.dirname(this.configuration.session.store.module));
+        signale.success('Using session store', sess);
+        signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
+        signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
+        signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
+      });
+    } catch (e) {
+      console.error(e);
+
+      if (this.options.kill) {
+        process.exit(1);
+      }
+
+      return false;
+    }
 
     return true;
   }
