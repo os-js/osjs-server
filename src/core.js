@@ -31,62 +31,12 @@
 const path = require('path');
 const morgan = require('morgan');
 const express = require('express');
-const express_session = require('express-session');
-const express_ws = require('express-ws');
 const minimist = require('minimist');
 const deepmerge = require('deepmerge');
 const signale = require('signale').scope('core');
-
 const {CoreBase} = require('@osjs/common');
+const {argvToConfig, createSession, createWebsocket, parseJson} = require('./utils/core.js');
 const {defaultConfiguration} = require('./config.js');
-
-/*
- * Converts an input argument to configuration entry
- * Overrides the user-created configuration file
- */
-const argvToConfig = {
-  'logging': logging => ({logging}),
-  'development': development => ({development}),
-  'port': port => ({port}),
-  'ws-port': port => ({ws: {port}}),
-  'secret': secret => ({session: {options: {secret}}}),
-  'morgan': morgan => ({morgan}),
-  'discovery': discovery => ({packages: {discovery}}),
-  'manifest': manifest => ({packages: {manifest}})
-};
-
-/*
- * Create session parser
- */
-const createSession = (app, configuration) => {
-  const Store = require(configuration.session.store.module)(express_session);
-  const store = new Store(configuration.session.store.options);
-
-  return express_session(Object.assign({
-    store
-  }, configuration.session.options));
-};
-
-/*
- * Create WebSocket server
- */
-const createWebsocket = (app, configuration, session) => express_ws(app, null, {
-  wsOptions: Object.assign({}, configuration.ws, {
-    verifyClient: (info, done) => {
-      session(info.req, {}, () => {
-        done(true);
-      });
-    }
-  })
-});
-
-const parseJson = str => {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    return str;
-  }
-}
 
 let _instance;
 
