@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.30
+
+* Added files section to package.json
+
 ## 3.0.29
 
 * Added back killswitch to Core
