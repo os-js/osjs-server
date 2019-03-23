@@ -38,18 +38,23 @@ const loader = require('./utils/packageloader');
  */
 class Packages {
 
-  constructor(core, options) {
+  constructor(core, options = {}) {
     this.core = core;
-    this.options = options;
     this.packages = [];
     this.watches = [];
     this.hotReloading = {};
+    this.options = Object.assign({
+      manifestFile: null,
+      discoveredFile: null
+    }, options);
   }
 
   /**
    * Initializes packages
    */
-  init(manifestFile, discoveredFile) {
+  init() {
+    const {manifestFile, discoveredFile} = this.options;
+
     if (this.core.config('development')) {
       if (fs.existsSync(manifestFile)) {
         const watcher = chokidar.watch(manifestFile);

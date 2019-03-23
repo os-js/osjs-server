@@ -40,10 +40,7 @@ const Packages = require('../packages');
 class PackageServiceProvider extends ServiceProvider {
   constructor(core) {
     super(core);
-    this.packages = new Packages(core);
-  }
 
-  init() {
     const {configuration} = this.core;
     const manifestFile = path.join(configuration.public, configuration.packages.metadata);
     const discoveredFile = path.resolve(configuration.root, configuration.packages.discovery);
@@ -51,9 +48,16 @@ class PackageServiceProvider extends ServiceProvider {
     this.core.logger.info('Using package discovery file', discoveredFile);
     this.core.logger.info('Using package manifest file', manifestFile);
 
+    this.packages = new Packages(core, {
+      manifestFile,
+      discoveredFile
+    });
+  }
+
+  init() {
     this.core.singleton('osjs/packages', () => this.packages);
 
-    return this.packages.init(manifestFile, discoveredFile);
+    return this.packages.init();
   }
 
   start() {
