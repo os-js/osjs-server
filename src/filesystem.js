@@ -57,7 +57,7 @@ class Filesystem {
    */
   destroy() {
     this.watches.forEach(({watch}) => {
-      if (typeof watch.close === 'function') {
+      if (watch && typeof watch.close === 'function') {
         watch.close();
       }
     });
@@ -155,7 +155,7 @@ class Filesystem {
   unmount(mountpoint) {
     const found = this.watches.find(w => w.id === mountpoint.id);
 
-    if (found) {
+    if (found && found.watch) {
       found.watch.close();
     }
 
@@ -175,7 +175,7 @@ class Filesystem {
    */
   watch(mountpoint) {
     if (
-      mountpoint.attributes.watch === false ||
+      !mountpoint.attributes.watch ||
       this.core.config('vfs.watch') === false ||
       !mountpoint.attributes.root
     ) {
@@ -201,6 +201,11 @@ class Filesystem {
       const filter = keys.length === 0
         ? () => true
         : ws => keys.every(k => ws._osjs_client[k] === args[k]);
+
+      this.core.emit('osjs/vfs:watch:change', {
+        mountpoint,
+        target
+      });
 
       this.core.broadcast('osjs/vfs:watch:change', [{
         path: target
