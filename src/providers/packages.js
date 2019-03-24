@@ -54,6 +54,12 @@ class PackageServiceProvider extends ServiceProvider {
     });
   }
 
+  provides() {
+    return [
+      'osjs/packages'
+    ];
+  }
+
   init() {
     this.core.singleton('osjs/packages', () => this.packages);
 

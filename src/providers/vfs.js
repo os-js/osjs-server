@@ -50,6 +50,12 @@ class VFSServiceProvider extends ServiceProvider {
     ];
   }
 
+  provides() {
+    return [
+      'osjs/vfs'
+    ];
+  }
+
   async init() {
     const filesystem = this.filesystem;
 

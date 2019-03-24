@@ -69,6 +69,12 @@ class CoreServiceProvider extends ServiceProvider {
     }
   }
 
+  provides() {
+    return [
+      'osjs/express'
+    ];
+  }
+
   /**
    * Initializes the service APIs
    */
