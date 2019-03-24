@@ -136,7 +136,7 @@ module.exports = (core) => ({
           return Object.assign({}, {[k]: test[i + 1]});
         }, {});
 
-        callback(args, test[test.length - 1]);
+        callback(args, test[test.length - 1], name);
       }
     };
 

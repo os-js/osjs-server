@@ -195,7 +195,7 @@ class Filesystem {
    * Internal method for setting up watch for given mountpoint adapter
    */
   _watch(mountpoint, adapter) {
-    const watch = adapter.watch(mountpoint, (args, dir) => {
+    const watch = adapter.watch(mountpoint, (args, dir, type) => {
       const target = mountpoint.name + ':/' + dir;
       const keys = Object.keys(args);
       const filter = keys.length === 0
@@ -204,11 +204,13 @@ class Filesystem {
 
       this.core.emit('osjs/vfs:watch:change', {
         mountpoint,
-        target
+        target,
+        type
       });
 
       this.core.broadcast('osjs/vfs:watch:change', [{
-        path: target
+        path: target,
+        type
       }, args], filter);
     });
 

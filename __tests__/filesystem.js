@@ -114,6 +114,7 @@ describe('Filesystem', () => {
     });
 
     expect(cb).toBeCalledWith(expect.objectContaining({
+      type: 'add',
       target: 'home:/watch.txt',
       mountpoint: filesystem.mountpoints.find(m => m.name === 'home')
     }));
