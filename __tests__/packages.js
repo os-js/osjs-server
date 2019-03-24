@@ -1,5 +1,6 @@
 const osjs = require('osjs');
-const Packages = require('../src/settings.js');
+const path = require('path');
+const Packages = require('../src/packages.js');
 
 describe('Packages', () => {
   let core;
@@ -9,13 +10,41 @@ describe('Packages', () => {
   afterAll(() => core.destroy());
 
   test('#constructor', () => {
-    packages = new Packages(core);
+    const discoveredFile = path.resolve(core.configuration.root, 'packages.json');
+    const manifestFile = path.resolve(core.configuration.public, 'metadata.json');
+
+    packages = new Packages(core, {
+      discoveredFile,
+      manifestFile
+    });
   });
 
   test('#init', () => {
     return expect(packages.init())
       .resolves
       .toBe(true);
+  });
+
+  test('#handleMessage', () => {
+    const params = [{
+      pid: 1,
+      name: 'JestTest',
+      args: {}
+    }];
+
+    const ws = {
+      send: jest.fn()
+    };
+
+    packages.handleMessage(ws, params);
+
+    expect(ws.send).toBeCalledWith(JSON.stringify({
+      name: 'osjs/application:socket:message',
+      params: [{
+        pid: 1,
+        args: ['Pong']
+      }]
+    }));
   });
 
   test('#destroy', () => {

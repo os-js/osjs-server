@@ -1,7 +1,7 @@
-const osjs = require('osjs')
-const Auth = require('../src/auth.js')
-const { Response } = require('jest-express/lib/response');
-const { Request } = require('jest-express/lib/request');
+const osjs = require('osjs');
+const Auth = require('../src/auth.js');
+const {Response} = require('jest-express/lib/response');
+const {Request} = require('jest-express/lib/request');
 
 describe('Authentication', () => {
   let core;

@@ -18,8 +18,8 @@ module.exports = () => {
     tempPath,
     development: false,
     port: 0,
-    root: path.dirname(__dirname),
-    public: '/tmp', //  FIXME
+    root: __dirname,
+    public: path.resolve(__dirname, 'dist'),
     vfs: {
       root: tempPath,
     },

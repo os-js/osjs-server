@@ -29,8 +29,10 @@
  */
 
 const fs = require('fs-extra');
+const fg = require('fast-glob');
+const path = require('path');
 const signale = require('signale').scope('pkg');
-const loader = require('./utils/packageloader');
+const Package = require('./package.js');
 
 const readOrDefault = filename => fs.existsSync(filename)
   ? fs.readJsonSync(filename)
@@ -44,7 +46,6 @@ class Packages {
   constructor(core, options = {}) {
     this.core = core;
     this.packages = [];
-    this.watches = [];
     this.hotReloading = {};
     this.options = Object.assign({
       manifestFile: null,
@@ -64,58 +65,121 @@ class Packages {
   }
 
   /**
-   * Loads packages
+   * Loads package manager
    */
   load() {
-    const {manifestFile, discoveredFile} = this.options;
-    const manifest = readOrDefault(manifestFile);
-    const discovered = readOrDefault(discoveredFile);
-    const load = loader(this.core, manifest, discovered);
+    return this.createLoader()
+      .then(packages => {
+        this.packages = this.packages.concat(packages);
 
-    return load(metadata => {
-      clearTimeout(this.hotReloading[metadata.name]);
-      this.hotReloading[metadata.name] = setTimeout(() => {
-        signale.info('Reloading', metadata.name);
-        this.core.broadcast('osjs/packages:package:changed', [metadata.name]);
-      }, 500);
-    }).then(({result, watches}) => {
-      this.watches = watches;
-      this.packages = this.packages.concat(result);
+        return true;
+      });
+  }
+
+  /**
+   * Loads all packages
+   */
+  createLoader() {
+    let result = [];
+    const discovered = readOrDefault(this.options.discoveredFile);
+    const manifest = readOrDefault(this.options.manifestFile);
+    const sources = discovered.map(d => path.join(d, 'metadata.json'));
+
+    const stream = fg.stream(sources, {
+      extension: false,
+      brace: false,
+      deep: 1,
+      case: false
     });
+
+    stream.on('error', error => signale.warn(error));
+    stream.on('data', filename => {
+      result.push(this.loadPackage(filename, manifest));
+    });
+
+    return new Promise((resolve, reject) => {
+      stream.once('end', () => {
+        Promise.all(result)
+          .then(result => result.filter(iter => !!iter.handler))
+          .then(resolve)
+          .catch(reject);
+      });
+    });
+  }
+
+  /**
+   * When a package dist has changed
+   */
+  onPackageChanged(pkg) {
+    clearTimeout(this.hotReloading[pkg.metadata.name]);
+
+    this.hotReloading[pkg.metadata.name] = setTimeout(() => {
+      signale.info('Reloading', pkg.metadata.name);
+      this.core.broadcast('osjs/packages:package:changed', [pkg.metadata.name]);
+    }, 500);
+  }
+
+  /**
+   * Loads package data
+   */
+  loadPackage(filename, manifest) {
+    const done = (pkg, error) => {
+      if (error) {
+        signale.warn(error);
+      }
+
+      return Promise.resolve(pkg);
+    };
+
+    return fs.readJson(filename)
+      .then(metadata => {
+        const pkg = new Package(this.core, {
+          filename,
+          metadata
+        });
+
+        return this.initializePackage(pkg, manifest, done);
+      });
+  }
+
+  /**
+   * Initializes a package
+   */
+  initializePackage(pkg, manifest, done) {
+    if (pkg.validate(manifest)) {
+      signale.await(`Loading ${pkg.script}`);
+
+      try {
+        if (this.core.configuration.development) {
+          signale.watch(pkg.watch(() => {
+            this.onPackageChanged(pkg);
+          }));
+        }
+
+        return pkg.init()
+          .then(() => done(pkg))
+          .catch(e => done(pkg, e));
+      } catch (e) {
+        return done(pkg, e);
+      }
+    }
+
+    return done(pkg);
   }
 
   /**
    * Starts packages
    */
   start() {
-    this._packageAction('start');
+    this.packages.forEach(pkg => pkg.start());
   }
 
   /**
    * Destroys packages
    */
   destroy() {
-    this._packageAction('destroy');
-    this.watches.forEach(watch => watch.close());
-
+    this.packages.forEach(pkg => pkg.destroy());
     this.packages = [];
-    this.watches = [];
-  }
-
-  /**
-   * Runs an action on all registered packages
-   * @param {string} action Method name
-   */
-  _packageAction(action) {
-    this.packages.forEach(({script}) => {
-      try {
-        if (typeof script[action] === 'function') {
-          script[action]();
-        }
-      } catch (e) {
-        signale.fatal(e);
-      }
-    });
   }
 
   /**
@@ -129,8 +193,8 @@ class Packages {
     const found = this.packages.findIndex(({metadata}) => metadata.name === name);
 
     if (found !== -1) {
-      const {script} = this.packages[found];
-      if (script && typeof script.onmessage === 'function') {
+      const {handler} = this.packages[found];
+      if (handler && typeof handler.onmessage === 'function') {
         const respond = (...respondParams) => ws.send(JSON.stringify({
           name: 'osjs/application:socket:message',
           params: [{
@@ -139,7 +203,7 @@ class Packages {
           }]
         }));
 
-        script.onmessage(ws, respond, args);
+        handler.onmessage(ws, respond, args);
       }
     }
   }

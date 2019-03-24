@@ -1,0 +1,16 @@
+{
+  "type": "application",
+  "name": "JestTest",
+  "category": null,
+  "server": "server.js",
+  "title": {
+    "en_EN": "Jest test"
+  },
+  "description": {
+    "en_EN": "Jest test"
+  },
+  "files": [
+    "main.js",
+    "main.css"
+  ]
+}
