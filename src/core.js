@@ -1,4 +1,4 @@
-/**
+/*
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
  * Copyright (c) 2011-2019, Anders Evenrud <andersevenrud@gmail.com>
@@ -42,9 +42,7 @@ const logger = consola.withTag('Core');
 let _instance;
 
 /**
- * Server Core
- *
- * @desc Provides the OS.js Server Core
+ * OS.js Server Core
  */
 class Core extends CoreBase {
 
@@ -116,6 +114,7 @@ class Core extends CoreBase {
 
   /**
    * Starts the server
+   * @return {Promise<boolean>}
    */
   async start() {
     if (!this.started) {
@@ -143,6 +142,7 @@ class Core extends CoreBase {
 
   /**
    * Initializes the server
+   * @return {Promise<boolean>}
    */
   async boot() {
     if (this.booted) {

@@ -36,6 +36,11 @@ const fsAdapter = require('./adapters/settings/fs');
  */
 class Settings {
 
+  /**
+   * Create new instance
+   * @param {Core} core Core reference
+   * @param {object} [options] Instance options
+   */
   constructor(core, options = {}) {
     this.core = core;
     this.options = Object.assign({
@@ -54,6 +59,9 @@ class Settings {
     }
   }
 
+  /**
+   * Destroy instance
+   */
   destroy() {
     if (this.adapter.destroy) {
       this.adapter.destroy();
@@ -73,6 +81,8 @@ class Settings {
 
   /**
    * Sends save request to adapter
+   * @param {Request} req Express request
+   * @param {Response} res Express response
    */
   async save(req, res) {
     const result = await this.adapter.save(req, res);
@@ -81,6 +91,8 @@ class Settings {
 
   /**
    * Sends load request to adapter
+   * @param {Request} req Express request
+   * @param {Response} res Express response
    */
   async load(req, res) {
     const result = await this.adapter.load(req, res);

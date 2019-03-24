@@ -1,4 +1,4 @@
-/**
+/*
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
  * Copyright (c) 2011-2019, Anders Evenrud <andersevenrud@gmail.com>
@@ -111,6 +111,11 @@ const getRealPath = (core, req, mount, file) => {
   return path.join(root, str);
 };
 
+/**
+ * System VFS adapter
+ * @param {Core} core Core reference
+ * @param {object} [options] Adapter options
+ */
 module.exports = (core) => ({
   watch: (mount, callback) => {
     const dest = resolveSegments(core, {

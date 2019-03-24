@@ -36,6 +36,11 @@ const chokidar = require('chokidar');
  */
 class Package {
 
+  /**
+   * Create new instance
+   * @param {Core} core Core reference
+   * @param {object} [options] Instance options
+   */
   constructor(core, options = {}) {
     this.core = core;
 
@@ -63,6 +68,9 @@ class Package {
 
   /**
    * Run method on package script
+   * @param {string} method Method name
+   * @param {*} [...args] Pass arguments
+   * @return {boolean}
    */
   action(method, ...args) {
     try {
@@ -80,6 +88,8 @@ class Package {
 
   /**
    * Validates this package
+   * @param {object[]} manifest Global manifest
+   * @return {boolean}
    */
   validate(manifest) {
     return this.script &&
@@ -89,6 +99,7 @@ class Package {
 
   /**
    * Initializes this package
+   * @return {Promise<undefined>}
    */
   init() {
     const handler = require(this.script);
@@ -104,6 +115,7 @@ class Package {
 
   /**
    * Starts server scripts
+   * @return {Promise<undefined>}
    */
   start() {
     return this.action('start');
@@ -111,6 +123,7 @@ class Package {
 
   /**
    * Creates a watch in package dist
+   * @return {string} Watched path
    */
   watch(cb) {
     const pub = this.core.config('public');
@@ -124,6 +137,8 @@ class Package {
 
   /**
    * Resolve an URL for resource
+   * @param {string} path Input path
+   * @return {string}
    */
   resource(path) {
     if (path.substr(0, 1) !== '/') {

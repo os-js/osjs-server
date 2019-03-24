@@ -40,6 +40,12 @@ const logger = consola.withTag('Filesystem');
  * OS.js Virtual Filesystem
  */
 class Filesystem {
+
+  /**
+   * Create new instance
+   * @param {Core} core Core reference
+   * @param {object} [options] Instance options
+   */
   constructor(core, options = {}) {
     this.core = core;
     this.mountpoints = [];
@@ -67,6 +73,7 @@ class Filesystem {
 
   /**
    * Initializes Filesystem
+   * @return {Promise<boolean>}
    */
   async init() {
     const adapters = Object.assign({
@@ -97,6 +104,8 @@ class Filesystem {
 
   /**
    * Gets MIME
+   * @param {string} filename Input filename or path
+   * @return {string}
    */
   mime(filename) {
     const {filenames} = this.core.config('mime', {
@@ -111,6 +120,7 @@ class Filesystem {
 
   /**
    * Crates a VFS request
+   * @return {Promise<*>}
    */
   request(name, req, res) {
     return this.methods[name](req, res);
@@ -118,6 +128,9 @@ class Filesystem {
 
   /**
    * Creates realpath VFS request
+   * @param {string} filename The path
+   * @param {object} user User session object
+   * @return {Promise<string>}
    */
   realpath(filename, user) {
     return this.methods.realpath({
@@ -132,6 +145,8 @@ class Filesystem {
 
   /**
    * Mounts given mountpoint
+   * @param {object} mount Mountpoint
+   * @return {object} the mountpoint
    */
   mount(mount) {
     const mountpoint = Object.assign({
@@ -151,6 +166,8 @@ class Filesystem {
 
   /**
    * Unmounts given mountpoint
+   * @param {object} mount Mountpoint
+   * @return {boolean}
    */
   unmount(mountpoint) {
     const found = this.watches.find(w => w.id === mountpoint.id);
@@ -172,6 +189,7 @@ class Filesystem {
 
   /**
    * Set up a watch for given mountpoint
+   * @param {object} mountpoint The mountpoint
    */
   watch(mountpoint) {
     if (
@@ -193,6 +211,8 @@ class Filesystem {
 
   /**
    * Internal method for setting up watch for given mountpoint adapter
+   * @param {object} mountpoint The mountpoint
+   * @param {object} adapter The adapter
    */
   _watch(mountpoint, adapter) {
     const watch = adapter.watch(mountpoint, (args, dir, type) => {

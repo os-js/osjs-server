@@ -46,6 +46,11 @@ const readOrDefault = filename => fs.existsSync(filename)
  */
 class Packages {
 
+  /**
+   * Create new instance
+   * @param {Core} core Core reference
+   * @param {object} [options] Instance options
+   */
   constructor(core, options = {}) {
     this.core = core;
     this.packages = [];
@@ -81,6 +86,7 @@ class Packages {
 
   /**
    * Loads all packages
+   * @return {Promise<Package[]>}
    */
   createLoader() {
     let result = [];
@@ -116,6 +122,7 @@ class Packages {
 
   /**
    * When a package dist has changed
+   * @param {Package} pkg Package instance
    */
   onPackageChanged(pkg) {
     clearTimeout(this.hotReloading[pkg.metadata.name]);
@@ -128,6 +135,9 @@ class Packages {
 
   /**
    * Loads package data
+   * @param {string} filename Filename
+   * @param {object} manifest Manifest
+   * @return {Promise<Package>}
    */
   loadPackage(filename, manifest) {
     const done = (pkg, error) => {
@@ -151,6 +161,7 @@ class Packages {
 
   /**
    * Initializes a package
+   * @return {Promise<Package>}
    */
   initializePackage(pkg, manifest, done) {
     if (pkg.validate(manifest)) {

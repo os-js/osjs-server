@@ -1,4 +1,4 @@
-/**
+/*
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
  * Copyright (c) 2011-2019, Anders Evenrud <andersevenrud@gmail.com>
@@ -28,6 +28,11 @@
  * @licence Simplified BSD License
  */
 
+/**
+ * Null Auth adapter
+ * @param {Core} core Core reference
+ * @param {object} [options] Adapter options
+ */
 module.exports = (core, options) => ({
   init: async () => true,
   destroy: async () => true,

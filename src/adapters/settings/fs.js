@@ -30,6 +30,11 @@
 const fs = require('fs-extra');
 const path = require('path');
 
+/**
+ * FS Settings adapter
+ * @param {Core} core Core reference
+ * @param {object} [options] Adapter options
+ */
 module.exports = (core, options) => {
   const fsOptions = Object.assign({
     system: false,
