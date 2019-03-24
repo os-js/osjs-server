@@ -36,6 +36,9 @@ module.exports = (options = {}) => {
     kill: false
   });
 
+  osjs.configuration.vfs.mountpoints[1].attributes.chokidar = {
+    persistent: false
+  };
   osjs.configuration.vfs.mountpoints[1].attributes.watch = true;
 
   osjs.register(CoreServiceProvider, {before: true});

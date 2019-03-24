@@ -102,6 +102,10 @@ describe('Filesystem', () => {
   });
 
   test('#watch - test emitter', async () => {
+    if (!core.config('vfs.watch')) {
+      return;
+    }
+
     const filename =  path.join(core.config('tempPath'), 'jest/watch.txt');
     const cb = jest.fn();
 
@@ -110,7 +114,7 @@ describe('Filesystem', () => {
     fs.writeFileSync(filename, 'testing');
 
     await new Promise(resolve => {
-      setTimeout(resolve, 250);
+      setTimeout(resolve, 100);
     });
 
     expect(cb).toBeCalledWith(expect.objectContaining({

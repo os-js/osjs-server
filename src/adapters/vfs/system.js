@@ -121,7 +121,7 @@ module.exports = (core) => ({
       }
     }, mount.attributes.root);
 
-    const watch = chokidar.watch(dest, {});
+    const watch = chokidar.watch(dest, mount.attributes.chokidar || {});
     const restr = dest.replace(/\*\*/g, '([^/]*)');
     const re = new RegExp(restr + '/(.*)');
     const seg =  matchSegments(mount.attributes.root)
