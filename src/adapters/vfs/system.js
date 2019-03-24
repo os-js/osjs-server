@@ -116,230 +116,230 @@ const getRealPath = (core, req, mount, file) => {
  * @param {Core} core Core reference
  * @param {object} [options] Adapter options
  */
-module.exports = (core) => ({
-  watch: (mount, callback) => {
-    const dest = resolveSegments(core, {
-      session: {
-        user: {
-          username: '**'
-        }
-      }
-    }, mount.attributes.root);
+module.exports = (core) => {
+  const wrapper = (method, cb, ...args) => vfs => (file, options = {}) => {
+    const promise = Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+      .then(realPath => fs[method](realPath, ...args));
 
-    const watch = chokidar.watch(dest, mount.attributes.chokidar || {});
-    const restr = dest.replace(/\*\*/g, '([^/]*)');
-    const re = new RegExp(restr + '/(.*)');
-    const seg =  matchSegments(mount.attributes.root)
-      .map(s => s.replace(/\{|\}/g, ''))
-      .filter(s => segments[s].dynamic);
+    return typeof cb === 'function'
+      ? cb(promise, options)
+      : promise.then(() => true);
+  };
 
-    const handle = name => file => {
-      const test = re.exec(file);
-
-      if (test && test.length > 0) {
-        const args = seg.reduce((res, k, i) => {
-          return Object.assign({}, {[k]: test[i + 1]});
-        }, {});
-
-        callback(args, test[test.length - 1], name);
-      }
-    };
-
-    const events = ['add', 'addDir', 'unlinkDir', 'unlink'];
-    events.forEach(name => watch.on(name, handle(name)));
-
-    return watch;
-  },
-
-  /**
-   * Checks if file exists
-   * @param {String} file The file path from client
-   * @return {Promise<boolean, Error>}
-   */
-  exists: vfs => file =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => fs.access(realPath, fs.F_OK))
-      .then(() => true)
-      .catch(() => false),
-
-  /**
-   * Get file statistics
-   * @param {String} file The file path from client
-   * @return {Object}
-   */
-  stat: vfs => file =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => {
-        return fs.access(realPath, fs.F_OK)
-          .then(() => createFileIter(core, path.dirname(realPath), realPath));
-      }),
-
-  /**
-   * Reads directory
-   * @param {String} root The file path from client
-   * @return {Object[]}
-   */
-  readdir: vfs => root =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, root))
-      .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
-      .then(({realPath, files}) => {
-        const promises = files.map(f => createFileIter(core, realPath, root.replace(/\/?$/, '/') + f));
-        return Promise.all(promises);
-      }),
-
-  /**
-   * Reads file stream
-   * @param {String} file The file path from client
-   * @return {stream.Readable}
-   */
-  readfile: vfs => (file, options = {}) =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => fs.stat(realPath).then(stat => ({realPath, stat})))
-      .then(({realPath, stat}) => {
-        if (!stat.isFile()) {
-          return false;
-        }
-
-        const stream = fs.createReadStream(realPath, {
-          flags: 'r'
-        });
-
-        if (options.download) {
-          vfs.res.attachment(path.basename(file));
-        }
-
-        return stream;
-      }),
-
-  /**
-   * Creates directory
-   * @param {String} file The file path from client
-   * @return {boolean}
-   */
-  mkdir: vfs => (file, options = {}) =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => fs.mkdir(realPath))
-      .then(() => true)
-      .catch(e => {
-        if (options.ensure && e.code === 'EEXIST') {
-          return true;
-        }
-
-        return Promise.reject(e);
-      }),
-
-  /**
-   * Writes file stream
-   * @param {String} file The file path from client
-   * @param {stream.Readable} data The stream
-   * @return {Promise<boolean, Error>}
-   */
-  writefile: vfs => (file, data) => new Promise((resolve, reject) => {
-    // FIXME: Currently this actually copies the file because
-    // formidable will put this in a temporary directory.
-    // It would probably be better to do a "rename()" on local filesystems
-    const realPath = getRealPath(core, vfs.req, vfs.mount, file);
-
-    const write = () => {
-      const stream = fs.createWriteStream(realPath);
-      data.on('error', err => reject(err));
-      data.on('end', () => resolve(true));
-      data.pipe(stream);
-    };
-
-    fs.stat(realPath).then(stat => {
-      if (stat.isDirectory()) {
-        resolve(false);
-      } else {
-        write();
-      }
-    }).catch((err) => err.code === 'ENOENT' ? write()  : reject(err));
-  }),
-
-  /**
-   * Renames given file or directory
-   * @param {String} src The source file path from client
-   * @param {String} dest The destination file path from client
-   * @return {boolean}
-   */
-  rename: vfs => (src, dest) =>
+  const crossWrapper = method => vfs => (src, dest, options = {}) =>
     Promise.resolve({
       realSource: getRealPath(core, vfs.req, vfs.mount, src),
       realDest: getRealPath(core, vfs.req, vfs.mount, dest)
     })
-      .then(({realSource, realDest}) => fs.rename(realSource, realDest))
-      .then(() => true),
+      .then(({realSource, realDest}) => fs[method](realSource, realDest))
+      .then(() => true);
 
-  /**
-   * Copies given file or directory
-   * @param {String} src The source file path from client
-   * @param {String} dest The destination file path from client
-   * @return {boolean}
-   */
-  copy: vfs => (src, dest) =>
-    Promise.resolve({
-      realSource: getRealPath(core, vfs.req, vfs.mount, src),
-      realDest: getRealPath(core, vfs.req, vfs.mount, dest)
-    })
-      .then(({realSource, realDest}) => fs.copy(realSource, realDest))
-      .then(() => true),
+  return {
+    watch: (mount, callback) => {
+      const dest = resolveSegments(core, {
+        session: {
+          user: {
+            username: '**'
+          }
+        }
+      }, mount.attributes.root);
 
-  /**
-   * Removes given file or directory
-   * @param {String} file The file path from client
-   * @return {boolean}
-   */
-  unlink: vfs => file =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => fs.remove(realPath))
-      .then(() => true),
+      const watch = chokidar.watch(dest, mount.attributes.chokidar || {});
+      const restr = dest.replace(/\*\*/g, '([^/]*)');
+      const re = new RegExp(restr + '/(.*)');
+      const seg =  matchSegments(mount.attributes.root)
+        .map(s => s.replace(/\{|\}/g, ''))
+        .filter(s => segments[s].dynamic);
 
-  /**
-   * Searches for files and folders
-   * @param {String} file The file path from client
-   * @return {boolean}
-   */
-  search: vfs => (root, pattern) =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, root))
-      .then(realPath => {
-        return fh.create()
-          .paths(realPath)
-          .match(pattern)
-          .find()
-          .then(files => ({realPath, files}))
-          .catch(err => {
-            core.logger.warn(err);
+      const handle = name => file => {
+        const test = re.exec(file);
 
-            return {realPath, files: []};
+        if (test && test.length > 0) {
+          const args = seg.reduce((res, k, i) => {
+            return Object.assign({}, {[k]: test[i + 1]});
+          }, {});
+
+          callback(args, test[test.length - 1], name);
+        }
+      };
+
+      const events = ['add', 'addDir', 'unlinkDir', 'unlink'];
+      events.forEach(name => watch.on(name, handle(name)));
+
+      return watch;
+    },
+
+    /**
+     * Checks if file exists
+     * @param {String} file The file path from client
+     * @return {Promise<boolean, Error>}
+     */
+    exists: wrapper('access', promise => {
+      return promise.then(() => true)
+        .catch(() => false);
+    }, fs.F_OK),
+
+    /**
+     * Get file statistics
+     * @param {String} file The file path from client
+     * @return {Object}
+     */
+    stat: vfs => file =>
+      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+        .then(realPath => {
+          return fs.access(realPath, fs.F_OK)
+            .then(() => createFileIter(core, path.dirname(realPath), realPath));
+        }),
+
+    /**
+     * Reads directory
+     * @param {String} root The file path from client
+     * @return {Object[]}
+     */
+    readdir: vfs => root =>
+      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, root))
+        .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
+        .then(({realPath, files}) => {
+          const promises = files.map(f => createFileIter(core, realPath, root.replace(/\/?$/, '/') + f));
+          return Promise.all(promises);
+        }),
+
+    /**
+     * Reads file stream
+     * @param {String} file The file path from client
+     * @return {stream.Readable}
+     */
+    readfile: vfs => (file, options = {}) =>
+      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+        .then(realPath => fs.stat(realPath).then(stat => ({realPath, stat})))
+        .then(({realPath, stat}) => {
+          if (!stat.isFile()) {
+            return false;
+          }
+
+          const stream = fs.createReadStream(realPath, {
+            flags: 'r'
           });
-      })
-      .then(({realPath, files}) => {
-        const promises = files.map(f => {
-          const rf = f.substr(realPath.length);
-          return createFileIter(
-            core,
-            path.dirname(realPath.replace(/\/?$/, '/') + rf),
-            root.replace(/\/?$/, '/') + rf
-          );
+
+          if (options.download) {
+            vfs.res.attachment(path.basename(file));
+          }
+
+          return stream;
+        }),
+
+    /**
+     * Creates directory
+     * @param {String} file The file path from client
+     * @return {boolean}
+     */
+    mkdir: wrapper('mkdir', (promise, options) => {
+      return promise
+        .then(() => true)
+        .catch(e => {
+          if (options.ensure && e.code === 'EEXIST') {
+            return true;
+          }
+
+          return Promise.reject(e);
         });
-        return Promise.all(promises);
-      }),
+    }),
 
-  /**
-   * Touches a file
-   * @param {String} file The file path from client
-   * @return {boolean}
-   */
-  touch: vfs => file =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-      .then(realPath => fs.ensureFile(realPath))
-      .then(() => true),
+    /**
+     * Writes file stream
+     * @param {String} file The file path from client
+     * @param {stream.Readable} data The stream
+     * @return {Promise<boolean, Error>}
+     */
+    writefile: vfs => (file, data) => new Promise((resolve, reject) => {
+      // FIXME: Currently this actually copies the file because
+      // formidable will put this in a temporary directory.
+      // It would probably be better to do a "rename()" on local filesystems
+      const realPath = getRealPath(core, vfs.req, vfs.mount, file);
 
-  /**
-   * Gets the real filesystem path (internal only)
-   * @param {String} file The file path from client
-   * @return {string}
-   */
-  realpath: vfs => file =>
-    Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
-});
+      const write = () => {
+        const stream = fs.createWriteStream(realPath);
+        data.on('error', err => reject(err));
+        data.on('end', () => resolve(true));
+        data.pipe(stream);
+      };
+
+      fs.stat(realPath).then(stat => {
+        if (stat.isDirectory()) {
+          resolve(false);
+        } else {
+          write();
+        }
+      }).catch((err) => err.code === 'ENOENT' ? write()  : reject(err));
+    }),
+
+    /**
+     * Renames given file or directory
+     * @param {String} src The source file path from client
+     * @param {String} dest The destination file path from client
+     * @return {boolean}
+     */
+    rename: crossWrapper('rename'),
+
+    /**
+     * Copies given file or directory
+     * @param {String} src The source file path from client
+     * @param {String} dest The destination file path from client
+     * @return {boolean}
+     */
+    copy: crossWrapper('copy'),
+
+    /**
+     * Removes given file or directory
+     * @param {String} file The file path from client
+     * @return {boolean}
+     */
+    unlink: wrapper('remove'),
+
+    /**
+     * Searches for files and folders
+     * @param {String} file The file path from client
+     * @return {boolean}
+     */
+    search: vfs => (root, pattern) =>
+      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, root))
+        .then(realPath => {
+          return fh.create()
+            .paths(realPath)
+            .match(pattern)
+            .find()
+            .then(files => ({realPath, files}))
+            .catch(err => {
+              core.logger.warn(err);
+
+              return {realPath, files: []};
+            });
+        })
+        .then(({realPath, files}) => {
+          const promises = files.map(f => {
+            const rf = f.substr(realPath.length);
+            return createFileIter(
+              core,
+              path.dirname(realPath.replace(/\/?$/, '/') + rf),
+              root.replace(/\/?$/, '/') + rf
+            );
+          });
+          return Promise.all(promises);
+        }),
+
+    /**
+     * Touches a file
+     * @param {String} file The file path from client
+     * @return {boolean}
+     */
+    touch: wrapper('ensureFile'),
+
+    /**
+     * Gets the real filesystem path (internal only)
+     * @param {String} file The file path from client
+     * @return {string}
+     */
+    realpath: vfs => file =>
+      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+  };
+};
