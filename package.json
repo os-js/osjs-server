@@ -34,7 +34,7 @@
   "dependencies": {
     "@osjs/common": "^3.0.3",
     "body-parser": "^1.18.2",
-    "chokidar": "^2.0.4",
+    "chokidar": "^2.1.5",
     "connect-loki": "^1.1.0",
     "consola": "^2.5.7",
     "deepmerge": "^2.2.1",
