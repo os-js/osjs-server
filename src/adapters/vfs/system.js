@@ -138,6 +138,8 @@ module.exports = (core) => ({
         callback(args, test[test.length - 1]);
       }
     });
+
+    return watch;
   },
 
   /**
