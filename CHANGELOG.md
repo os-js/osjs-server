@@ -1,5 +1,20 @@
 ## Changelog for osjs-server
 
+## 3.0.32
+
+* Send VFS watch trigger type in broadcast call
+* Updated unit tests
+* Updated chokidar dependency
+* Updated system vfs adapter watcher
+* Added 'osjs/fs' service
+* Updated watch handling in Filesystem class
+* Added missing return in VFS watch for system adapter
+* Updated providers
+* Updated logging
+* Changed from 'signale' to 'consola' logger
+* Minor cleanup in Core
+* Refactored package loading procedure
+
 ## 3.0.30
 
 * Added files section to package.json
