@@ -47,9 +47,6 @@ class PackageServiceProvider extends ServiceProvider {
     const manifestFile = path.join(configuration.public, configuration.packages.metadata);
     const discoveredFile = path.resolve(configuration.root, configuration.packages.discovery);
 
-    this.core.logger.info('Using package discovery file', discoveredFile);
-    this.core.logger.info('Using package manifest file', manifestFile);
-
     this.watches = [];
     this.packages = new Packages(core, {
       manifestFile,

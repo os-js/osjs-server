@@ -29,11 +29,12 @@
  */
 
 const systemAdapter = require('./adapters/vfs/system');
-const signale = require('signale').scope('vfs');
 const uuid = require('uuid/v1');
 const mime = require('mime');
 const path = require('path');
 const vfs = require('./vfs');
+const consola = require('consola');
+const logger = consola.withTag('Filesystem');
 
 /**
  * OS.js Virtual Filesystem
@@ -141,7 +142,7 @@ class Filesystem {
 
     this.mountpoints.push(mountpoint);
 
-    signale.success('Mounted', mountpoint.name, mountpoint.attributes);
+    logger.success('Mounted', mountpoint.name);
 
     this.watch(mountpoint);
 
@@ -211,7 +212,7 @@ class Filesystem {
       watch
     });
 
-    signale.watch('Watching mountpoint', mountpoint.name);
+    logger.watch('Watching mountpoint', mountpoint.name);
   }
 }
 

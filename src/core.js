@@ -33,10 +33,11 @@ const morgan = require('morgan');
 const express = require('express');
 const minimist = require('minimist');
 const deepmerge = require('deepmerge');
-const signale = require('signale').scope('core');
+const consola = require('consola');
 const {CoreBase} = require('@osjs/common');
 const {argvToConfig, createSession, createWebsocket, parseJson} = require('./utils/core.js');
 const {defaultConfiguration} = require('./config.js');
+const logger = consola.withTag('Core');
 
 let _instance;
 
@@ -63,7 +64,7 @@ class Core extends CoreBase {
     const val = k => argvToConfig[k](parseJson(argv[k]));
     const keys = Object.keys(argvToConfig).filter(k => argv.hasOwnProperty(k));
     const argvConfig = keys.reduce((o, k) => {
-      signale.fav(`CLI argument '--${k}' overrides`, val(k));
+      logger.info(`CLI argument '--${k}' overrides`, val(k));
 
       return Object.assign(o, deepmerge(o, val(k)));
     }, {});
@@ -71,7 +72,7 @@ class Core extends CoreBase {
     super(defaultConfiguration, deepmerge(cfg, argvConfig), options);
 
     this.httpServer = null;
-    this.logger = signale;
+    this.logger = consola.withTag('Internal');
     this.app = express();
     this.session = createSession(this.app, this.configuration);
     this.ws = createWebsocket(this.app, this.configuration, this.session);
@@ -98,7 +99,7 @@ class Core extends CoreBase {
 
     this.emit('osjs/core:destroy');
 
-    signale.pause('Shutting down server');
+    logger.info('Shutting down...');
 
     if (this.wss) {
       this.wss.close();
@@ -118,9 +119,11 @@ class Core extends CoreBase {
    */
   async start() {
     if (!this.started) {
-      signale.start('Starting server');
+      logger.info('Starting services...');
 
       await super.start();
+
+      logger.success('Initialized!');
 
       try {
         this.listen();
@@ -146,15 +149,12 @@ class Core extends CoreBase {
       return true;
     }
 
-    signale.await('Initializing core');
-
     this.emit('osjs/core:start');
 
     if (this.configuration.logging) {
       this.wss.on('connection', (c) => {
-        signale.start('WS Connection opened');
-
-        c.on('close', () => signale.pause('WS Connection closed'));
+        logger.log('WebSocket connection opened');
+        c.on('close', () => logger.log('WebSocket connection closed'));
       });
 
       if (this.configuration.morgan) {
@@ -162,14 +162,13 @@ class Core extends CoreBase {
       }
     }
 
-    signale.await('Initializing providers');
+
+    logger.info('Initializing services...');
 
     await super.boot();
     this.emit('init');
     await this.start();
     this.emit('osjs/core:started');
-
-    signale.success('Initialized');
 
     return true;
   }
@@ -178,13 +177,17 @@ class Core extends CoreBase {
    * Opens HTTP server
    */
   listen() {
+    const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
+    const session = path.basename(path.dirname(this.configuration.session.store.module));
+    const dist = this.configuration.public.replace(process.cwd(), '');
+
+    logger.info('Creating HTTP server');
+
     this.httpServer = this.app.listen(this.configuration.port, () => {
-      const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-      const sess = path.basename(path.dirname(this.configuration.session.store.module));
-      signale.success('Using session store', sess);
-      signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
-      signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
-      signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
+      logger.success(`Server was started on ${this.configuration.hostname}:${this.configuration.port}`);
+      logger.success(`WebSocket is running on ${this.configuration.hostname}:${wsp}`);
+      logger.success(`Using ${session} sessions`);
+      logger.success(`Serving content from ${dist}`);
     });
   }
 

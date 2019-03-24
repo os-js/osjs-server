@@ -3,8 +3,7 @@ module.exports = {
   coverageReporters: ['lcov'],
 
   moduleNameMapper: {
-    '^osjs$': '<rootDir>/__mocks__/core.js',
-    '^signale$': '<rootDir>/__mocks__/signale.js'
+    '^osjs$': '<rootDir>/__mocks__/core.js'
   },
 
   coveragePathIgnorePatterns: [

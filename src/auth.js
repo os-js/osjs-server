@@ -28,7 +28,8 @@
  * @licence Simplified BSD License
  */
 
-const signale = require('signale').scope('auth');
+const consola = require('consola');
+const logger = consola.withTag('Auth');
 const nullAdapter = require('./adapters/auth/null.js');
 
 /**
@@ -107,7 +108,7 @@ class Auth {
     try {
       req.session.destroy();
     } catch (e) {
-      signale.warn(e);
+      logger.warn(e);
     }
 
     res.json({});
@@ -127,7 +128,7 @@ class Auth {
       .filter(k => typeof result[k] === 'undefined');
 
     if (missing.length) {
-      signale.warn('Missing user attributes', missing);
+      logger.warn('Missing user attributes', missing);
     } else {
       return Object.assign({}, template, Object.keys(result)
         .filter(k => ignores.indexOf(k) === -1)

@@ -34,7 +34,6 @@ const chokidar = require('chokidar');
 const bodyParser = require('body-parser');
 const proxy = require('express-http-proxy');
 const nocache = require('nocache');
-const signale = require('signale').scope('core');
 const {ServiceProvider} = require('@osjs/common');
 const {isAuthenticated} = require('../utils/core.js');
 
@@ -191,7 +190,7 @@ class CoreServiceProvider extends ServiceProvider {
     }, item)).filter(item => item.source && item.destination);
 
     proxies.forEach(item => {
-      signale.info(`Proxying ${item.source} -> ${item.destination}`);
+      this.core.logger.info(`Proxying ${item.source} -> ${item.destination}`);
       app.use(item.source, proxy(item.destination, item.options));
     });
   }

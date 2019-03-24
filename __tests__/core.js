@@ -1,12 +1,15 @@
+const consola = require('consola');
 const Core = require('../src/core.js');
 
 describe('Core', () => {
   let core;
-
   const testEvent = JSON.stringify({
     params: [1, 2, 3],
     name: 'test/jest'
   });
+
+  beforeAll(() => consola.pauseLogs());
+  afterAll(() => consola.resumeLogs());
 
   beforeEach(() => {
     if (!core) {

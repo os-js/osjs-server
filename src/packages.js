@@ -31,8 +31,11 @@
 const fs = require('fs-extra');
 const fg = require('fast-glob');
 const path = require('path');
-const signale = require('signale').scope('pkg');
 const Package = require('./package.js');
+const consola = require('consola');
+const logger = consola.withTag('Packages');
+
+const relative = filename => filename.replace(process.cwd(), '');
 
 const readOrDefault = filename => fs.existsSync(filename)
   ? fs.readJsonSync(filename)
@@ -81,9 +84,13 @@ class Packages {
    */
   createLoader() {
     let result = [];
-    const discovered = readOrDefault(this.options.discoveredFile);
-    const manifest = readOrDefault(this.options.manifestFile);
+    const {discoveredFile, manifestFile} = this.options;
+    const discovered = readOrDefault(discoveredFile);
+    const manifest = readOrDefault(manifestFile);
     const sources = discovered.map(d => path.join(d, 'metadata.json'));
+
+    logger.info('Using package discovery file', relative(discoveredFile));
+    logger.info('Using package manifest file', relative(manifestFile));
 
     const stream = fg.stream(sources, {
       extension: false,
@@ -92,7 +99,7 @@ class Packages {
       case: false
     });
 
-    stream.on('error', error => signale.warn(error));
+    stream.on('error', error => logger.error(error));
     stream.on('data', filename => {
       result.push(this.loadPackage(filename, manifest));
     });
@@ -114,7 +121,7 @@ class Packages {
     clearTimeout(this.hotReloading[pkg.metadata.name]);
 
     this.hotReloading[pkg.metadata.name] = setTimeout(() => {
-      signale.info('Reloading', pkg.metadata.name);
+      logger.debug('Sending reload signal for', pkg.metadata.name);
       this.core.broadcast('osjs/packages:package:changed', [pkg.metadata.name]);
     }, 500);
   }
@@ -125,7 +132,7 @@ class Packages {
   loadPackage(filename, manifest) {
     const done = (pkg, error) => {
       if (error) {
-        signale.warn(error);
+        logger.warn(error);
       }
 
       return Promise.resolve(pkg);
@@ -147,13 +154,13 @@ class Packages {
    */
   initializePackage(pkg, manifest, done) {
     if (pkg.validate(manifest)) {
-      signale.await(`Loading ${pkg.script}`);
+      logger.info(`Loading ${relative(pkg.script)}`);
 
       try {
         if (this.core.configuration.development) {
-          signale.watch(pkg.watch(() => {
+          pkg.watch(() => {
             this.onPackageChanged(pkg);
-          }));
+          });
         }
 
         return pkg.init()

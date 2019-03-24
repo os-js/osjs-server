@@ -1,3 +1,6 @@
+const consola = require('consola');
+consola.pauseLogs();
+
 const temp = require('temp').track();
 const path = require('path');
 const config = require('../src/config.js');
@@ -30,10 +33,6 @@ module.exports = () => {
     }
   }, config), {
     kill: false
-  });
-
-  osjs.logger = new Proxy({}, {
-    get: () => () => {}
   });
 
   osjs.register(CoreServiceProvider, {before: true});
