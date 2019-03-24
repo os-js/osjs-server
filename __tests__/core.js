@@ -1,4 +1,6 @@
 const consola = require('consola');
+consola.pauseLogs();
+
 const Core = require('../src/core.js');
 
 describe('Core', () => {
@@ -7,9 +9,6 @@ describe('Core', () => {
     params: [1, 2, 3],
     name: 'test/jest'
   });
-
-  beforeAll(() => consola.pauseLogs());
-  afterAll(() => consola.resumeLogs());
 
   beforeEach(() => {
     if (!core) {
