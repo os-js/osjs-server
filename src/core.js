@@ -117,31 +117,22 @@ class Core extends CoreBase {
    * Starts the server
    */
   async start() {
-    if (this.started) {
-      return true;
-    }
+    if (!this.started) {
+      signale.start('Starting server');
 
-    signale.start('Starting server');
+      await super.start();
 
-    await super.start();
+      try {
+        this.listen();
+      } catch (e) {
+        console.error(e);
 
-    try {
-      this.httpServer = this.app.listen(this.configuration.port, () => {
-        const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-        const sess = path.basename(path.dirname(this.configuration.session.store.module));
-        signale.success('Using session store', sess);
-        signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
-        signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
-        signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
-      });
-    } catch (e) {
-      console.error(e);
+        if (this.options.kill) {
+          process.exit(1);
+        }
 
-      if (this.options.kill) {
-        process.exit(1);
+        return false;
       }
-
-      return false;
     }
 
     return true;
@@ -174,16 +165,27 @@ class Core extends CoreBase {
     signale.await('Initializing providers');
 
     await super.boot();
-
     this.emit('init');
-
     await this.start();
-
     this.emit('osjs/core:started');
 
     signale.success('Initialized');
 
     return true;
+  }
+
+  /**
+   * Opens HTTP server
+   */
+  listen() {
+    this.httpServer = this.app.listen(this.configuration.port, () => {
+      const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
+      const sess = path.basename(path.dirname(this.configuration.session.store.module));
+      signale.success('Using session store', sess);
+      signale.success('Using directory', this.configuration.public.replace(process.cwd(), ''));
+      signale.watch(`WebSocket Listening at ${this.configuration.hostname}:${wsp}`);
+      signale.watch(`HTTP Listening at ${this.configuration.hostname}:${this.configuration.port}`);
+    });
   }
 
   /**
