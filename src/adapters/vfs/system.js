@@ -54,7 +54,7 @@ const createFileIter = (core, realRoot, file) => {
   return fs.stat(realPath)
     .then(createStat)
     .catch(error => {
-      console.warn(error);
+      core.logger.warn(error);
 
       return createStat({
         isDirectory: () => false,
@@ -297,7 +297,7 @@ module.exports = (core) => ({
           .find()
           .then(files => ({realPath, files}))
           .catch(err => {
-            console.warn(err);
+            core.logger.warn(err);
 
             return {realPath, files: []};
           });

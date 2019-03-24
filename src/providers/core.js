@@ -141,7 +141,7 @@ class CoreServiceProvider extends ServiceProvider {
       try {
         req.session.touch();
       } catch (e) {
-        console.warn(e);
+        this.core.logger.warn(e);
       }
 
       res.status(200).send('ok');
@@ -163,7 +163,7 @@ class CoreServiceProvider extends ServiceProvider {
           const {name, params} = JSON.parse(msg);
           this.core.emit(name, ws, ...params);
         } catch (e) {
-          console.warn(e);
+          this.core.logger.warn(e);
         }
       });
 
@@ -217,7 +217,7 @@ class CoreServiceProvider extends ServiceProvider {
 
       this.watches.push(watcher);
     } catch (e) {
-      console.warn(e);
+      this.core.logger.warn(e);
     }
   }
 }

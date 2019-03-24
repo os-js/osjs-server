@@ -52,7 +52,7 @@ module.exports = (core, options) => {
   const load = req => before(req)
     .then(filename => fs.readJson(filename))
     .catch(error => {
-      console.warn(error);
+      core.logger.warn(error);
       return {};
     });
 

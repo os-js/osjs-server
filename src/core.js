@@ -128,7 +128,7 @@ class Core extends CoreBase {
       try {
         this.listen();
       } catch (e) {
-        console.error(e);
+        logger.fatal(e);
 
         if (this.options.kill) {
           process.exit(1);

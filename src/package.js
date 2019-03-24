@@ -72,7 +72,7 @@ class Package {
         return true;
       }
     } catch (e) {
-      console.warn(e);
+      this.core.logger.warn(e);
     }
 
     return false;

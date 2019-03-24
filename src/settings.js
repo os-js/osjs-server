@@ -49,7 +49,7 @@ class Settings {
     try {
       this.adapter = this.options.adapter(core, this.options.config);
     } catch (e) {
-      console.warn(e);
+      this.core.logger.warn(e);
       this.adapter = nullAdapter(core, this.options.config);
     }
   }

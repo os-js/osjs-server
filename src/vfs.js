@@ -91,7 +91,7 @@ const createMiddleware = core => {
       next();
     })
     .catch(error => {
-      console.warn(error);
+      core.logger.warn(error);
       req.fields = {};
       req.files = {};
 

@@ -212,7 +212,7 @@ class Filesystem {
       watch
     });
 
-    logger.watch('Watching mountpoint', mountpoint.name);
+    logger.info('Watching mountpoint', mountpoint.name);
   }
 }
 
