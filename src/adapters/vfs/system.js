@@ -121,23 +121,27 @@ module.exports = (core) => ({
       }
     }, mount.attributes.root);
 
-    const watch = chokidar.watch(dest);
+    const watch = chokidar.watch(dest, {});
     const restr = dest.replace(/\*\*/g, '([^/]*)');
     const re = new RegExp(restr + '/(.*)');
     const seg =  matchSegments(mount.attributes.root)
       .map(s => s.replace(/\{|\}/g, ''))
       .filter(s => segments[s].dynamic);
 
-    watch.on('change', file => {
+    const handle = name => file => {
       const test = re.exec(file);
-      const args = seg.reduce((res, k, i) => {
-        return Object.assign({}, {[k]: test[i + 1]});
-      }, {});
 
-      if (test.length > 0) {
+      if (test && test.length > 0) {
+        const args = seg.reduce((res, k, i) => {
+          return Object.assign({}, {[k]: test[i + 1]});
+        }, {});
+
         callback(args, test[test.length - 1]);
       }
-    });
+    };
+
+    const events = ['add', 'addDir', 'unlinkDir', 'unlink'];
+    events.forEach(name => watch.on(name, handle(name)));
 
     return watch;
   },
