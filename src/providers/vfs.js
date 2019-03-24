@@ -52,6 +52,7 @@ class VFSServiceProvider extends ServiceProvider {
 
   provides() {
     return [
+      'osjs/fs',
       'osjs/vfs'
     ];
   }
@@ -60,6 +61,8 @@ class VFSServiceProvider extends ServiceProvider {
     const filesystem = this.filesystem;
 
     await filesystem.init();
+
+    this.core.singleton('osjs/fs', () => this.filesystem);
 
     this.core.singleton('osjs/vfs', () => ({
       realpath: (...args) => this.filesystem.realpath(...args),
