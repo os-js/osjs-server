@@ -47,6 +47,11 @@ describe('Core', () => {
     });
   });
 
+  test('#constructor - requires options', () => {
+    expect(() => new Core())
+      .toThrowError('The public option is required');
+  });
+
   test('.getInstance', () => {
     expect(Core.getInstance())
       .toBeInstanceOf(Core);

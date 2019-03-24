@@ -26,6 +26,18 @@ describe('Settings', () => {
     settings = new Settings(core);
   });
 
+  test('#constructor - should fall back to null adapter', () => {
+    settings = new Settings(core, {
+      adapter: () => {
+        throw new Error('Simulated failure');
+      }
+    });
+
+    expect(settings.adapter)
+      .not
+      .toBe(null);
+  });
+
   test('#init', () => {
     return expect(settings.init())
       .resolves

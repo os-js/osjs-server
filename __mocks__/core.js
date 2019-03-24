@@ -14,7 +14,7 @@ const {
   SettingsServiceProvider
 } = require('../index.js');
 
-module.exports = () => {
+module.exports = (options = {}) => {
   const tempPath = temp.mkdirSync('osjs-vfs');
 
   const osjs = new Core(Object.assign({
@@ -25,6 +25,7 @@ module.exports = () => {
     public: path.resolve(__dirname, 'dist'),
     vfs: {
       root: tempPath,
+      watch: true
     },
     mime: {
       filenames: {
@@ -34,6 +35,8 @@ module.exports = () => {
   }, config), {
     kill: false
   });
+
+  osjs.configuration.vfs.mountpoints[1].attributes.watch = true;
 
   osjs.register(CoreServiceProvider, {before: true});
   osjs.register(PackageServiceProvider);

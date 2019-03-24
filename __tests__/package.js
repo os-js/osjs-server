@@ -78,6 +78,9 @@ describe('Package', () => {
 
     expect(pkg.action('invalid'))
       .toBe(false);
+
+    expect(pkg.action('test'))
+      .toBe(false);
   });
 
   test('#resource', () => {

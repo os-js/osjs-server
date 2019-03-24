@@ -38,6 +38,18 @@ describe('Authentication', () => {
     auth = new Auth(core);
   });
 
+  test('#constructor - should fall back to null adapter', () => {
+    auth = new Auth(core, {
+      adapter: () => {
+        throw new Error('Simulated failure');
+      }
+    });
+
+    expect(auth.adapter)
+      .not
+      .toBe(null);
+  });
+
   test('#init', () => {
     return expect(auth.init())
       .resolves
@@ -45,7 +57,7 @@ describe('Authentication', () => {
   });
 
   test('#login - fail on error', async () => {
-    await auth.login(request, response)
+    await auth.login(request, response);
 
     expect(response.status).toBeCalledWith(403);
     expect(response.json).toBeCalledWith({
@@ -54,9 +66,9 @@ describe('Authentication', () => {
   });
 
   test('#login - success', async () => {
-    request.setBody({username: 'jest', password: 'jest'})
+    request.setBody({username: 'jest', password: 'jest'});
 
-    await auth.login(request, response)
+    await auth.login(request, response);
 
     expect(request.session.user).toEqual(profile);
     expect(request.session.save).toBeCalled();
@@ -64,7 +76,7 @@ describe('Authentication', () => {
   });
 
   test('#logout', async () => {
-    await auth.logout(request, response)
+    await auth.logout(request, response);
 
     expect(request.session.destroy).toBeCalled();
     expect(response.json).toBeCalledWith({});

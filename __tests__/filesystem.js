@@ -1,3 +1,4 @@
+const fs = require('fs-extra');
 const osjs = require('osjs');
 const path = require('path');
 const Filesystem = require('../src/filesystem.js');
@@ -9,9 +10,14 @@ describe('Filesystem', () => {
   let filesystem;
   let mountpoint;
 
-  beforeAll(() => osjs().then(c => (core = c)));
+  beforeAll(() => osjs().then(c => {
+    core = c;
+    filesystem = c.make('osjs/fs');
+  }));
+
   afterAll(() => core.destroy());
 
+  /* Already inited from provider
   test('#constructor', () => {
     filesystem = new Filesystem(core);
   });
@@ -21,6 +27,7 @@ describe('Filesystem', () => {
       .resolves
       .toBe(true);
   });
+  */
 
   test('#mime', () => {
     expect(filesystem.mime('text file.txt'))
@@ -43,7 +50,6 @@ describe('Filesystem', () => {
     mountpoint = filesystem.mount({
       name: 'jest',
       attributes: {
-        watch: true,
         root: '/tmp'
       }
     });
@@ -51,7 +57,6 @@ describe('Filesystem', () => {
     expect(mountpoint).toMatchObject({
       root: 'jest:/',
       attributes: {
-        watch: true,
         root: '/tmp'
       }
     });
@@ -81,7 +86,7 @@ describe('Filesystem', () => {
       path: 'home:/test'
     };
 
-    const result = await filesystem.request('exists', request, response)
+    const result = await filesystem.request('exists', request, response);
 
     expect(result).toBe(false);
   });
@@ -94,6 +99,24 @@ describe('Filesystem', () => {
   test('#unmount - test fail', () => {
     expect(filesystem.unmount({}))
       .toBe(false);
+  });
+
+  test('#watch - test emitter', async () => {
+    const filename =  path.join(core.config('tempPath'), 'jest/watch.txt');
+    const cb = jest.fn();
+
+    core.on('osjs/vfs:watch:change', cb);
+    fs.ensureDirSync(path.dirname(filename));
+    fs.writeFileSync(filename, 'testing');
+
+    await new Promise(resolve => {
+      setTimeout(resolve, 250);
+    });
+
+    expect(cb).toBeCalledWith(expect.objectContaining({
+      target: 'home:/watch.txt',
+      mountpoint: filesystem.mountpoints.find(m => m.name === 'home')
+    }));
   });
 
   test('#destroy', () => {
