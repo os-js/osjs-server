@@ -85,11 +85,13 @@ module.exports.parseJson = str => {
 /*
  * Checks groups for a request
  */
-const validateGroups = (req, groups) => {
+const validateGroups = (req, groups, all) => {
   if (groups instanceof Array && groups.length) {
     const userGroups = req.session.user.groups;
 
-    return groups.some(g => userGroups.indexOf(g) !== -1);
+    const method = all ? 'every' : 'some';
+
+    return groups[method](g => userGroups.indexOf(g) !== -1);
   }
 
   return true;
@@ -98,8 +100,8 @@ const validateGroups = (req, groups) => {
 /*
  * Authentication middleware wrapper
  */
-module.exports.isAuthenticated = (groups = []) => (req, res, next) => {
-  if (req.session.user && validateGroups(req, groups)) {
+module.exports.isAuthenticated = (groups = [], all = false) => (req, res, next) => {
+  if (req.session.user && validateGroups(req, groups, all)) {
     return next();
   }
 

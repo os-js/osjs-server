@@ -80,6 +80,7 @@ class CoreServiceProvider extends ServiceProvider {
    */
   initService() {
     const {app} = this.core;
+    const {requireAllGroups} = this.core.configuration.auth;
 
     const middleware = {
       route: [],
@@ -102,7 +103,7 @@ class CoreServiceProvider extends ServiceProvider {
       routeAuthenticated: (method, uri, cb, groups = []) =>
         app[method.toLowerCase()](uri, [
           ...middleware.routeAuthenticated,
-          isAuthenticated(groups)
+          isAuthenticated(groups, requireAllGroups)
         ], cb)
     }));
   }
