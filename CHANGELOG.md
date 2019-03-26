@@ -1,5 +1,13 @@
 ## Changelog for osjs-server
 
+## 3.0.33
+
+* Emit warning when files missing in dist (closes #11)
+* Updated consola logging pause in tests
+* Added some abstraction to system VFS adapter
+* Updated auth.js comment header
+* Updated esdoc
+
 ## 3.0.32
 
 * Send VFS watch trigger type in broadcast call
