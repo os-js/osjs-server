@@ -59,7 +59,7 @@ const defaultConfiguration = {
   auth: {
     defaultGroups: [],
     requiredGroups: [],
-    requireAllGroups: true,
+    requireAllGroups: false,
     denyUsers: []
   },
   mime: {

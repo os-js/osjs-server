@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.35
+
+* Added 'routeAuthenticated' group behavior option (closes #13)
+
 ## 3.0.34
 
 * Added denyUsers and requiredGroups to authenticator
