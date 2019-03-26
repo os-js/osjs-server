@@ -28,6 +28,7 @@
  * @licence Simplified BSD License
  */
 
+const fs = require('fs-extra');
 const path = require('path');
 const morgan = require('morgan');
 const express = require('express');
@@ -182,6 +183,11 @@ class Core extends CoreBase {
     const dist = this.configuration.public.replace(process.cwd(), '');
 
     logger.info('Creating HTTP server');
+
+    const checkFile = path.join(this.configuration.public, this.configuration.index);
+    if (!fs.existsSync(checkFile)) {
+      logger.warn('Missing files in "dist/" directory. Did you forget to run "npm run build" ?');
+    }
 
     this.httpServer = this.app.listen(this.configuration.port, () => {
       logger.success(`Server was started on ${this.configuration.hostname}:${this.configuration.port}`);
