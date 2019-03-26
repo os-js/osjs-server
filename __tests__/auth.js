@@ -42,7 +42,8 @@ describe('Authentication', () => {
     auth = new Auth(core, {
       adapter: () => {
         throw new Error('Simulated failure');
-      }
+      },
+      denyUsers: ['jestdeny']
     });
 
     expect(auth.adapter)
@@ -61,7 +62,7 @@ describe('Authentication', () => {
 
     expect(response.status).toBeCalledWith(403);
     expect(response.json).toBeCalledWith({
-      error: 'Invalid login'
+      error: 'Invalid login or permission denied'
     });
   });
 
@@ -70,9 +71,34 @@ describe('Authentication', () => {
 
     await auth.login(request, response);
 
+    expect(response.status).toBeCalledWith(200);
     expect(request.session.user).toEqual(profile);
     expect(request.session.save).toBeCalled();
     expect(response.json).toBeCalledWith(profile);
+  });
+
+  test('#login - fail on denied user', async () => {
+    request.setBody({username: 'jestdeny', password: 'jest'});
+
+    await auth.login(request, response);
+
+    expect(response.status).toBeCalledWith(403);
+    expect(response.json).toBeCalledWith({
+      error: 'Invalid login or permission denied'
+    });
+  });
+
+  test('#login - fail on missing groups', async () => {
+    auth.options.requiredGroups = ['required'];
+
+    request.setBody({username: 'jest', password: 'jest'});
+
+    await auth.login(request, response);
+
+    expect(response.status).toBeCalledWith(403);
+    expect(response.json).toBeCalledWith({
+      error: 'Invalid login or permission denied'
+    });
   });
 
   test('#logout', async () => {

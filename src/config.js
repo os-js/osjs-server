@@ -57,7 +57,9 @@ const defaultConfiguration = {
     */
   ],
   auth: {
-    defaultGroups: []
+    defaultGroups: [],
+    requiredGroups: [],
+    denyUsers: []
   },
   mime: {
     filenames: {

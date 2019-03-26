@@ -43,9 +43,13 @@ class Auth {
    * @param {Object} [options={}] Service Provider arguments
    */
   constructor(core, options = {}) {
+    const {requiredGroups, denyUsers} = core.configuration.auth;
+
     this.core = core;
     this.options = Object.assign({
-      adapter: nullAdapter
+      adapter: nullAdapter,
+      requiredGroups,
+      denyUsers
     }, options);
 
     try {
@@ -86,15 +90,15 @@ class Auth {
 
     if (result) {
       const profile = this.createUserProfile(req.body, result);
-      if (profile) {
+      if (profile && this.checkLoginPermissions(profile)) {
         req.session.user = profile;
-        req.session.save(() => res.json(profile));
+        req.session.save(() => res.status(200).json(profile));
         return;
       }
     }
 
     res.status(403)
-      .json({error: 'Invalid login'});
+      .json({error: 'Invalid login or permission denied'});
   }
 
   /**
@@ -114,6 +118,35 @@ class Auth {
     res.json({});
   }
 
+  /**
+   * Checks if login is allowed for this user
+   * @param {object} profile User profile
+   * @return {boolean}
+   */
+  checkLoginPermissions(profile) {
+    const {requiredGroups, denyUsers} = this.options;
+
+    if (denyUsers.indexOf(profile.username) !== -1) {
+      return false;
+    }
+
+    if (requiredGroups.length > 0) {
+      const passes = requiredGroups.every(name => {
+        return profile.groups.indexOf(name) !== -1;
+      });
+
+      return passes;
+    }
+
+    return true;
+  }
+
+  /**
+   * Creates user profile object
+   * @param {object} fields Input fields
+   * @param {object} result Login result
+   * @return {object}
+   */
   createUserProfile(fields, result) {
     const ignores = ['password'];
     const required = ['username', 'id'];
