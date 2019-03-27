@@ -79,13 +79,14 @@ const defaultConfiguration = {
     store: {
       module: require.resolve('connect-loki'),
       options: {
-        autosave: true,
-        ttl: maxAge
+        autosave: true
+        //ttl: maxAge
       }
     },
     options: {
       name: 'osjs.sid',
       secret: 'osjs',
+      rolling: true,
       resave: false,
       saveUninitialized: false,
       cookie: {
