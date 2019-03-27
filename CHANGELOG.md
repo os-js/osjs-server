@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.36
+
+* Add rolling session updates (fixes #6)
+
 ## 3.0.35
 
 * Added 'routeAuthenticated' group behavior option (closes #13)
