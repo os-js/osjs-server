@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.37
+
+* Updated dependencies
+
 ## 3.0.36
 
 * Add rolling session updates (fixes #6)
