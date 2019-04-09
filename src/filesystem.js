@@ -129,10 +129,10 @@ class Filesystem {
   /**
    * Creates realpath VFS request
    * @param {string} filename The path
-   * @param {object} user User session object
+   * @param {object} [user] User session object
    * @return {Promise<string>}
    */
-  realpath(filename, user) {
+  realpath(filename, user = {}) {
     return this.methods.realpath({
       session: {
         user
