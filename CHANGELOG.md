@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.38
+
+* Updated Filesystem#realpath signature
+
 ## 3.0.37
 
 * Updated dependencies
