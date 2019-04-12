@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.39
+
+* Added Auth#register and adapter support
+
 ## 3.0.38
 
 * Updated Filesystem#realpath signature
