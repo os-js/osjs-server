@@ -32,4 +32,12 @@ describe('Auth null adapter', () => {
       .resolves
       .toBe(true);
   });
+
+  test('#register', () => {
+    return expect(adapter.register({
+      body: {username: 'jest', password: 'jest'}
+    }))
+      .resolves
+      .toEqual({username: 'jest'});
+  });
 });

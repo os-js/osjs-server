@@ -119,6 +119,22 @@ class Auth {
   }
 
   /**
+   * Performs a register request
+   * @param {Object} req HTTP request
+   * @param {Object} res HTTP response
+   */
+  async register(req, res) {
+    if (this.adapter.register) {
+      const result = await this.adapter.register(req, res);
+
+      return res.json(result);
+    }
+
+    return res.status(403)
+      .json({error: 'Registration unavailable'});
+  }
+
+  /**
    * Checks if login is allowed for this user
    * @param {object} profile User profile
    * @return {boolean}

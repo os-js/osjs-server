@@ -51,6 +51,7 @@ class AuthServiceProvider extends ServiceProvider {
   async init() {
     const {route, routeAuthenticated} = this.core.make('osjs/express');
 
+    route('post', '/register', (req, res) => this.auth.register(req, res));
     route('post', '/login', (req, res) => this.auth.login(req, res));
     routeAuthenticated('post', '/logout', (req, res) => this.auth.logout(req, res));
 

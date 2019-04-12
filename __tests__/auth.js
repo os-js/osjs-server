@@ -108,6 +108,14 @@ describe('Authentication', () => {
     expect(response.json).toBeCalledWith({});
   });
 
+  test('#register', async () => {
+    request.setBody({username: 'jest', password: 'jest'});
+
+    await auth.register(request, response);
+
+    expect(response.json).toBeCalledWith({username: 'jest'});
+  });
+
   test('#destroy', () => {
     auth = auth.destroy();
   });
