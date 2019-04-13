@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.40
+
+* Added Filesystem#call for abstracted calls
+
 ## 3.0.39
 
 * Added Auth#register and adapter support
