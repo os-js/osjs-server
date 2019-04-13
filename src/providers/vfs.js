@@ -67,6 +67,7 @@ class VFSServiceProvider extends ServiceProvider {
     this.core.singleton('osjs/vfs', () => ({
       realpath: (...args) => this.filesystem.realpath(...args),
       request: (...args) => this.filesystem.request(...args),
+      call: (...args) => this.filesystem.call(...args),
       mime: (...args) => this.filesystem.mime(...args),
 
       get adapters() {

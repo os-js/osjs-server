@@ -72,8 +72,16 @@ describe('Filesystem', () => {
       .toBe(realPath);
   });
 
+  test('#call', async () => {
+    const result = await filesystem.call({
+      method: 'exists',
+      user: {username: 'jest'}
+    }, 'home:/test');
+
+    expect(result).toBe(false);
+  });
+
   test('#request', async () => {
-    const response = new Response();
     const request = new Request();
 
     request.session = {
@@ -86,7 +94,7 @@ describe('Filesystem', () => {
       path: 'home:/test'
     };
 
-    const result = await filesystem.request('exists', request, response);
+    const result = await filesystem.request('exists', request);
 
     expect(result).toBe(false);
   });

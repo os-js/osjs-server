@@ -29,6 +29,7 @@
  */
 
 const fs = require('fs-extra');
+const path = require('path');
 const express = require('express');
 const {Stream} = require('stream');
 const {
@@ -101,7 +102,8 @@ const createMiddleware = core => {
 
 // Standard request with only a target
 const createRequestFactory = findMountpoint => (getter, method, readOnly, respond) => async (req, res) => {
-  const args = [...getter(req, res), req.fields.options || {}];
+  const options = req.fields.options || {};
+  const args = [...getter(req, res), options];
 
   const found = await findMountpoint(args[0]);
   if (method === 'search') {
@@ -114,6 +116,10 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
 
   const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
 
+  if (method === 'readfile' && options.download) {
+    res.attachment(path.basename(path.basename(result.path)));
+  }
+
   return respond ? respond(result) : result;
 };
 
@@ -124,27 +130,28 @@ const createCrossRequestFactory = findMountpoint => (getter, method, respond) =>
   const srcMount = await findMountpoint(from);
   const destMount = await findMountpoint(to);
   const sameAdapter = srcMount.adapter === destMount.adapter;
+  const createArgs = t => ({req, res, adapter: t.adapter, mount: t.mount});
 
   await checkMountpointPermission(req, res, 'readfile', false)(srcMount);
   await checkMountpointPermission(req, res, 'writefile', true)(destMount);
 
   if (sameAdapter) {
     const result = await srcMount
-      .adapter[method]({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, to, options);
+      .adapter[method](createArgs(srcMount))(from, to, options);
 
     return !!result;
   }
 
   // Simulates a copy/move
   const stream = await srcMount.adapter
-    .readfile({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
+    .readfile(createArgs(srcMount))(from, options);
 
   const result = await destMount.adapter
-    .writefile({req, res, adapter: destMount.adapter, mount: destMount.mount})(to, stream, options);
+    .writefile(createArgs(destMount))(to, stream, options);
 
   if (method === 'rename') {
     await srcMount.adapter
-      .unlink({req, res, adapter: srcMount.adapter, mount: srcMount.mount})(from, options);
+      .unlink(createArgs(srcMount))(from, options);
   }
 
   return !!result;

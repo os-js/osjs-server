@@ -217,15 +217,9 @@ module.exports = (core) => {
             return false;
           }
 
-          const stream = fs.createReadStream(realPath, {
+          return fs.createReadStream(realPath, {
             flags: 'r'
           });
-
-          if (options.download) {
-            vfs.res.attachment(path.basename(file));
-          }
-
-          return stream;
         }),
 
     /**

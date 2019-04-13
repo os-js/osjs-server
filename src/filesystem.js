@@ -28,6 +28,7 @@
  * @licence Simplified BSD License
  */
 
+const {methodArguments} = require('./utils/vfs');
 const systemAdapter = require('./adapters/vfs/system');
 const uuid = require('uuid/v1');
 const mime = require('mime');
@@ -120,10 +121,44 @@ class Filesystem {
 
   /**
    * Crates a VFS request
+   * @param {Request|object} req HTTP Request object
+   * @param {Response|object} [res] HTTP Response object
    * @return {Promise<*>}
    */
-  request(name, req, res) {
+  request(name, req, res = {}) {
     return this.methods[name](req, res);
+  }
+
+  /**
+   * Performs a VFS request with simulated HTTP request
+   * @param {object} options Request options
+   * @param {string} options.method VFS Method name
+   * @param {object} [options.user] User session data
+   * @param {*} ...args Arguments to pass to VFS method
+   * @return {Promise<*>}
+   */
+  call(options, ...args) {
+    const {method, user} = Object.assign({
+      user: {}
+    }, options);
+
+    const req = methodArguments[method]
+      .reduce(({fields, files}, key, index) => {
+        const arg = args[index];
+        if (typeof key === 'function') {
+          files = Object.assign(key(arg), files);
+        } else {
+          fields = Object.assign({
+            [key]: arg
+          }, fields);
+        }
+
+        return {fields, files};
+      }, {fields: {}, files: {}});
+
+    req.session = {user};
+
+    return this.request(method, req);
   }
 
   /**

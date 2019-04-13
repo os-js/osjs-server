@@ -225,6 +225,25 @@ const parseFields = config => (req, res) => {
   return parseFormData(req, config);
 };
 
+/**
+ * A map of methods and their arguments.
+ * Used for direct access via API
+ */
+const methodArguments = {
+  realpath: ['path'],
+  exists: ['path'],
+  stat: ['path'],
+  readdir: ['path'],
+  readfile: ['path'],
+  writefile: ['path', upload => ({upload})],
+  mkdir: ['path'],
+  unlink: ['path'],
+  touch: ['path'],
+  search: ['root', 'pattern'],
+  copy: ['from', 'to'],
+  rename: ['from', 'to']
+};
+
 module.exports = {
   mountpointResolver,
   createError,
@@ -234,5 +253,6 @@ module.exports = {
   sanitize,
   getPrefix,
   parseFields,
-  errorCodes
+  errorCodes,
+  methodArguments
 };
