@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.41
+
+* Updated dependencies
+
 ## 3.0.40
 
 * Added Filesystem#call for abstracted calls
