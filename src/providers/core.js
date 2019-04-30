@@ -179,6 +179,9 @@ class CoreServiceProvider extends ServiceProvider {
         params: [{
           cookie: {
             maxAge: this.core.config('session.options.cookie.maxAge')
+          },
+          vfs: {
+            watch: this.core.config('vfs.watch')
           }
         }]
       }));
