@@ -104,7 +104,7 @@ const defaultConfiguration = {
   },
 
   vfs: {
-    watch: true,
+    watch: false,
     root: path.join(process.cwd(), 'vfs'),
 
     mountpoints: [{
