@@ -155,7 +155,7 @@ module.exports = (core) => {
         .map(s => s.replace(/\{|\}/g, ''))
         .filter(s => segments[s].dynamic);
 
-      const handle = name => file => {
+      const handle = (action, type) => file => {
         const test = re.exec(file);
 
         if (test && test.length > 0) {
@@ -163,12 +163,18 @@ module.exports = (core) => {
             return Object.assign({}, {[k]: test[i + 1]});
           }, {});
 
-          callback(args, test[test.length - 1], name);
+          callback(args, test[test.length - 1], action, type);
         }
       };
 
       const events = ['add', 'addDir', 'unlinkDir', 'unlink'];
-      events.forEach(name => watch.on(name, handle(name)));
+      events.forEach(action => {
+        const type = action.match(/^add/)
+          ? 'add'
+          : 'remove';
+
+        watch.on(action, handle(action, type));
+      });
 
       return watch;
     },

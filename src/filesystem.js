@@ -250,7 +250,7 @@ class Filesystem {
    * @param {object} adapter The adapter
    */
   _watch(mountpoint, adapter) {
-    const watch = adapter.watch(mountpoint, (args, dir, type) => {
+    const watch = adapter.watch(mountpoint, (args, dir, action, type) => {
       const target = mountpoint.name + ':/' + dir;
       const keys = Object.keys(args);
       const filter = keys.length === 0
@@ -260,11 +260,13 @@ class Filesystem {
       this.core.emit('osjs/vfs:watch:change', {
         mountpoint,
         target,
+        action,
         type
       });
 
       this.core.broadcast('osjs/vfs:watch:change', [{
         path: target,
+        action,
         type
       }, args], filter);
     });
