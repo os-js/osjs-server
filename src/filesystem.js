@@ -228,7 +228,7 @@ class Filesystem {
    */
   watch(mountpoint) {
     if (
-      !mountpoint.attributes.watch ||
+      mountpoint.attributes.watch !== true ||
       this.core.config('vfs.watch') === false ||
       !mountpoint.attributes.root
     ) {

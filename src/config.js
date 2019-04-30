@@ -104,19 +104,21 @@ const defaultConfiguration = {
   },
 
   vfs: {
-    watch: false,
+    watch: true,
     root: path.join(process.cwd(), 'vfs'),
 
     mountpoints: [{
       name: 'osjs',
       attributes: {
         root: '{root}/dist',
-        readOnly: true
+        readOnly: true,
+        watch: true
       }
     }, {
       name: 'home',
       attributes: {
-        root: '{vfs}/{username}'
+        root: '{vfs}/{username}',
+        watch: true
       }
     }]
   }
