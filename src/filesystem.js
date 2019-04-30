@@ -265,6 +265,7 @@ class Filesystem {
       });
 
       this.core.broadcast('osjs/vfs:watch:change', [{
+        source: 'server',
         path: target,
         action,
         type
