@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.42
+
+* Supress warnings from invalid websocket messages
+
 ## 3.0.41
 
 * Updated dependencies
