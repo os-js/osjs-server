@@ -168,7 +168,10 @@ class CoreServiceProvider extends ServiceProvider {
       ws.on('message', msg => {
         try {
           const {name, params} = JSON.parse(msg);
-          this.core.emit(name, ws, ...params);
+
+          if (name && params instanceof Array) {
+            this.core.emit(name, ws, ...params);
+          }
         } catch (e) {
           this.core.logger.warn(e);
         }
