@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.43
+
+* Added ranged HTTP response support in system adapter (fixes #15) (#16)
+
 ## 3.0.42
 
 * Supress warnings from invalid websocket messages
