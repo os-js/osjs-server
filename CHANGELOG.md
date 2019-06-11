@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.44
+
+* Support more characters in vfs mountpoint names
+
 ## 3.0.43
 
 * Added ranged HTTP response support in system adapter (fixes #15) (#16)
