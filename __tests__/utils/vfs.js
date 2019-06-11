@@ -10,11 +10,20 @@ describe('VFS Utils', () => {
   test('getPrefix', () => {
     expect(utils.getPrefix('home:/'))
       .toBe('home');
+
+    expect(utils.getPrefix('home-dir:/'))
+      .toBe('home-dir');
+
+    expect(utils.getPrefix('home-dir::/'))
+      .toBe('home-dir');
   });
 
   test('sanitize', () => {
     expect(utils.sanitize('home:/(/)¤HF)¤"NF)(FN)(Fn98....)"'))
       .toBe('home:/(/)¤HF)¤NF)(FN)(Fn98....)');
+
+    expect(utils.sanitize('home-dir:/fooo'))
+      .toBe('home-dir:/fooo');
   });
 
   test('streamFromRequest', () => {

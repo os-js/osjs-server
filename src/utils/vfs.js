@@ -52,7 +52,7 @@ const getPrefix = path => String(path).split(':')[0];
  */
 const sanitize = filename => {
   const [name, str] = (filename.replace(/\/+/g, '/')
-    .match(/^(\w+):(.*)/) || [])
+    .match(/^([\w-_]+):+(.*)/) || [])
     .slice(1);
 
   const sane = str.split('/')
