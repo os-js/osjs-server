@@ -100,9 +100,22 @@ const createMiddleware = core => {
     });
 };
 
+const createOptions = req => {
+  const options = req.fields.options;
+  if (typeof options === 'string') {
+    try {
+      return JSON.parse(req.fields.options) || {};
+    } catch (e) {
+      // Allow to fall through
+    }
+  }
+
+  return options || {};
+};
+
 // Standard request with only a target
 const createRequestFactory = findMountpoint => (getter, method, readOnly, respond) => async (req, res) => {
-  const options = req.fields.options || {};
+  const options = createOptions(req);
   const args = [...getter(req, res), options];
 
   const found = await findMountpoint(args[0]);
@@ -125,7 +138,7 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
 
 // Request that has a source and target
 const createCrossRequestFactory = findMountpoint => (getter, method, respond) => async (req, res) => {
-  const [from, to, options] = [...getter(req, res), req.fields.options || {}];
+  const [from, to, options] = [...getter(req, res), createOptions(req)];
 
   const srcMount = await findMountpoint(from);
   const destMount = await findMountpoint(to);
