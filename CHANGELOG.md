@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.46
+
+* Fix issue with path resolution in VFS on cross requests (fixes #19)
+
 ## 3.0.45
 
 * Correctly detect VFS options on GET (fixes #18)
