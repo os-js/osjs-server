@@ -150,7 +150,7 @@ const createCrossRequestFactory = findMountpoint => (getter, method, respond) =>
 
   if (sameAdapter) {
     const result = await srcMount
-      .adapter[method](createArgs(srcMount))(from, to, options);
+      .adapter[method](createArgs(srcMount), createArgs(destMount))(from, to, options);
 
     return !!result;
   }

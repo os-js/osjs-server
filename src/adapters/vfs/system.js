@@ -160,13 +160,12 @@ module.exports = (core) => {
       : promise.then(() => true);
   };
 
-  const crossWrapper = method => vfs => (src, dest, options = {}) =>
-    Promise.resolve({
-      realSource: getRealPath(core, vfs.req, vfs.mount, src),
-      realDest: getRealPath(core, vfs.req, vfs.mount, dest)
-    })
-      .then(({realSource, realDest}) => fs[method](realSource, realDest))
-      .then(() => true);
+  const crossWrapper = method => (srcVfs, destVfs) => (src, dest, options = {}) => Promise.resolve({
+    realSource: getRealPath(core, srcVfs.req, srcVfs.mount, src),
+    realDest: getRealPath(core, destVfs.req, destVfs.mount, dest)
+  })
+    .then(({realSource, realDest}) => fs[method](realSource, realDest))
+    .then(() => true);
 
   return {
     watch: (mount, callback) => {

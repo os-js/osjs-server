@@ -34,7 +34,7 @@ describe('VFS System adapter', () => {
     }
   };
 
-  const request = (name, ...args) => adapter[name](vfs)(...args);
+  const request = (name, ...args) => adapter[name](vfs, vfs)(...args);
 
   test('#touch', () => {
     return expect(request('touch', 'home:/test'))
