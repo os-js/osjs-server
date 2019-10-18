@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.45
+
+* Correctly detect VFS options on GET (fixes #18)
+
 ## 3.0.44
 
 * Support more characters in vfs mountpoint names
