@@ -73,40 +73,40 @@ const streamFromRequest = req => {
     : fs.createReadStream(req.files.upload.path);
 };
 
-const validateAll = (arr, compare) => arr.every(g => compare.indexOf(g) !== -1);
+const validateAll = (arr, compare, strict = true) => arr[strict ? 'every' : 'some'](g => compare.indexOf(g) !== -1);
 
 /**
  * Validates array groups
  */
-const validateNamedGroups = (groups, userGroups) => {
+const validateNamedGroups = (groups, userGroups, strict) => {
   const namedGroups = groups
     .filter(g => typeof g === 'string');
 
   return namedGroups.length
-    ? validateAll(namedGroups, userGroups)
+    ? validateAll(namedGroups, userGroups, strict)
     : true;
 };
 
 /**
  * Validates matp of groups based on method:[group,...]
  */
-const validateMethodGroups = (groups, userGroups, method) => {
+const validateMethodGroups = (groups, userGroups, method, strict) => {
   const methodGroups = groups
     .find(g => typeof g === 'string' ? false : (method in g));
 
   return methodGroups
-    ? validateAll(methodGroups[method], userGroups)
+    ? validateAll(methodGroups[method], userGroups, strict)
     : true;
 };
 
 /**
  * Validates groups
  */
-const validateGroups = (userGroups, method, mountpoint) => {
+const validateGroups = (userGroups, method, mountpoint, strict) => {
   const groups = mountpoint.attributes.groups || [];
   if (groups.length) {
-    const namedValid = validateNamedGroups(groups, userGroups, method);
-    const methodValid = validateMethodGroups(groups, userGroups, method);
+    const namedValid = validateNamedGroups(groups, userGroups, strict);
+    const methodValid = validateMethodGroups(groups, userGroups, method, strict);
 
     return namedValid && methodValid;
   }
@@ -117,7 +117,7 @@ const validateGroups = (userGroups, method, mountpoint) => {
 /**
  * Checks permissions for given mountpoint
  */
-const checkMountpointPermission = (req, res, method, readOnly) => {
+const checkMountpointPermission = (req, res, method, readOnly, strict) => {
   const userGroups = req.session.user.groups;
 
   return ({mount}) => {
@@ -135,7 +135,7 @@ const checkMountpointPermission = (req, res, method, readOnly) => {
       }
     }
 
-    if (validateGroups(userGroups, method, mount)) {
+    if (validateGroups(userGroups, method, mount, strict)) {
       return Promise.resolve(true);
     }
 

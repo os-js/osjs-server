@@ -2,6 +2,31 @@ const {Readable, Stream} = require('stream');
 const temp = require('temp');
 const utils = require('../../src/utils/vfs.js');
 
+const checkMountpointGroupPermission = (
+  userGroups = [],
+  mountpointGroups = [],
+  strict
+) => {
+  const check = utils.checkMountpointPermission({
+    session: {
+      user: {
+        groups: userGroups
+      }
+    }
+  }, {}, 'readdir', false, strict);
+
+  const mount = {
+    name: 'osjs',
+    root: 'osjs:/',
+    attributes: {
+      readOnly: true,
+      groups: mountpointGroups
+    }
+  };
+
+  return check({mount});
+};
+
 describe('VFS Utils', () => {
   afterAll(() => {
     temp.cleanupSync();
@@ -42,21 +67,37 @@ describe('VFS Utils', () => {
   });
 
   test('validateGroups - flat groups', () => {
-    const mount = {
+    expect(utils.validateGroups([
+      'successful',
+      'failure'
+    ], '', {
       attributes: {
         groups: [
           'successful'
         ]
       }
-    };
-    expect(utils.validateGroups([
-      'successful',
-      'failure'
-    ], '', mount)).toBe(true);
+    })).toBe(true);
 
     expect(utils.validateGroups([
       'failure'
-    ], '', mount)).toBe(false);
+    ], '', {
+      attributes: {
+        groups: [
+          'successful'
+        ]
+      }
+    })).toBe(false);
+
+    expect(utils.validateGroups([
+      'successful'
+    ], '', {
+      attributes: {
+        groups: [
+          'successful',
+          'successful2'
+        ]
+      }
+    }, false)).toBe(true);
   });
 
   test('validateGroups - method maps', () => {
@@ -99,27 +140,43 @@ describe('VFS Utils', () => {
       .toThrowError('Mountpoint \'osjs\' is read-only');
   });
 
-  test('checkMountpointPermission - groups', () => {
-    const check = utils.checkMountpointPermission({
-      session: {
-        user: {
-          groups: []
-        }
-      }
-    }, {}, 'readdir', false);
-
-    const mount = {
-      name: 'osjs',
-      root: 'osjs:/',
-      attributes: {
-        readOnly: true,
-        groups: ['required']
-      }
-    };
-
-    return expect(check({mount}))
+  test('checkMountpointPermission - groups', async () => {
+    await expect(checkMountpointGroupPermission(
+      [],
+      ['required']
+    ))
       .rejects
       .toThrowError('Permission was denied for \'readdir\' in \'osjs\'');
+
+    await expect(checkMountpointGroupPermission(
+      ['missing'],
+      ['required']
+    ))
+      .rejects
+      .toThrowError('Permission was denied for \'readdir\' in \'osjs\'');
+
+    await expect(checkMountpointGroupPermission(
+      ['required'],
+      ['required', 'some-other']
+    ))
+      .rejects
+      .toThrowError('Permission was denied for \'readdir\' in \'osjs\'');
+
+    await expect(checkMountpointGroupPermission(
+      ['required'],
+      ['required']
+    )).resolves.toBe(true);
+
+    await expect(checkMountpointGroupPermission(
+      ['required', 'some-other'],
+      ['required']
+    )).resolves.toBe(true);
+
+    await expect(checkMountpointGroupPermission(
+      ['required'],
+      ['required', 'some-other'],
+      false
+    )).resolves.toBe(true);
   });
 
   test('checkMountpointPermission', () => {
