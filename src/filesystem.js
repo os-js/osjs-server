@@ -170,7 +170,9 @@ class Filesystem {
   realpath(filename, user = {}) {
     return this.methods.realpath({
       session: {
-        user
+        user: Object.assign({
+          groups: []
+        }, user)
       },
       fields: {
         path: filename
