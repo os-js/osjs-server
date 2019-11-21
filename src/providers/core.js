@@ -100,10 +100,10 @@ class CoreServiceProvider extends ServiceProvider {
         ...middleware.route
       ], cb),
 
-      routeAuthenticated: (method, uri, cb, groups = []) =>
+      routeAuthenticated: (method, uri, cb, groups = [], strict = requireAllGroups) =>
         app[method.toLowerCase()](uri, [
           ...middleware.routeAuthenticated,
-          isAuthenticated(groups, requireAllGroups)
+          isAuthenticated(groups, strict)
         ], cb)
     }));
   }
