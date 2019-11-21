@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.49
+
+* Added strict check argument to routeAuthenticated
+
 ## 3.0.48
 
 * Add a default group set in realpath (#21)

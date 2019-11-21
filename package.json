@@ -1,6 +1,6 @@
 {
   "name": "@osjs/server",
-  "version": "3.0.48",
+  "version": "3.0.49",
   "description": "OS.js v3 Server",
   "main": "index.js",
   "scripts": {
