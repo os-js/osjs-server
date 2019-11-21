@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.47
+
+* Added abitlity to make VFS group checking non-strict (#22) (#23)
+
 ## 3.0.46
 
 * Fix issue with path resolution in VFS on cross requests (fixes #19)
