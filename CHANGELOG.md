@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.48
+
+* Add a default group set in realpath (#21)
+
 ## 3.0.47
 
 * Added abitlity to make VFS group checking non-strict (#22) (#23)
