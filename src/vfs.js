@@ -125,7 +125,8 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
     }
   }
 
-  await checkMountpointPermission(req, res, method, readOnly)(found);
+  const strict = found.mount.attributes.strictGroups !== false;
+  await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
   const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
 
@@ -145,8 +146,10 @@ const createCrossRequestFactory = findMountpoint => (getter, method, respond) =>
   const sameAdapter = srcMount.adapter === destMount.adapter;
   const createArgs = t => ({req, res, adapter: t.adapter, mount: t.mount});
 
-  await checkMountpointPermission(req, res, 'readfile', false)(srcMount);
-  await checkMountpointPermission(req, res, 'writefile', true)(destMount);
+  const srcStrict = srcMount.mount.attributes.strictGroups !== false;
+  const destStrict = destMount.mount.attributes.strictGroups !== false;
+  await checkMountpointPermission(req, res, 'readfile', false, srcStrict)(srcMount);
+  await checkMountpointPermission(req, res, 'writefile', true, destStrict)(destMount);
 
   if (sameAdapter) {
     const result = await srcMount
