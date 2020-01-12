@@ -61,7 +61,7 @@ class Core extends CoreBase {
 
     const argv = minimist(options.argv);
     const val = k => argvToConfig[k](parseJson(argv[k]));
-    const keys = Object.keys(argvToConfig).filter(k => argv.hasOwnProperty(k));
+    const keys = Object.keys(argvToConfig).filter(k => Object.prototype.hasOwnProperty.call(argv, k));
     const argvConfig = keys.reduce((o, k) => {
       logger.info(`CLI argument '--${k}' overrides`, val(k));
 
