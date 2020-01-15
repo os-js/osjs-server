@@ -1,5 +1,11 @@
 ## Changelog for osjs-server
 
+## 3.0.50
+
+* Eslint pass
+* Updated dotfiles
+* Updated dependencies
+
 ## 3.0.49
 
 * Added strict check argument to routeAuthenticated
