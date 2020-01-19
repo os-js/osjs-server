@@ -1,5 +1,11 @@
 ## Changelog for osjs-server
 
+## 3.0.51
+
+* Updated dependencies
+* Updated dotfile usage
+* Updated copyright notices in preambles
+
 ## 3.0.50
 
 * Eslint pass
