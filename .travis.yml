@@ -6,6 +6,7 @@ node_js:
   - "8"
   - "9"
   - "10"
+  - "13"
 env:
   global:
     - CC_TEST_REPORTER_ID=125467a1ee6a975ccd559c38662bdc1dd9540cd2803f98db94e1cf3596738773
