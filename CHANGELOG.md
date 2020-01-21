@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.53
+
+* Updated exports
+
 ## 3.0.52
 
 * Updated dependencies
