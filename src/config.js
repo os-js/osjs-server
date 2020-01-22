@@ -57,6 +57,7 @@ const defaultConfiguration = {
     */
   ],
   auth: {
+    vfsGroups: [],
     defaultGroups: [],
     requiredGroups: [],
     requireAllGroups: false,

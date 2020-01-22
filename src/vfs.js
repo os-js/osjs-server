@@ -206,9 +206,10 @@ module.exports = core => {
   const methods = vfs(core);
   const middleware = createMiddleware(core);
   const {isAuthenticated} = core.make('osjs/express');
+  const vfsGroups = core.config('auth.vfsGroups', []);
 
   // Middleware first
-  router.use(isAuthenticated([]));
+  router.use(isAuthenticated(vfsGroups));
   router.use(middleware);
 
   // Then all VFS routes (needs implementation above)
