@@ -4,8 +4,8 @@
   "description": "OS.js v3 Server",
   "main": "index.js",
   "scripts": {
-    "test": "npm run eslint && npm run test:coverage",
-    "test:coverage": "jest",
+    "test": "npm run eslint && npm run jest",
+    "jest": "jest",
     "eslint": "eslint index.js src",
     "prepublishOnly": "npm run test"
   },
