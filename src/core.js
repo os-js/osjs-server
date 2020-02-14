@@ -54,7 +54,6 @@ class Core extends CoreBase {
    */
   constructor(cfg, options = {}) {
     options = Object.assign({}, {
-      kill: true,
       argv: process.argv.splice(2),
       root: process.cwd()
     }, options);
@@ -87,14 +86,10 @@ class Core extends CoreBase {
   /**
    * Destroys the instance
    */
-  destroy() {
+  destroy(done = () => {}) {
     if (this.destroyed) {
       return;
     }
-
-    const done = this.options.kill
-      ? () => process.exit(0)
-      : () => {};
 
     this.emit('osjs/core:destroy');
 
@@ -125,17 +120,7 @@ class Core extends CoreBase {
 
       logger.success('Initialized!');
 
-      try {
-        this.listen();
-      } catch (e) {
-        logger.fatal(e);
-
-        if (this.options.kill) {
-          process.exit(1);
-        }
-
-        return false;
-      }
+      this.listen();
     }
 
     return true;
