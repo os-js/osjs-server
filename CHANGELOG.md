@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.0.55
+
+* Updated dependencies
+
 ## 3.0.54
 
 * Removed process.exit from Core
