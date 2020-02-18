@@ -6,6 +6,7 @@
   "scripts": {
     "test": "npm run eslint && npm run jest",
     "jest": "jest",
+    "coverage": "jest --coverage",
     "eslint": "eslint index.js src",
     "prepublishOnly": "npm run test"
   },
