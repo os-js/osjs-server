@@ -1,98 +1,98 @@
 ## Changelog for osjs-server
 
-## 3.0.55
+## 3.0.55 - 2020-02-16
 
 * Updated dependencies
 
-## 3.0.54
+## 3.0.54 - 2020-02-14
 
 * Removed process.exit from Core
 
-## 3.0.53
+## 3.0.53 - 2020-01-21
 
 * Updated exports
 
-## 3.0.52
+## 3.0.52 - 2020-01-19
 
 * Updated dependencies
 
-## 3.0.51
+## 3.0.51 - 2020-01-19
 
 * Updated dependencies
 * Updated dotfile usage
 * Updated copyright notices in preambles
 
-## 3.0.50
+## 3.0.50 - 2020-01-15
 
 * Eslint pass
 * Updated dotfiles
 * Updated dependencies
 
-## 3.0.49
+## 3.0.49 - 2019-11-21
 
 * Added strict check argument to routeAuthenticated
 
-## 3.0.48
+## 3.0.48 - 2019-11-21
 
 * Add a default group set in realpath (#21)
 
-## 3.0.47
+## 3.0.47 - 2019-11-21
 
 * Added abitlity to make VFS group checking non-strict (#22) (#23)
 
-## 3.0.46
+## 3.0.46 - 2019-10-18
 
 * Fix issue with path resolution in VFS on cross requests (fixes #19)
 
-## 3.0.45
+## 3.0.45 - 2019-10-18
 
 * Correctly detect VFS options on GET (fixes #18)
 
-## 3.0.44
+## 3.0.44 - 2019-06-11
 
 * Support more characters in vfs mountpoint names
 
-## 3.0.43
+## 3.0.43 - 2019-06-02
 
 * Added ranged HTTP response support in system adapter (fixes #15) (#16)
 
-## 3.0.42
+## 3.0.42 - 2019-05-24
 
 * Supress warnings from invalid websocket messages
 
-## 3.0.41
+## 3.0.41 - 2019-04-13
 
 * Updated dependencies
 
-## 3.0.40
+## 3.0.40 - 2019-04-13
 
 * Added Filesystem#call for abstracted calls
 
-## 3.0.39
+## 3.0.39 - 2019-04-12
 
 * Added Auth#register and adapter support
 
-## 3.0.38
+## 3.0.38 - 2019-04-09
 
 * Updated Filesystem#realpath signature
 
-## 3.0.37
+## 3.0.37 - 2019-04-08
 
 * Updated dependencies
 
-## 3.0.36
+## 3.0.36 - 2019-03-27
 
 * Add rolling session updates (fixes #6)
 
-## 3.0.35
+## 3.0.35 - 2019-03-26
 
 * Added 'routeAuthenticated' group behavior option (closes #13)
 
-## 3.0.34
+## 3.0.34 - 2019-03-26
 
 * Added denyUsers and requiredGroups to authenticator
 
-## 3.0.33
+## 3.0.33 - 2019-03-26
 
 * Emit warning when files missing in dist (closes #11)
 * Updated consola logging pause in tests
@@ -100,7 +100,7 @@
 * Updated auth.js comment header
 * Updated esdoc
 
-## 3.0.32
+## 3.0.32 - 2019-03-24
 
 * Send VFS watch trigger type in broadcast call
 * Updated unit tests
@@ -115,15 +115,15 @@
 * Minor cleanup in Core
 * Refactored package loading procedure
 
-## 3.0.30
+## 3.0.30 - 2019-03-23
 
 * Added files section to package.json
 
-## 3.0.29
+## 3.0.29 - 2019-03-23
 
 * Added back killswitch to Core
 
-## 3.0.28
+## 3.0.28 - 2019-03-23
 
 * Updated README
 * Split out and cleaned up some core from CoreServiceProvider
@@ -156,7 +156,7 @@
 
 * Hotfix for some VFS methods
 
-## 3.0.26
+## 3.0.26 - 2019-03-19
 
 * Added 'osjs/core:ping' event
 * Refactored VFS implementation
@@ -169,125 +169,125 @@
 * Cleaned up core provider init
 * Split out Auth from AuthProvider
 
-## 3.0.25
+## 3.0.25 - 2019-02-25
 
 * Fixed 'fs' Settings adapter (fixes #14)
 
-## 3.0.24
+## 3.0.24 - 2019-02-19
 
 * Added Core.getInstance
 
-## 3.0.23
+## 3.0.23 - 2019-02-05
 
 * Added 'realpath' method to VFS (for internal usage)
 
-## 3.0.22
+## 3.0.22 - 2019-02-02
 
 * Updated routeAuthenticated group gating (#13)
 
-## 3.0.21
+## 3.0.21 - 2019-01-26
 
 * Update websocket message handling
 
-## 3.0.20
+## 3.0.20 - 2019-01-26
 
 * Addded 'call' method to expres service
 * Added support for injecting middleware for routes
 
-## 3.0.19
+## 3.0.19 - 2019-01-19
 
 * Updated dependencies
 * Update config.js (#10)
 * Updated README
 
-## 3.0.18
+## 3.0.18 - 2019-01-04
 
 * Updated internal socket message handling
 
-## 3.0.17
+## 3.0.17 - 2019-01-04
 
 * Fixed issue with non-client socket messaging
 
-## 3.0.16
+## 3.0.16 - 2019-01-01
 
 * Added direct support for core websocket in applications
 * Emit even on destruction
 
-## 3.0.15
+## 3.0.15 - 2018-12-29
 
 * Additional ws broadcast methods (#4)
 * Force session touch on ping (#6)
 
-## 3.0.14
+## 3.0.14 - 2018-12-23
 
 * Added configurable default auth groups
 
-## 3.0.13
+## 3.0.13 - 2018-12-22
 
 * Handle HEAD requests properly in VFS calls
 * Make sure route helpers cast method to lowercase<Paste>
 
-## 3.0.12
+## 3.0.12 - 2018-12-16
 
 * Updated MIME definitions
 
-## 3.0.11
+## 3.0.11 - 2018-12-09
 
 * Added configurable VFS root directory
 
-## 3.0.9
+## 3.0.9 - 2018-12-04
 
 * Updated filehound dependency (fixes #3)
 
-## 3.0.8
+## 3.0.8 - 2018-12-01
 
 * Make sure 'attributes' is set in a mountpoint
 
-## 3.0.7
+## 3.0.7 - 2018-12-01
 
 * Added a workaround from filehound blowing up
 * Added 'searchable' vfs mountpoint attribute<Paste>
 
-## 3.0.6
+## 3.0.6 - 2018-11-25
 
 * Added 'engines' to package.json
 
-## 3.0.5
+## 3.0.5 - 2018-11-25
 
 * Updated dependencies
 * Updated mime support
 
-## 3.0.4
+## 3.0.4 - 2018-11-24
 
 * Added configuration of form/file post size limits
 
-## 3.0.3
+## 3.0.3 - 2018-11-19
 
 * Added configurable 'manifest' file
 * Added configurable 'discovery' file usage
 * Removed unused Packages#constructor argument
 
-## 3.0.2
+## 3.0.2 - 2018-11-10
 
 * Added support for custom mime resolution in VFS
 
-## 3.0.1
+## 3.0.1 - 2018-10-28
 
 * Updated @osjs/common
 
-## 3.0.0-alpha.42
+## 3.0.0-alpha.42 - 2018-10-26
 
 * Better VFS service exposure
 
-## 3.0.0-alpha.41
+## 3.0.0-alpha.41 - 2018-09-29
 
 * Updated @osjs/common
 
-## 3.0.0-alpha.40
+## 3.0.0-alpha.40 - 2018-09-27
 
 * Updated dependencies
 
-## 3.0.0-alpha.39
+## 3.0.0-alpha.39 - 2018-08-14
 
 * Added 'nocache' package in development mode
 * Added 'ensure' to mkdir VFS method options
@@ -295,22 +295,22 @@
 * Ensure JSON vfs posts are not going through formidable
 * Added 'touch' VFS endpoint
 
-## 3.0.0-alpha.38
+## 3.0.0-alpha.38 - 2018-08-11
 
 * Added updated 'fs' settings adapter
 * Add proper VFS exposure in provider
 * Add some extra adapter error handling and fallback
 
-## 3.0.0-alpha.37
+## 3.0.0-alpha.37 - 2018-08-04
 
 * Broadcast dist file changes in dev mode
 
-## 3.0.0-alpha.36
+## 3.0.0-alpha.36 - 2018-07-25
 
 * Fixed some syntax errors
 * Fixed eslint comment warnings
 
-## 3.0.0-alpha.35
+## 3.0.0-alpha.35 - 2018-07-24
 
 * Split up Settings provider
 * Split up Package Provider
@@ -321,25 +321,25 @@
 * Cleaned up VFS request binding etc.
 * Match VFS parameters from client in adapter methods
 
-## 3.0.0-alpha.34
+## 3.0.0-alpha.34 - 2018-07-21
 
 * Fixed package reload (dev mode)
 
-## 3.0.0-alpha.33
+## 3.0.0-alpha.33 - 2018-07-21
 
 * Add extra filtering in package script loading
 
-## 3.0.0-alpha.32
+## 3.0.0-alpha.32 - 2018-07-20
 
 * Fixed removal of directories in system VFS adapter
 * VFS search improvements
 * Updated eslintrc
 
-## 3.0.0-alpha.31
+## 3.0.0-alpha.31 - 2018-07-19
 
 * Updated @osjs/common dependency
 
-## 3.0.0-alpha.30
+## 3.0.0-alpha.30 - 2018-07-18
 
 * Added VFS search() method
 * Updated travis-ci
@@ -347,21 +347,21 @@
 * Added initial travis-ci config
 * Better package loading on boot
 
-## 3.0.0-alpha.29
+## 3.0.0-alpha.29 - 2018-07-16
 
 * Added 'download' for 'readfile' in system vfs
 
-## 3.0.0-alpha.28
+## 3.0.0-alpha.28 - 2018-07-14
 
 * Allow override certain configurations via argv
 
-## 3.0.0-alpha.27
+## 3.0.0-alpha.27 - 2018-07-14
 
 * Updated @osjs/common dependency
 * Updated default configuration
 * Use 'connect-loki' instead of 'session-file-store' (#2)
 
-## 3.0.0-alpha.26
+## 3.0.0-alpha.26 - 2018-07-10
 
 * Updated dependencies
 * Remove 'extended' usage in body-parser
@@ -370,56 +370,56 @@
 * Added vfs change/watch events broadcasting over WS
 * Added read-only support for mountpoints
 
-## 3.0.0-alpha.25
+## 3.0.0-alpha.25 - 2018-07-06
 
 * Added 'ping' endpoint + cookie maxAge
 * Added missing .eslintrc, cleanup
 
-## 3.0.0-alpha.24
+## 3.0.0-alpha.24 - 2018-06-21
 
 * Added group-based permissions to VFS
 * Force-save session on login
 
-## 3.0.0-alpha.23
+## 3.0.0-alpha.23 - 2018-06-17
 
 * Provide 'fs' settings adapter
 
-## 3.0.0-alpha.22
+## 3.0.0-alpha.22 - 2018-06-09
 
 * Added group checking to authenticated routes
 * Add 'httpServer' reference in core
 
-## 3.0.0-alpha.21
+## 3.0.0-alpha.21 - 2018-05-23
 
 * Emit starting events (#1)
 * Added urlencoded body-parser middleware (#1)
 
-## 3.0.0-alpha.20
+## 3.0.0-alpha.20 - 2018-05-22
 
 * Added proxy support via configuration
 
-## 3.0.0-alpha.19
+## 3.0.0-alpha.19 - 2018-05-10
 
 * Solved an issue with readdir on Windows
 
-## 3.0.0-alpha.18
+## 3.0.0-alpha.18 - 2018-05-10
 
 * Remove 'registerDefault' from Core options
 
 This requires the distribution to manually register base providers.
 See 'index.js' in the base repository.
 
-## 3.0.0-alpha.17
+## 3.0.0-alpha.17 - 2018-05-06
 
 * Added npmignore
 * Added CHANGELOG
 
-## 3.0.0-alpha.16
+## 3.0.0-alpha.16 - 2018-05-05
 
 * Broadcast package/meta updates in dev mode
 * Solved an issue with session saving
 
-## 3.0.0-alpha.15
+## 3.0.0-alpha.15 - 2018-04-29
 
 * Added session customization, file as default
 * Added broadcasting (ws) support
@@ -427,17 +427,17 @@ See 'index.js' in the base repository.
 * Updated some vfs handling
 * Handle moutpoints properly, cleanups
 
-## 3.0.0-alpha.14
+## 3.0.0-alpha.14 - 2018-04-29
 
 * Updated application initialization
 * Provide more user information on login
 * Updated http session handling, require user id from login
 
-## 3.0.0-alpha.13
+## 3.0.0-alpha.13 - 2018-04-29
 
 * A more functional approach for Auth + Settings
 
-## 3.0.0-alpha.11
+## 3.0.0-alpha.11 - 2018-04-27
 
 * Updated provider loading
 * Renamed server.js -> core.js
@@ -461,7 +461,7 @@ See 'index.js' in the base repository.
 * Added options argument in service provider
 * Added support for passing on default provider options
 
-## 3.0.0-alpha.10
+## 3.0.0-alpha.10 - 2018-04-22
 
 * Added default 'home' mountpoint
 * Added session support to segment parsing in vfs
@@ -472,7 +472,7 @@ See 'index.js' in the base repository.
 * Optimize readdir() in vfs
 * Temporarily strip prefixes from inbound VFS call paths
 
-## v3.0.0-alpha.9
+## 3.0.0-alpha.9 - 2018-04-15
 
 * Added copy() VFS method
 * Use 'fs-extra' instead of builtin 'fs'
@@ -480,11 +480,11 @@ See 'index.js' in the base repository.
 * Added multipart/upload to VFS req parsing, writefile() method
 * Updated VFS methods and integration
 
-## v3.0.0-alpha.8
+## 3.0.0-alpha.8 - 2018-04-07
 
 * Changed app public path to '/apps/'
 
-## v3.0.0-alpha.7
+## 3.0.0-alpha.7 - 2018-03-31
 
 * Added engines dependendy to package.json
 * Added esdoc config, updated docs
@@ -492,11 +492,11 @@ See 'index.js' in the base repository.
 * Pass on a 'proc' object instead of metadata in applications
 * Added helpers to application init call
 
-## v3.0.0-alpha.6
+## 3.0.0-alpha.6 - 2018-03-25
 
 * Provide error code in scandir fail
 * Corrected URLs in package.json
 
-## v3.0.0-alpha.5
+## 3.0.0-alpha.5 - 2018-03-19
 
 Initial public release
