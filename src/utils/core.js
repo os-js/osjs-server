@@ -61,7 +61,7 @@ module.exports.createSession = (app, configuration) => {
 /*
  * Create WebSocket server
  */
-module.exports.createWebsocket = (app, configuration, session) => express_ws(app, null, {
+module.exports.createWebsocket = (app, configuration, session, httpServer) => express_ws(app, httpServer, {
   wsOptions: Object.assign({}, configuration.ws, {
     verifyClient: (info, done) => {
       session(info.req, {}, () => {

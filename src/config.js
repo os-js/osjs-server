@@ -44,6 +44,13 @@ const defaultConfiguration = {
     maxFieldsSize: mb(20),
     maxFileSize: mb(200)
   },
+  https: {
+    enabled: false,
+    options: {
+      key: null,
+      cert: null
+    }
+  },
   ws: {
     port: null
   },

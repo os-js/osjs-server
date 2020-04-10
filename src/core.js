@@ -29,6 +29,8 @@
  */
 
 const fs = require('fs-extra');
+const http = require('http');
+const https = require('https');
 const path = require('path');
 const morgan = require('morgan');
 const express = require('express');
@@ -69,16 +71,20 @@ class Core extends CoreBase {
 
     super(defaultConfiguration, deepmerge(cfg, argvConfig), options);
 
-    this.httpServer = null;
     this.logger = consola.withTag('Internal');
     this.app = express();
-    this.session = createSession(this.app, this.configuration);
-    this.ws = createWebsocket(this.app, this.configuration, this.session);
-    this.wss = this.ws.getWss();
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
     }
+
+    this.httpServer = this.config('https.enabled')
+      ? https.createServer(this.config('https.options'), this.app)
+      : http.createServer(this.app);
+
+    this.session = createSession(this.app, this.configuration);
+    this.ws = createWebsocket(this.app, this.configuration, this.session, this.httpServer);
+    this.wss = this.ws.getWss();
 
     _instance = this;
   }
@@ -163,22 +169,27 @@ class Core extends CoreBase {
    * Opens HTTP server
    */
   listen() {
-    const wsp = this.configuration.ws.port ? this.configuration.ws.port : this.configuration.port;
-    const session = path.basename(path.dirname(this.configuration.session.store.module));
-    const dist = this.configuration.public.replace(process.cwd(), '');
+    const httpPort = this.config('port');
+    const wsPort = this.config('ws.port') || httpPort;
+    const pub = this.config('public');
+    const session = path.basename(path.dirname(this.config('session.store.module')));
+    const dist = pub.replace(process.cwd(), '');
+    const secure = this.config('https.enabled', false);
+    const proto = prefix => `${prefix}${secure ? 's' : ''}://`;
+    const host = port => `${this.config('hostname')}:${port}`;
 
-    logger.info('Creating HTTP server');
+    logger.info('Opening server connection');
 
-    const checkFile = path.join(this.configuration.public, this.configuration.index);
+    const checkFile = path.join(pub, this.configuration.index);
     if (!fs.existsSync(checkFile)) {
       logger.warn('Missing files in "dist/" directory. Did you forget to run "npm run build" ?');
     }
 
-    this.httpServer = this.app.listen(this.configuration.port, () => {
-      logger.success(`Server was started on ${this.configuration.hostname}:${this.configuration.port}`);
-      logger.success(`WebSocket is running on ${this.configuration.hostname}:${wsp}`);
-      logger.success(`Using ${session} sessions`);
-      logger.success(`Serving content from ${dist}`);
+    this.httpServer.listen(httpPort, () => {
+      logger.success(`Using '${session}' sessions`);
+      logger.success(`Serving '${dist}'`);
+      logger.success(`WebSocket listening on ${proto('ws')}${host(wsPort)}`);
+      logger.success(`Server listening on ${proto('http')}${host(httpPort)}`);
     });
   }
 
