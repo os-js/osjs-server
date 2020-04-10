@@ -156,12 +156,16 @@ class Packages {
    * @param {object} user
    */
   async installPackage(url, options, user) {
+    if (!options.root) {
+      throw new Error('Missing package installation root path');
+    }
+
     const {realpath} = this.core.make('osjs/vfs');
 
     const name = path.basename(url.split('?')[0])
       .replace(/\.[^/.]+$/, '');
 
-    const userRoot = options.root || 'home:/.packages'; // FIXME: Client-side
+    const userRoot = options.root;
     const target = await realpath(`${userRoot}/${name}`, user);
     const root = await realpath(userRoot, user);
     const manifest = await realpath(`${userRoot}/metadata.json`, user);
@@ -194,6 +198,10 @@ class Packages {
     const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
 
     await fs.writeJson(manifest, metadatas);
+
+    return {
+      reload: !options.system
+    };
   }
 
   /**
