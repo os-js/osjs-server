@@ -55,6 +55,12 @@ class PackageServiceProvider extends ServiceProvider {
     });
   }
 
+  depends() {
+    return [
+      'osjs/express'
+    ];
+  }
+
   provides() {
     return [
       'osjs/packages'
@@ -62,7 +68,21 @@ class PackageServiceProvider extends ServiceProvider {
   }
 
   init() {
+    const {routeAuthenticated} = this.core.make('osjs/express');
+
     this.core.singleton('osjs/packages', () => this.packages);
+
+    routeAuthenticated('GET', '/api/packages/manifest', (req, res) => {
+      this.packages.readPackageManifests(req.session.user)
+        .then(json => res.json(json))
+        .catch(error => res.status(400).json({error}));
+    });
+
+    routeAuthenticated('POST', '/api/packages/install', (req, res) => {
+      this.packages.installPackage(req.body.url, req.body.options)
+        .then(() => res.json({success: true}))
+        .catch(error => res.status(400).json({error}));
+    });
 
     return this.packages.init();
   }

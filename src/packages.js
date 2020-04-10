@@ -42,6 +42,12 @@ const readOrDefault = filename => fs.existsSync(filename)
   : [];
 
 /**
+ * @typedef InstallPackageOptions
+ * @param {boolean} system
+ * @param {object} [auth]
+ */
+
+/**
  * OS.js Package Management
  */
 class Packages {
@@ -131,6 +137,36 @@ class Packages {
       logger.debug('Sending reload signal for', pkg.metadata.name);
       this.core.broadcast('osjs/packages:package:changed', [pkg.metadata.name]);
     }, 500);
+  }
+
+  /**
+   * Installs a package from given url
+   * @param {string} url
+   * @param {InstallPackageOptions} options
+   */
+  async installPackage(url, options) {
+    throw new Error('Not implemented yet');
+  }
+
+  /**
+   * Reads package manifests
+   * @return {Package[]} List of packages
+   */
+  async readPackageManifests(user) {
+    const {realpath} = this.core.make('osjs/vfs');
+    const {manifestFile} = this.options;
+    const homePath = await realpath('home:/.packages/metadata.json', user);
+
+    const systemManifest = await readOrDefault(manifestFile);
+    const userManifest = await readOrDefault(homePath);
+
+    return [
+      ...systemManifest,
+      ...userManifest.map(pkg => Object.assign({}, pkg, {
+        _user: true,
+        server: null
+      }))
+    ];
   }
 
   /**
