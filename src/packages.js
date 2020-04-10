@@ -31,8 +31,9 @@
 const fs = require('fs-extra');
 const fg = require('fast-glob');
 const path = require('path');
-const Package = require('./package.js');
 const consola = require('consola');
+const Package = require('./package.js');
+const {getPrefix} = require('./utils/vfs.js');
 const logger = consola.withTag('Packages');
 
 const relative = filename => filename.replace(process.cwd(), '');
@@ -155,11 +156,17 @@ class Packages {
    * @return {Package[]} List of packages
    */
   async readPackageManifests(paths, user) {
-    const {realpath} = this.core.make('osjs/vfs');
+    const {realpath, mountpoints} = this.core.make('osjs/vfs');
     const {manifestFile} = this.options;
     const systemManifest = await readOrDefault(manifestFile);
 
-    const userManifests = await Promise.all(paths.map(async p => {
+    const isValidVfs = p => {
+      const prefix = getPrefix(p);
+      const mount = mountpoints.find(m => m.name === prefix);
+      return mount && mount.attributes.root;
+    };
+
+    const userManifests = await Promise.all(paths.filter(isValidVfs).map(async p => {
       const real = await realpath(`${p}/metadata.json`, user);
       const list = await readOrDefault(real);
 
