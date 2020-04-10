@@ -187,7 +187,7 @@ class Packages {
 
     // FIXME: npm packages have a 'package' subdirectory
     if (!await fs.exists(path.resolve(target, 'metadata.json'))) {
-      await fs.unlink(target);
+      await fs.remove(target);
 
       throw new Error('Invalid package');
     }
