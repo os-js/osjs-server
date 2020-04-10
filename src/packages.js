@@ -167,8 +167,6 @@ class Packages {
 
     const userRoot = options.root;
     const target = await realpath(`${userRoot}/${name}`, user);
-    const root = await realpath(userRoot, user);
-    const manifest = await realpath(`${userRoot}/metadata.json`, user);
 
     if (await fs.exists(target)) {
       throw new Error('Target already exists');
@@ -192,16 +190,56 @@ class Packages {
       throw new Error('Invalid package');
     }
 
-    // TODO: Check conflicts ?
-
-    const filenames = await fg(root + '/*/metadata.json'); // FIXME: Windows!
-    const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
-
-    await fs.writeJson(manifest, metadatas);
+    await this.writeUserManifest(userRoot, user);
 
     return {
       reload: !options.system
     };
+  }
+
+  /**
+   * Uninstalls a package by name
+   * @param {string} name
+   * @param {InstallPackageOptions} options
+   * @param {object} user
+   */
+  async uninstallPackage(name, options, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
+    if (!options.root) {
+      throw new Error('Missing package installation root path');
+    }
+
+    const userRoot = options.root;
+    const target = await realpath(`${userRoot}/${name}`, user);
+
+    if (await fs.exists(target)) {
+      await fs.remove(target);
+      await this.writeUserManifest(userRoot, user);
+    } else {
+      throw new Error('Package not found in root directory');
+    }
+
+    return {
+      reload: !options.system
+    };
+  }
+
+  /**
+   * Writes user installed package manifest
+   * @param {string} userRoot
+   * @param {object} user
+   */
+  async writeUserManifest(userRoot, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
+    // TODO: Check conflicts ?
+    const root = await realpath(userRoot, user);
+    const manifest = await realpath(`${userRoot}/metadata.json`, user);
+    const filenames = await fg(root + '/*/metadata.json'); // FIXME: Windows!
+    const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
+
+    await fs.writeJson(manifest, metadatas);
   }
 
   /**

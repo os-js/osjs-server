@@ -87,6 +87,15 @@ class PackageServiceProvider extends ServiceProvider {
         });
     });
 
+    routeAuthenticated('POST', '/api/packages/uninstall', (req, res) => {
+      this.packages.uninstallPackage(req.body.name, req.body.options, req.session.user)
+        .then(body => res.json(body))
+        .catch((error) => {
+          console.error(error);
+          res.status(400).json({error: 'Package uninstallation failed'});
+        });
+    });
+
     return this.packages.init();
   }
 
