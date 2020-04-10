@@ -1,5 +1,10 @@
 ## Changelog for osjs-server
 
+## 3.1.0 - 2020-04-10
+
+* Added support for https (#26) (#27)
+* Added timestamps to CHANGELOG.md
+
 ## 3.0.55 - 2020-02-16
 
 * Updated dependencies
