@@ -32,6 +32,8 @@ const fs = require('fs-extra');
 const fg = require('fast-glob');
 const path = require('path');
 const consola = require('consola');
+const bent = require('bent');
+const tar = require('tar');
 const Package = require('./package.js');
 const {getPrefix} = require('./utils/vfs.js');
 const logger = consola.withTag('Packages');
@@ -42,10 +44,17 @@ const readOrDefault = filename => fs.existsSync(filename)
   ? fs.readJsonSync(filename)
   : [];
 
+const extract = (stream, target) => new Promise((resolve, reject) => {
+  stream.once('end', () => resolve());
+  stream.once('error', error => reject(error));
+  stream.pipe(tar.extract({C: target}));
+});
+
 /**
  * @typedef InstallPackageOptions
+ * @param {string} root
  * @param {boolean} system
- * @param {object} [auth]
+ * @param {object} [headers]
  */
 
 /**
@@ -144,9 +153,38 @@ class Packages {
    * Installs a package from given url
    * @param {string} url
    * @param {InstallPackageOptions} options
+   * @param {object} user
    */
-  async installPackage(url, options) {
-    throw new Error('Not implemented yet');
+  async installPackage(url, options, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
+    const name = path.basename(url.split('?')[0])
+      .replace(/\.[^/.]+$/, '');
+
+    const stream = await bent()(url, null, {
+      headers: options.headers || {}
+    });
+
+    const userRoot = options.root || 'home:/.packages'; // FIXME: Client-side
+    const target = await realpath(`${userRoot}/${name}`, user);
+    const root = await realpath(userRoot, user);
+    const manifest = await realpath(`${userRoot}/metadata.json`, user);
+
+    if (await fs.exists(target)) {
+      throw new Error('Target already exists');
+    }
+
+    if (options.system) {
+      throw new Error('System packages not yet implemented');
+    }
+
+    await fs.mkdir(target);
+    await extract(stream, target);
+
+    const filenames = await fg(root + '/*/metadata.json');
+    const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
+
+    await fs.writeJson(manifest, metadatas);
   }
 
   /**

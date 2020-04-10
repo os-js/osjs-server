@@ -79,9 +79,12 @@ class PackageServiceProvider extends ServiceProvider {
     });
 
     routeAuthenticated('POST', '/api/packages/install', (req, res) => {
-      this.packages.installPackage(req.body.url, req.body.options)
+      this.packages.installPackage(req.body.url, req.body.options, req.session.user)
         .then(() => res.json({success: true}))
-        .catch(error => res.status(400).json({error}));
+        .catch((error) => {
+          console.error(error);
+          res.status(400).json({error: 'Package installation failed'});
+        });
     });
 
     return this.packages.init();
