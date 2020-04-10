@@ -161,10 +161,6 @@ class Packages {
     const name = path.basename(url.split('?')[0])
       .replace(/\.[^/.]+$/, '');
 
-    const stream = await bent()(url, null, {
-      headers: options.headers || {}
-    });
-
     const userRoot = options.root || 'home:/.packages'; // FIXME: Client-side
     const target = await realpath(`${userRoot}/${name}`, user);
     const root = await realpath(userRoot, user);
@@ -178,10 +174,23 @@ class Packages {
       throw new Error('System packages not yet implemented');
     }
 
+    const stream = await bent()(url, null, {
+      headers: options.headers || {}
+    });
+
     await fs.mkdir(target);
     await extract(stream, target);
 
-    const filenames = await fg(root + '/*/metadata.json');
+    // FIXME: npm packages have a 'package' subdirectory
+    if (!await fs.exists(path.resolve(target, 'metadata.json'))) {
+      await fs.unlink(target);
+
+      throw new Error('Invalid package');
+    }
+
+    // TODO: Check conflicts ?
+
+    const filenames = await fg(root + '/*/metadata.json'); // FIXME: Windows!
     const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
 
     await fs.writeJson(manifest, metadatas);
