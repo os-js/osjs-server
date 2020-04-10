@@ -72,29 +72,24 @@ class PackageServiceProvider extends ServiceProvider {
 
     this.core.singleton('osjs/packages', () => this.packages);
 
-    routeAuthenticated('GET', '/api/packages/metadata', (req, res) => {
-      this.packages.readPackageManifests(req.query.root || [], req.session.user)
-        .then(json => res.json(json))
-        .catch(error => res.status(400).json({error}));
-    });
+    const usingPackageManager = cb => (req, res) => cb(req, res)
+      .then(json => res.json(json))
+      .catch((error) => {
+        console.error(error);
+        res.status(400).json({error: 'Action failed'});
+      });
 
-    routeAuthenticated('POST', '/api/packages/install', (req, res) => {
-      this.packages.installPackage(req.body.url, req.body.options, req.session.user)
-        .then(body => res.json(body))
-        .catch((error) => {
-          console.error(error);
-          res.status(400).json({error: 'Package installation failed'});
-        });
-    });
+    routeAuthenticated('GET', '/api/packages/metadata', usingPackageManager((req, res) => {
+      return this.packages.readPackageManifests(req.query.root || [], req.session.user);
+    }));
 
-    routeAuthenticated('POST', '/api/packages/uninstall', (req, res) => {
-      this.packages.uninstallPackage(req.body.name, req.body.options, req.session.user)
-        .then(body => res.json(body))
-        .catch((error) => {
-          console.error(error);
-          res.status(400).json({error: 'Package uninstallation failed'});
-        });
-    });
+    routeAuthenticated('POST', '/api/packages/install', usingPackageManager((req, res) => {
+      return this.packages.installPackage(req.body.url, req.body.options, req.session.user);
+    }));
+
+    routeAuthenticated('POST', '/api/packages/uninstall', usingPackageManager((req, res) => {
+      return this.packages.uninstallPackage(req.body.name, req.body.options, req.session.user);
+    }));
 
     return this.packages.init();
   }
