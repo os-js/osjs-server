@@ -73,7 +73,7 @@ class PackageServiceProvider extends ServiceProvider {
     this.core.singleton('osjs/packages', () => this.packages);
 
     routeAuthenticated('GET', '/api/packages/manifest', (req, res) => {
-      this.packages.readPackageManifests(req.session.user)
+      this.packages.readPackageManifests(req.query.root || [], req.session.user)
         .then(json => res.json(json))
         .catch(error => res.status(400).json({error}));
     });

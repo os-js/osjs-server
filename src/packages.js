@@ -150,22 +150,28 @@ class Packages {
 
   /**
    * Reads package manifests
+   * @param {string[]} paths
+   * @param {object} user
    * @return {Package[]} List of packages
    */
-  async readPackageManifests(user) {
+  async readPackageManifests(paths, user) {
     const {realpath} = this.core.make('osjs/vfs');
     const {manifestFile} = this.options;
-    const homePath = await realpath('home:/.packages/metadata.json', user);
-
     const systemManifest = await readOrDefault(manifestFile);
-    const userManifest = await readOrDefault(homePath);
+
+    const userManifests = await Promise.all(paths.map(async p => {
+      const real = await realpath(`${p}/metadata.json`, user);
+      const list = await readOrDefault(real);
+
+      return list.map(pkg => Object.assign({}, pkg, {
+        _vfs: p,
+        server: null
+      }));
+    }));
 
     return [
       ...systemManifest,
-      ...userManifest.map(pkg => Object.assign({}, pkg, {
-        _user: true,
-        server: null
-      }))
+      ...[].concat(...userManifests)
     ];
   }
 
