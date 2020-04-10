@@ -79,17 +79,23 @@ class PackageServiceProvider extends ServiceProvider {
         res.status(400).json({error: 'Action failed'});
       });
 
-    routeAuthenticated('GET', '/api/packages/metadata', usingPackageManager((req, res) => {
-      return this.packages.readPackageManifests(req.query.root || [], req.session.user);
-    }));
+    routeAuthenticated(
+      'GET',
+      '/api/packages/metadata',
+      usingPackageManager(req => this.packages.readPackageManifests(req.query.root || [], req.session.user))
+    );
 
-    routeAuthenticated('POST', '/api/packages/install', usingPackageManager((req, res) => {
-      return this.packages.installPackage(req.body.url, req.body.options, req.session.user);
-    }));
+    routeAuthenticated(
+      'POST',
+      '/api/packages/install',
+      usingPackageManager(req => this.packages.installPackage(req.body.url, req.body.options, req.session.user))
+    );
 
-    routeAuthenticated('POST', '/api/packages/uninstall', usingPackageManager((req, res) => {
-      return this.packages.uninstallPackage(req.body.name, req.body.options, req.session.user);
-    }));
+    routeAuthenticated(
+      'POST',
+      '/api/packages/uninstall',
+      usingPackageManager(req => this.packages.uninstallPackage(req.body.name, req.body.options, req.session.user))
+    );
 
     return this.packages.init();
   }

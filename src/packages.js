@@ -32,23 +32,17 @@ const fs = require('fs-extra');
 const fg = require('fast-glob');
 const path = require('path');
 const consola = require('consola');
-const bent = require('bent');
-const tar = require('tar');
 const Package = require('./package.js');
 const {getPrefix} = require('./utils/vfs.js');
+const {
+  relative,
+  archiveName,
+  fetchSteam,
+  readOrDefault,
+  extract
+} = require('./utils/packages.js');
+
 const logger = consola.withTag('Packages');
-
-const relative = filename => filename.replace(process.cwd(), '');
-
-const readOrDefault = filename => fs.existsSync(filename)
-  ? fs.readJsonSync(filename)
-  : [];
-
-const extract = (stream, target) => new Promise((resolve, reject) => {
-  stream.once('end', () => resolve());
-  stream.once('error', error => reject(error));
-  stream.pipe(tar.extract({C: target}));
-});
 
 /**
  * @typedef InstallPackageOptions
@@ -156,30 +150,22 @@ class Packages {
    * @param {object} user
    */
   async installPackage(url, options, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
     if (!options.root) {
       throw new Error('Missing package installation root path');
     }
 
-    const {realpath} = this.core.make('osjs/vfs');
-
-    const name = path.basename(url.split('?')[0])
-      .replace(/\.[^/.]+$/, '');
-
-    const userRoot = options.root;
-    const target = await realpath(`${userRoot}/${name}`, user);
+    const name = archiveName(url);
+    const target = await realpath(`${options.root}/${name}`, user);
 
     if (await fs.exists(target)) {
       throw new Error('Target already exists');
-    }
-
-    if (options.system) {
+    } else if (options.system) {
       throw new Error('System packages not yet implemented');
     }
 
-    const stream = await bent()(url, null, {
-      headers: options.headers || {}
-    });
-
+    const stream = await fetchSteam(url, options);
     await fs.mkdir(target);
     await extract(stream, target);
 
@@ -190,7 +176,7 @@ class Packages {
       throw new Error('Invalid package');
     }
 
-    await this.writeUserManifest(userRoot, user);
+    await this.writeUserManifest(options.root, user);
 
     return {
       reload: !options.system
