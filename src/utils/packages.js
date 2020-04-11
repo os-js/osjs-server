@@ -44,14 +44,14 @@ const fetchSteam = (url, options) => bent()(url, null, {
   headers: options.headers || {}
 });
 
-const readOrDefault = filename => fs.existsSync(filename)
-  ? fs.readJsonSync(filename)
-  : [];
+const readOrDefault = async (filename) => await fs.exists(filename)
+  ? fs.readJson(filename)
+  : Promise.resolve([]);
 
 const extract = (stream, target) => new Promise((resolve, reject) => {
-  stream.once('end', () => resolve());
-  stream.once('error', error => reject(error));
-  stream.pipe(tar.extract({C: target}));
+  const s = stream.pipe(tar.extract({C: target}));
+  s.once('end', () => resolve());
+  s.once('error', error => reject(error));
 });
 
 module.exports = {

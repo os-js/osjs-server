@@ -98,11 +98,11 @@ class Packages {
    * Loads all packages
    * @return {Promise<Package[]>}
    */
-  createLoader() {
+  async createLoader() {
     let result = [];
     const {discoveredFile, manifestFile} = this.options;
-    const discovered = readOrDefault(discoveredFile);
-    const manifest = readOrDefault(manifestFile);
+    const discovered = await readOrDefault(discoveredFile);
+    const manifest = await readOrDefault(manifestFile);
     const sources = discovered.map(d => path.join(d, 'metadata.json'));
 
     logger.info('Using package discovery file', relative(discoveredFile));
@@ -204,6 +204,7 @@ class Packages {
     const target = await realpath(`${userRoot}/${name}`, user);
 
     if (await fs.exists(target)) {
+      // FIXME: Secure this
       await fs.remove(target);
       await this.writeUserManifest(userRoot, user);
     } else {
@@ -226,7 +227,7 @@ class Packages {
     // TODO: Check conflicts ?
     const root = await realpath(userRoot, user);
     const manifest = await realpath(`${userRoot}/metadata.json`, user);
-    const filenames = await fg(root + '/*/metadata.json'); // FIXME: Windows!
+    const filenames = await fg(root.replace(/\\/g, '/') + '/*/metadata.json');
     const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
 
     await fs.writeJson(manifest, metadatas);
