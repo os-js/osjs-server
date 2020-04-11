@@ -165,6 +165,18 @@ class CoreServiceProvider extends ServiceProvider {
       ws.upgradeReq = ws.upgradeReq || req;
       ws._osjs_client = Object.assign({}, req.session.user);
 
+      const interval = this.core.config('ws.ping', 0);
+
+      const pingInterval = interval ? setInterval(() => {
+        ws.send(JSON.stringify({
+          name: 'osjs/core:ping'
+        }));
+      }, interval) : undefined;
+
+      ws.on('close', () => {
+        clearInterval(pingInterval);
+      });
+
       ws.on('message', msg => {
         try {
           const {name, params} = JSON.parse(msg);

@@ -52,7 +52,8 @@ const defaultConfiguration = {
     }
   },
   ws: {
-    port: null
+    port: null,
+    ping: 30 * 1000
   },
   proxy: [
     /*
