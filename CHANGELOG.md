@@ -1,5 +1,10 @@
 ## Changelog for osjs-server
 
+## 3.1.2 - 2020-04-12
+
+* Require node 10 or later
+* Made Core destroy procedure async
+
 ## 3.1.1 - 2020-04-11
 
 * Added websocket client ping (#30)
