@@ -159,18 +159,22 @@ class Packages {
     const name = archiveName(url);
     const target = await realpath(`${options.root}/${name}`, user);
 
-    if (await fs.exists(target)) {
+    if (path.resolve(target) === path.resolve(options.root)) {
+      throw new Error('Invalid package source');
+    } else if (await fs.exists(target)) {
       throw new Error('Target already exists');
     } else if (options.system) {
       throw new Error('System packages not yet implemented');
     }
 
     const stream = await fetchSteam(url, options);
-    await fs.mkdir(target);
+
+    await fs.mkdirp(target);
     await extract(stream, target);
 
     // FIXME: npm packages have a 'package' subdirectory
-    if (!await fs.exists(path.resolve(target, 'metadata.json'))) {
+    const exists = await fs.exists(path.resolve(target, 'metadata.json'));
+    if (!exists) {
       await fs.remove(target);
 
       throw new Error('Invalid package');
