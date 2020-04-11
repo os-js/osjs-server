@@ -94,7 +94,7 @@ class Core extends CoreBase {
    */
   destroy(done = () => {}) {
     if (this.destroyed) {
-      return;
+      return Promise.resolve();
     }
 
     this.emit('osjs/core:destroy');
@@ -105,13 +105,21 @@ class Core extends CoreBase {
       this.wss.close();
     }
 
-    super.destroy();
+    const finish = (error) => {
+      if (error) {
+        logger.error(error);
+      }
 
-    if (this.httpServer) {
-      this.httpServer.close(done);
-    } else {
-      done();
-    }
+      if (this.httpServer) {
+        this.httpServer.close(done);
+      } else {
+        done();
+      }
+    };
+
+    return Promise.resolve(super.destroy())
+      .then(() => finish())
+      .catch(finish);
   }
 
   /**

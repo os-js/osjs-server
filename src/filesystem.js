@@ -34,6 +34,7 @@ const uuid = require('uuid/v1');
 const mime = require('mime');
 const path = require('path');
 const vfs = require('./vfs');
+const {closeWatches} = require('./utils/core.js');
 const consola = require('consola');
 const logger = consola.withTag('Filesystem');
 
@@ -62,12 +63,12 @@ class Filesystem {
   /**
    * Destroys instance
    */
-  destroy() {
-    this.watches.forEach(({watch}) => {
-      if (watch && typeof watch.close === 'function') {
-        watch.close();
-      }
-    });
+  async destroy() {
+    const watches = this.watches.filter(({watch}) => {
+      return watch && typeof watch.close === 'function';
+    }).map(({watch}) => watch);
+
+    await closeWatches(watches);
 
     this.watches = [];
   }
@@ -204,13 +205,13 @@ class Filesystem {
   /**
    * Unmounts given mountpoint
    * @param {object} mount Mountpoint
-   * @return {boolean}
+   * @return {Promise<boolean>}
    */
-  unmount(mountpoint) {
+  async unmount(mountpoint) {
     const found = this.watches.find(w => w.id === mountpoint.id);
 
     if (found && found.watch) {
-      found.watch.close();
+      await found.watch.close();
     }
 
     const index = this.mountpoints.indexOf(mountpoint);
@@ -270,6 +271,8 @@ class Filesystem {
         type
       }, args], filter);
     });
+
+    watch.on('error', error => logger.warn('Mountpoint watch error', error));
 
     this.watches.push({
       id: mountpoint.id,

@@ -96,7 +96,7 @@ describe('Package', () => {
       .toBe(path.resolve(core.configuration.public, 'apps/JestTest'));
   });
 
-  test('#destroy', () => {
-    pkg.destroy();
+  test('#destroy', async () => {
+    await pkg.destroy();
   });
 });

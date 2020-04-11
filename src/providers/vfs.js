@@ -44,6 +44,11 @@ class VFSServiceProvider extends ServiceProvider {
     this.filesystem = new Filesystem(core, options);
   }
 
+  async destroy() {
+    await this.filesystem.destroy();
+    super.destroy();
+  }
+
   depends() {
     return [
       'osjs/express'

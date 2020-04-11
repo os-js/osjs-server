@@ -100,12 +100,14 @@ describe('Filesystem', () => {
   });
 
   test('#unmount', () => {
-    expect(filesystem.unmount(mountpoint))
+    return expect(filesystem.unmount(mountpoint))
+      .resolves
       .toBe(true);
   });
 
   test('#unmount - test fail', () => {
-    expect(filesystem.unmount({}))
+    return expect(filesystem.unmount({}))
+      .resolves
       .toBe(false);
   });
 
@@ -132,7 +134,8 @@ describe('Filesystem', () => {
     }));
   });
 
-  test('#destroy', () => {
-    filesystem = filesystem.destroy();
+  test('#destroy', async () => {
+    await filesystem.destroy();
+    filesystem = undefined;
   });
 });

@@ -35,7 +35,7 @@ const bodyParser = require('body-parser');
 const proxy = require('express-http-proxy');
 const nocache = require('nocache');
 const {ServiceProvider} = require('@osjs/common');
-const {isAuthenticated} = require('../utils/core.js');
+const {isAuthenticated, closeWatches} = require('../utils/core.js');
 
 /**
  * OS.js Core Service Provider
@@ -50,8 +50,8 @@ class CoreServiceProvider extends ServiceProvider {
     this.watches = [];
   }
 
-  destroy() {
-    this.watches.forEach(w => w.close());
+  async destroy() {
+    await closeWatches(this.watches);
     super.destroy();
   }
 

@@ -47,7 +47,8 @@ describe('Packages', () => {
     }));
   });
 
-  test('#destroy', () => {
-    packages = packages.destroy();
+  test('#destroy', async () => {
+    await packages.destroy();
+    packages = undefined;
   });
 });

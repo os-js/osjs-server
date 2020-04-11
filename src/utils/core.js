@@ -109,3 +109,13 @@ module.exports.isAuthenticated = (groups = [], all = false) => (req, res, next) 
     .status(403)
     .send('Access denied');
 };
+
+/**
+ * Closes an array of watches
+ */
+module.exports.closeWatches = (watches) => Promise.all(
+  watches.map((w) => {
+    return w.close()
+      .catch(error => console.warn(error));
+  })
+);

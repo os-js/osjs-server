@@ -57,11 +57,11 @@ class Package {
   /**
    * Destroys instance
    */
-  destroy() {
+  async destroy() {
     this.action('destroy');
 
     if (this.watcher) {
-      this.watcher.close();
+      await this.watcher.close();
       this.watcher = null;
     }
   }

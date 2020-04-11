@@ -56,7 +56,8 @@ describe('Settings', () => {
     expect(response.json).toBeCalledWith({});
   });
 
-  test('#destroy', () => {
-    settings = settings.destroy();
+  test('#destroy', async () => {
+    await settings.destroy();
+    settings = undefined;
   });
 });

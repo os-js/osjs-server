@@ -90,11 +90,11 @@ describe('Core', () => {
     expect(core.wss.clients[2].send).not.toBeCalled();
   });
 
-  test('#destroy', () => {
+  test('#destroy', async () => {
     const cb = jest.fn();
     core.on('osjs/core:destroy', cb);
-    core.destroy();
-    core.destroy();
+    await core.destroy();
+    await core.destroy();
     expect(cb).toHaveBeenCalledTimes(1);
   });
 });

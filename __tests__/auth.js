@@ -116,7 +116,8 @@ describe('Authentication', () => {
     expect(response.json).toBeCalledWith({username: 'jest'});
   });
 
-  test('#destroy', () => {
-    auth = auth.destroy();
+  test('#destroy', async () => {
+    await auth.destroy();
+    auth = undefined;
   });
 });

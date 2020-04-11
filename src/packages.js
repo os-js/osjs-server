@@ -195,8 +195,9 @@ class Packages {
   /**
    * Destroys packages
    */
-  destroy() {
-    this.packages.forEach(pkg => pkg.destroy());
+  async destroy() {
+    await Promise.all(this.packages.map(pkg => pkg.destroy()));
+
     this.packages = [];
   }
 

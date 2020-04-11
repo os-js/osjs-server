@@ -33,6 +33,7 @@ const path = require('path');
 const chokidar = require('chokidar');
 const {ServiceProvider} = require('@osjs/common');
 const Packages = require('../packages');
+const {closeWatches} = require('../utils/core');
 
 /**
  * OS.js Package Service Provider
@@ -74,9 +75,9 @@ class PackageServiceProvider extends ServiceProvider {
     }
   }
 
-  destroy() {
-    this.watches.forEach(w => w.close());
-    this.packages.destroy();
+  async destroy() {
+    await closeWatches(this.watches);
+    await this.packages.destroy();
     super.destroy();
   }
 
