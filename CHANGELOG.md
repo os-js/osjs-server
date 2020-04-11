@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.1 - 2020-04-11
+
+* Added websocket client ping (#30)
+
 ## 3.1.0 - 2020-04-10
 
 * Added support for https (#26) (#27)
