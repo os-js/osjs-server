@@ -46,19 +46,19 @@
     "express-ws": "^4.0.0",
     "fast-glob": "^2.2.7",
     "filehound": "^1.17.4",
-    "formidable": "^1.2.1",
+    "formidable": "^1.2.2",
     "fs-extra": "^8.1.0",
     "mime": "^2.4.4",
-    "minimist": "^1.2.0",
-    "morgan": "^1.9.1",
+    "minimist": "^1.2.5",
+    "morgan": "^1.10.0",
     "nocache": "^2.1.0",
     "sanitize-filename": "^1.6.3",
     "uuid": "^3.4.0"
   },
   "devDependencies": {
-    "@osjs/eslint-config": "^1.0.2",
+    "@osjs/eslint-config": "^1.1.0",
     "eslint": "^6.8.0",
-    "jest-express": "^1.11.0",
+    "jest-express": "^1.11.3",
     "temp": "^0.9.1"
   },
   "eslintConfig": {
