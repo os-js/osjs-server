@@ -55,10 +55,11 @@ class Packages {
     this.core = core;
     this.packages = [];
     this.hotReloading = {};
-    this.options = Object.assign({
+    this.options = {
       manifestFile: null,
-      discoveredFile: null
-    }, options);
+      discoveredFile: null,
+      ...options
+    };
   }
 
   /**

@@ -46,11 +46,12 @@ class Auth {
     const {requiredGroups, denyUsers} = core.configuration.auth;
 
     this.core = core;
-    this.options = Object.assign({
+    this.options = {
       adapter: nullAdapter,
       requiredGroups,
-      denyUsers
-    }, options);
+      denyUsers,
+      ...options
+    };
 
     try {
       this.adapter = this.options.adapter(core, this.options.config);
@@ -179,9 +180,11 @@ class Auth {
     if (missing.length) {
       logger.warn('Missing user attributes', missing);
     } else {
-      return Object.assign({}, template, Object.keys(result)
+      const values = Object.keys(result)
         .filter(k => ignores.indexOf(k) === -1)
-        .reduce((o, k) => Object.assign(o, {[k]: result[k]}), {}));
+        .reduce((o, k) => ({...o, [k]: result[k]}), {});
+
+      return {...template, ...values};
     }
 
     return false;

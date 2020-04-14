@@ -188,10 +188,7 @@ module.exports = (core) => {
         const test = re.exec(file);
 
         if (test && test.length > 0) {
-          const args = seg.reduce((res, k, i) => {
-            return Object.assign({}, {[k]: test[i + 1]});
-          }, {});
-
+          const args = seg.reduce((res, k, i) => ({[k]: test[i + 1]}), {});
           callback(args, test[test.length - 1], name);
         }
       };

@@ -36,10 +36,11 @@ const path = require('path');
  * @param {object} [options] Adapter options
  */
 module.exports = (core, options) => {
-  const fsOptions = Object.assign({
+  const fsOptions = {
     system: false,
-    path: 'home:/.osjs/settings.json'
-  }, options || {});
+    path: 'home:/.osjs/settings.json',
+    ...options || {}
+  };
 
   const getRealFilename = (req) => fsOptions.system
     ? Promise.resolve(fsOptions.path)

@@ -53,22 +53,24 @@ module.exports.createSession = (app, configuration) => {
   const Store = require(configuration.session.store.module)(express_session);
   const store = new Store(configuration.session.store.options);
 
-  return express_session(Object.assign({
-    store
-  }, configuration.session.options));
+  return express_session({
+    store,
+    ...configuration.session.options
+  });
 };
 
 /*
  * Create WebSocket server
  */
 module.exports.createWebsocket = (app, configuration, session, httpServer) => express_ws(app, httpServer, {
-  wsOptions: Object.assign({}, configuration.ws, {
+  wsOptions: {
+    ...configuration.ws,
     verifyClient: (info, done) => {
       session(info.req, {}, () => {
         done(true);
       });
     }
-  })
+  }
 });
 
 /*

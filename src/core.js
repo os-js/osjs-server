@@ -55,18 +55,18 @@ class Core extends CoreBase {
    * @param {Object} [options] Options
    */
   constructor(cfg, options = {}) {
-    options = Object.assign({}, {
+    options = {
       argv: process.argv.splice(2),
-      root: process.cwd()
-    }, options);
+      root: process.cwd(),
+      ...options
+    };
 
     const argv = minimist(options.argv);
     const val = k => argvToConfig[k](parseJson(argv[k]));
     const keys = Object.keys(argvToConfig).filter(k => Object.prototype.hasOwnProperty.call(argv, k));
     const argvConfig = keys.reduce((o, k) => {
       logger.info(`CLI argument '--${k}' overrides`, val(k));
-
-      return Object.assign(o, deepmerge(o, val(k)));
+      return {...o, ...deepmerge(o, val(k))};
     }, {});
 
     super(defaultConfiguration, deepmerge(cfg, argvConfig), options);

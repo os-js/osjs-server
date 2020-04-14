@@ -55,9 +55,10 @@ class Filesystem {
     this.watches = [];
     this.router = null;
     this.methods = {};
-    this.options = Object.assign({
-      adapters: {}
-    }, options);
+    this.options = {
+      adapters: {},
+      ...options
+    };
   }
 
   /**
@@ -78,14 +79,16 @@ class Filesystem {
    * @return {Promise<boolean>}
    */
   async init() {
-    const adapters = Object.assign({
-      system: systemAdapter
-    }, this.options.adapters);
+    const adapters = {
+      system: systemAdapter,
+      ...this.options.adapters
+    };
 
     this.adapters = Object.keys(adapters).reduce((result, iter) => {
-      return Object.assign({
-        [iter]: adapters[iter](this.core)
-      }, result);
+      return {
+        [iter]: adapters[iter](this.core),
+        ...result
+      };
     }, {});
 
     // Routes
@@ -139,9 +142,10 @@ class Filesystem {
    * @return {Promise<*>}
    */
   call(options, ...args) {
-    const {method, user} = Object.assign({
-      user: {}
-    }, options);
+    const {method, user} = {
+      user: {},
+      ...options
+    };
 
     const req = methodArguments[method]
       .reduce(({fields, files}, key, index) => {
@@ -149,9 +153,10 @@ class Filesystem {
         if (typeof key === 'function') {
           files = Object.assign(key(arg), files);
         } else {
-          fields = Object.assign({
-            [key]: arg
-          }, fields);
+          fields = {
+            [key]: arg,
+            ...fields
+          };
         }
 
         return {fields, files};
@@ -171,9 +176,10 @@ class Filesystem {
   realpath(filename, user = {}) {
     return this.methods.realpath({
       session: {
-        user: Object.assign({
-          groups: []
-        }, user)
+        user: {
+          groups: [],
+          ...user
+        }
       },
       fields: {
         path: filename
@@ -187,11 +193,12 @@ class Filesystem {
    * @return {object} the mountpoint
    */
   mount(mount) {
-    const mountpoint = Object.assign({
+    const mountpoint = {
       id: uuid(),
       root: `${mount.name}:/`,
-      attributes: {}
-    }, mount);
+      attributes: {},
+      ...mount
+    };
 
     this.mountpoints.push(mountpoint);
 

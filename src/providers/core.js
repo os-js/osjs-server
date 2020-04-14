@@ -163,7 +163,7 @@ class CoreServiceProvider extends ServiceProvider {
 
     app.ws('/', (ws, req) => {
       ws.upgradeReq = ws.upgradeReq || req;
-      ws._osjs_client = Object.assign({}, req.session.user);
+      ws._osjs_client = {...req.session.user};
 
       const interval = this.core.config('ws.ping', 0);
 
@@ -205,11 +205,12 @@ class CoreServiceProvider extends ServiceProvider {
    */
   initProxies() {
     const {app, configuration} = this.core;
-    const proxies = (configuration.proxy || []).map(item => Object.assign({
+    const proxies = (configuration.proxy || []).map(item => ({
       source: null,
       destination: null,
-      options: {}
-    }, item)).filter(item => item.source && item.destination);
+      options: {},
+      ...item
+    })).filter(item => item.source && item.destination);
 
     proxies.forEach(item => {
       this.core.logger.info(`Proxying ${item.source} -> ${item.destination}`);
