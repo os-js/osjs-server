@@ -92,9 +92,9 @@ class Core extends CoreBase {
   /**
    * Destroys the instance
    */
-  destroy(done = () => {}) {
+  async destroy(done = () => {}) {
     if (this.destroyed) {
-      return Promise.resolve();
+      return;
     }
 
     this.emit('osjs/core:destroy');
@@ -117,9 +117,12 @@ class Core extends CoreBase {
       }
     };
 
-    return Promise.resolve(super.destroy())
-      .then(() => finish())
-      .catch(finish);
+    try {
+      await super.destroy();
+      finish();
+    } catch (e) {
+      finish(e);
+    }
   }
 
   /**
