@@ -1,5 +1,10 @@
 ## Changelog for osjs-server
 
+## 3.1.3 - 2020-06-11
+
+* Added some error logging to VFS
+* Updated Core#destroy async expressions
+
 ## 3.1.2 - 2020-04-12
 
 * Require node 10 or later
