@@ -207,6 +207,7 @@ module.exports = core => {
   const middleware = createMiddleware(core);
   const {isAuthenticated} = core.make('osjs/express');
   const vfsGroups = core.config('auth.vfsGroups', []);
+  const logEnabled = core.config('development');
 
   // Middleware first
   router.use(isAuthenticated(vfsGroups));
@@ -232,8 +233,15 @@ module.exports = core => {
       ? error.code
       : (errorCodes[error.code] || 400);
 
+    if (logEnabled) {
+      console.error(error);
+    }
+
     res.status(code)
-      .json({error: error.toString()});
+      .json({
+        error: error.toString(),
+        stack: logEnabled ? error.stack : undefined
+      });
   });
 
   return {router, methods};
