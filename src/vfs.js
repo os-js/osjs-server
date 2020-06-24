@@ -131,7 +131,8 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
 
   if (method === 'readfile' && options.download) {
-    res.attachment(path.basename(path.basename(result.path)));
+    const filename = path.basename(args[0]);
+    res.append('Content-Disposition', `attachment; filename="${filename}"`);
   }
 
   return respond ? respond(result) : result;
