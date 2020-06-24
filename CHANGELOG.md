@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.4 - 2020-06-24
+
+* VFS readfile downloads no longer relies on physical paths (fixes #33)
+
 ## 3.1.3 - 2020-06-11
 
 * Added some error logging to VFS
