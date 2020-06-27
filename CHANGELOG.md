@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.5 - 2020-06-27
+
+* Moved ranged VFS responses down to API (from adapter)
+
 ## 3.1.4 - 2020-06-24
 
 * VFS readfile downloads no longer relies on physical paths (fixes #33)
