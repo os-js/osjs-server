@@ -48,6 +48,16 @@ const requestSearch = req => ([sanitize(req.fields.root), req.fields.pattern]);
 const requestCross = req => ([sanitize(req.fields.from), sanitize(req.fields.to)]);
 const requestFile = req => ([sanitize(req.fields.path), streamFromRequest(req)]);
 
+/*
+ * Parses the range request headers
+ */
+const parseRangeHeader = (range, size) => {
+  const [pstart, pend] = range.replace(/bytes=/, '').split('-');
+  const start = parseInt(pstart, 10);
+  const end = pend ? parseInt(pend, 10) : undefined;
+  return [start, end];
+};
+
 /**
  * A "finally" for our chain
  */
@@ -102,15 +112,22 @@ const createMiddleware = core => {
 
 const createOptions = req => {
   const options = req.fields.options;
+  const range = req.headers && req.headers.range;
+  let result = options || {};
+
   if (typeof options === 'string') {
     try {
-      return JSON.parse(req.fields.options) || {};
+      result = JSON.parse(req.fields.options) || {};
     } catch (e) {
       // Allow to fall through
     }
   }
 
-  return options || {};
+  if (range) {
+    result.range = parseRangeHeader(req.headers.range);
+  }
+
+  return result;
 };
 
 // Standard request with only a target
@@ -125,14 +142,39 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
     }
   }
 
-  const strict = found.mount.attributes.strictGroups !== false;
+  const {attributes} = found.mount;
+  const strict = attributes.strictGroups !== false;
+  const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
+  const wrapper = m => found.adapter[m]({req, res, adapter: found.adapter, mount: found.mount})(...args);
   await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
-  const result = await found.adapter[method]({req, res, adapter: found.adapter, mount: found.mount})(...args);
+  const result = await wrapper(method);
+  if (method === 'readfile') {
+    if (ranges && options.range) {
+      try {
+        const stat = await wrapper('stat');
+        if (stat.size) {
+          const size = stat.size;
+          const [start, end] = options.range;
+          const realEnd = end ? end : size - 1;
+          const chunksize = (realEnd - start) + 1;
 
-  if (method === 'readfile' && options.download) {
-    const filename = path.basename(args[0]);
-    res.append('Content-Disposition', `attachment; filename="${filename}"`);
+          res.writeHead(206, {
+            'Content-Range': `bytes ${start}-${realEnd}/${size}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': stat.mime
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to send a ranged response', e);
+      }
+    }
+
+    if (options.download) {
+      const filename = path.basename(args[0]);
+      res.append('Content-Disposition', `attachment; filename="${filename}"`);
+    }
   }
 
   return respond ? respond(result) : result;

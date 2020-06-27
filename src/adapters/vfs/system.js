@@ -65,40 +65,6 @@ const createFileIter = (core, realRoot, file) => {
 };
 
 /*
- * Parses the range request headers
- */
-const parseRangeHeader = (range, size) => {
-  const [pstart, pend] = range.replace(/bytes=/, '').split('-');
-  const start = parseInt(pstart, 10);
-  const end = pend ? parseInt(pend, 10) : size - 1;
-  const chunksize = (end - start) + 1;
-
-  return [start, end, chunksize];
-};
-
-/*
- * Creates the returned stream
- */
-const createStream = (realPath, {size}, {req, res}) => {
-  const params = {flags: 'r'};
-
-  if (req.headers && req.headers.range) {
-    const [start, end, chunksize] = parseRangeHeader(req.headers.range, size);
-
-    res.writeHead(206, {
-      'Content-Range': `bytes ${start}-${end}/${size}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': chunksize
-    });
-
-    params.start = start;
-    params.end = end;
-  }
-
-  return fs.createReadStream(realPath, params);
-};
-
-/*
  * Segment value map
  */
 const segments = {
@@ -247,7 +213,12 @@ module.exports = (core) => {
             return false;
           }
 
-          return createStream(realPath, stat, vfs);
+          const range = options.range || [];
+          return fs.createReadStream(realPath, {
+            flags: 'r',
+            start: range[0],
+            end: range[1]
+          });
         }),
 
     /**
