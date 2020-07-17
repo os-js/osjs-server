@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.6 - 2020-07-17
+
+* Send content-type mime on readfile if available (#35)
+
 ## 3.1.5 - 2020-06-27
 
 * Moved ranged VFS responses down to API (from adapter)
