@@ -146,13 +146,15 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   const strict = attributes.strictGroups !== false;
   const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
   const wrapper = m => found.adapter[m]({req, res, adapter: found.adapter, mount: found.mount})(...args);
+  const readstat = () => wrapper('stat').catch(() => ({}));
   await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
   const result = await wrapper(method);
   if (method === 'readfile') {
+    const stat = await readstat();
+
     if (ranges && options.range) {
       try {
-        const stat = await wrapper('stat');
         if (stat.size) {
           const size = stat.size;
           const [start, end] = options.range;
@@ -169,6 +171,8 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
       } catch (e) {
         console.warn('Failed to send a ranged response', e);
       }
+    } else if (stat.mime) {
+      res.append('Content-Type', stat.mime);
     }
 
     if (options.download) {
