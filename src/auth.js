@@ -75,7 +75,7 @@ class Auth {
    */
   async init() {
     if (this.adapter.init) {
-      return await this.adapter.init();
+      return this.adapter.init();
     }
 
     return true;

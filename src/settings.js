@@ -43,9 +43,10 @@ class Settings {
    */
   constructor(core, options = {}) {
     this.core = core;
-    this.options = Object.assign({
-      adapter: nullAdapter
-    }, options);
+    this.options = {
+      adapter: nullAdapter,
+      ...options
+    };
 
     if (this.options.adapter === 'fs') {
       this.options.adapter = fsAdapter;

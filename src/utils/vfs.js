@@ -168,7 +168,7 @@ const mountpointResolver = core => async (path) => {
     ? adapters[mount.adapter]
     : adapters.system);
 
-  return {mount, adapter};
+  return Object.freeze({mount, adapter});
 };
 
 /*

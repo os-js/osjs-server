@@ -149,11 +149,11 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   const {attributes} = found.mount;
   const strict = attributes.strictGroups !== false;
   const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
-  const wrapper = m => found.adapter[m]({adapter: found.adapter, mount: found.mount})(...args);
-  const readstat = () => wrapper('stat').catch(() => ({}));
+  const vfsMethodWrapper = m => found.adapter[m](found)(...args);
+  const readstat = () => vfsMethodWrapper('stat').catch(() => ({}));
   await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
-  const result = await wrapper(method);
+  const result = await vfsMethodWrapper(method);
   if (method === 'readfile') {
     const stat = await readstat();
 
@@ -195,7 +195,6 @@ const createCrossRequestFactory = findMountpoint => (getter, method, respond) =>
   const srcMount = await findMountpoint(from);
   const destMount = await findMountpoint(to);
   const sameAdapter = srcMount.adapter === destMount.adapter;
-  const createArgs = t => ({adapter: t.adapter, mount: t.mount});
 
   const srcStrict = srcMount.mount.attributes.strictGroups !== false;
   const destStrict = destMount.mount.attributes.strictGroups !== false;
@@ -204,21 +203,21 @@ const createCrossRequestFactory = findMountpoint => (getter, method, respond) =>
 
   if (sameAdapter) {
     const result = await srcMount
-      .adapter[method](createArgs(srcMount), createArgs(destMount))(from, to, options);
+      .adapter[method](srcMount, destMount)(from, to, options);
 
     return !!result;
   }
 
   // Simulates a copy/move
   const stream = await srcMount.adapter
-    .readfile(createArgs(srcMount))(from, options);
+    .readfile(srcMount)(from, options);
 
   const result = await destMount.adapter
-    .writefile(createArgs(destMount))(to, stream, options);
+    .writefile(destMount)(to, stream, options);
 
   if (method === 'rename') {
     await srcMount.adapter
-      .unlink(createArgs(srcMount))(from, options);
+      .unlink(srcMount)(from, options);
   }
 
   return !!result;
