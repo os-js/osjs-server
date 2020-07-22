@@ -155,20 +155,20 @@ const createError = (code, message) => {
 /**
  * Resolves a mountpoint
  */
-const mountpointResolver = core => (path) => {
+const mountpointResolver = core => async (path) => {
   const {adapters, mountpoints} = core.make('osjs/vfs');
   const prefix = getPrefix(path);
   const mount = mountpoints.find(m => m.name === prefix);
 
-  if (mount) {
-    const adapter = mount.adapter
-      ? adapters[mount.adapter]
-      : adapters.system;
-
-    return Promise.resolve({mount, adapter});
+  if (!mount) {
+    throw createError(403, `Mountpoint not found for '${prefix}'`);
   }
 
-  return Promise.reject(createError(403, `Mountpoint not found for '${prefix}'`));
+  const adapter = await (mount.adapter
+    ? adapters[mount.adapter]
+    : adapters.system);
+
+  return {mount, adapter};
 };
 
 /*
