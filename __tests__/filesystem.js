@@ -46,8 +46,8 @@ describe('Filesystem', () => {
       .toBe('test/jest');
   });
 
-  test('#mount', () => {
-    mountpoint = filesystem.mount({
+  test('#mount', async () => {
+    mountpoint = await filesystem.mount({
       name: 'jest',
       attributes: {
         root: '/tmp'

@@ -101,8 +101,8 @@ class Filesystem {
     mime.define(define, {force: true});
 
     // Mountpoints
-    this.core.config('vfs.mountpoints')
-      .forEach(mount => this.mount(mount));
+    await Promise.all(this.core.config('vfs.mountpoints')
+      .map(mount => this.mount(mount)));
 
     return true;
   }
@@ -192,7 +192,7 @@ class Filesystem {
    * @param {object} mount Mountpoint
    * @return {object} the mountpoint
    */
-  mount(mount) {
+  async mount(mount) {
     const mountpoint = {
       id: uuid(),
       root: `${mount.name}:/`,
@@ -204,7 +204,7 @@ class Filesystem {
 
     logger.success('Mounted', mountpoint.name);
 
-    this.watch(mountpoint);
+    await this.watch(mountpoint);
 
     return mountpoint;
   }
@@ -236,7 +236,7 @@ class Filesystem {
    * Set up a watch for given mountpoint
    * @param {object} mountpoint The mountpoint
    */
-  watch(mountpoint) {
+  async watch(mountpoint) {
     if (
       !mountpoint.attributes.watch ||
       this.core.config('vfs.watch') === false ||
@@ -245,12 +245,12 @@ class Filesystem {
       return;
     }
 
-    const adapter = mountpoint.adapter
+    const adapter = await (mountpoint.adapter
       ? this.adapters[mountpoint.adapter]
-      : this.adapters.system;
+      : this.adapters.system);
 
     if (typeof adapter.watch === 'function') {
-      this._watch(mountpoint, adapter);
+      await this._watch(mountpoint, adapter);
     }
   }
 
@@ -259,8 +259,8 @@ class Filesystem {
    * @param {object} mountpoint The mountpoint
    * @param {object} adapter The adapter
    */
-  _watch(mountpoint, adapter) {
-    const watch = adapter.watch(mountpoint, (args, dir, type) => {
+  async _watch(mountpoint, adapter) {
+    const watch = await adapter.watch(mountpoint, (args, dir, type) => {
       const target = mountpoint.name + ':/' + dir;
       const keys = Object.keys(args);
       const filter = keys.length === 0

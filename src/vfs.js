@@ -113,6 +113,7 @@ const createMiddleware = core => {
 const createOptions = req => {
   const options = req.fields.options;
   const range = req.headers && req.headers.range;
+  const session = {...req.session || {}};
   let result = options || {};
 
   if (typeof options === 'string') {
@@ -127,7 +128,10 @@ const createOptions = req => {
     result.range = parseRangeHeader(req.headers.range);
   }
 
-  return result;
+  return {
+    ...result,
+    session
+  };
 };
 
 // Standard request with only a target
@@ -145,7 +149,7 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   const {attributes} = found.mount;
   const strict = attributes.strictGroups !== false;
   const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
-  const wrapper = m => found.adapter[m]({req, res, adapter: found.adapter, mount: found.mount})(...args);
+  const wrapper = m => found.adapter[m]({adapter: found.adapter, mount: found.mount})(...args);
   const readstat = () => wrapper('stat').catch(() => ({}));
   await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
@@ -191,7 +195,7 @@ const createCrossRequestFactory = findMountpoint => (getter, method, respond) =>
   const srcMount = await findMountpoint(from);
   const destMount = await findMountpoint(to);
   const sameAdapter = srcMount.adapter === destMount.adapter;
-  const createArgs = t => ({req, res, adapter: t.adapter, mount: t.mount});
+  const createArgs = t => ({adapter: t.adapter, mount: t.mount});
 
   const srcStrict = srcMount.mount.attributes.strictGroups !== false;
   const destStrict = destMount.mount.attributes.strictGroups !== false;

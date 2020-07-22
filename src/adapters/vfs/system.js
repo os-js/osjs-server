@@ -80,14 +80,14 @@ const segments = {
 
   username: {
     dynamic: true,
-    fn: (core, req) => req.session.user.username
+    fn: (core, session) => session.user.username
   }
 };
 
 /*
  * Gets a segment value
  */
-const getSegment = (core, req, seg) => segments[seg] ? segments[seg].fn(core, req) : '';
+const getSegment = (core, session, seg) => segments[seg] ? segments[seg].fn(core, session) : '';
 
 /*
  * Matches a string for segments
@@ -97,16 +97,16 @@ const matchSegments = str => (str.match(/(\{\w+\})/g) || []);
 /*
  * Resolves a string with segments
  */
-const resolveSegments = (core, req, str) => matchSegments(str)
-  .reduce((result, current) => result.replace(current, getSegment(core, req, current.replace(/(\{|\})/g, ''))), str);
+const resolveSegments = (core, session, str) => matchSegments(str)
+  .reduce((result, current) => result.replace(current, getSegment(core, session, current.replace(/(\{|\})/g, ''))), str);
 
 /*
  * Resolves a given file path based on a request
  * Will take out segments from the resulting string
  * and replace them with a list of defined variables
  */
-const getRealPath = (core, req, mount, file) => {
-  const root = resolveSegments(core, req, mount.attributes.root);
+const getRealPath = (core, session, mount, file) => {
+  const root = resolveSegments(core, session, mount.attributes.root);
   const str = file.substr(mount.root.length - 1);
   return path.join(root, str);
 };
@@ -118,7 +118,7 @@ const getRealPath = (core, req, mount, file) => {
  */
 module.exports = (core) => {
   const wrapper = (method, cb, ...args) => vfs => (file, options = {}) => {
-    const promise = Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+    const promise = Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
       .then(realPath => fs[method](realPath, ...args));
 
     return typeof cb === 'function'
@@ -127,8 +127,8 @@ module.exports = (core) => {
   };
 
   const crossWrapper = method => (srcVfs, destVfs) => (src, dest, options = {}) => Promise.resolve({
-    realSource: getRealPath(core, srcVfs.req, srcVfs.mount, src),
-    realDest: getRealPath(core, destVfs.req, destVfs.mount, dest)
+    realSource: getRealPath(core, options.session, srcVfs.mount, src),
+    realDest: getRealPath(core, options.session, destVfs.mount, dest)
   })
     .then(({realSource, realDest}) => fs[method](realSource, realDest))
     .then(() => true);
@@ -136,10 +136,8 @@ module.exports = (core) => {
   return {
     watch: (mount, callback) => {
       const dest = resolveSegments(core, {
-        session: {
-          user: {
-            username: '**'
-          }
+        user: {
+          username: '**'
         }
       }, mount.attributes.root);
 
@@ -168,6 +166,7 @@ module.exports = (core) => {
     /**
      * Checks if file exists
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {Promise<boolean, Error>}
      */
     exists: wrapper('access', promise => {
@@ -178,10 +177,11 @@ module.exports = (core) => {
     /**
      * Get file statistics
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {Object}
      */
-    stat: vfs => file =>
-      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+    stat: vfs => (file, options = {}) =>
+      Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
         .then(realPath => {
           return fs.access(realPath, fs.F_OK)
             .then(() => createFileIter(core, path.dirname(realPath), realPath));
@@ -190,10 +190,11 @@ module.exports = (core) => {
     /**
      * Reads directory
      * @param {String} root The file path from client
+     * @param {Object} [options={}] Options
      * @return {Object[]}
      */
-    readdir: vfs => root =>
-      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, root))
+    readdir: vfs => (root, options) =>
+      Promise.resolve(getRealPath(core, options.session, vfs.mount, root))
         .then(realPath => fs.readdir(realPath).then(files => ({realPath, files})))
         .then(({realPath, files}) => {
           const promises = files.map(f => createFileIter(core, realPath, root.replace(/\/?$/, '/') + f));
@@ -203,10 +204,11 @@ module.exports = (core) => {
     /**
      * Reads file stream
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {stream.Readable}
      */
     readfile: vfs => (file, options = {}) =>
-      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+      Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
         .then(realPath => fs.stat(realPath).then(stat => ({realPath, stat})))
         .then(({realPath, stat}) => {
           if (!stat.isFile()) {
@@ -224,9 +226,10 @@ module.exports = (core) => {
     /**
      * Creates directory
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {boolean}
      */
-    mkdir: wrapper('mkdir', (promise, options) => {
+    mkdir: wrapper('mkdir', (promise, options = {}) => {
       return promise
         .then(() => true)
         .catch(e => {
@@ -242,13 +245,14 @@ module.exports = (core) => {
      * Writes file stream
      * @param {String} file The file path from client
      * @param {stream.Readable} data The stream
+     * @param {Object} [options={}] Options
      * @return {Promise<boolean, Error>}
      */
-    writefile: vfs => (file, data) => new Promise((resolve, reject) => {
+    writefile: vfs => (file, data, options = {}) => new Promise((resolve, reject) => {
       // FIXME: Currently this actually copies the file because
       // formidable will put this in a temporary directory.
       // It would probably be better to do a "rename()" on local filesystems
-      const realPath = getRealPath(core, vfs.req, vfs.mount, file);
+      const realPath = getRealPath(core, options.session, vfs.mount, file);
 
       const write = () => {
         const stream = fs.createWriteStream(realPath);
@@ -270,6 +274,7 @@ module.exports = (core) => {
      * Renames given file or directory
      * @param {String} src The source file path from client
      * @param {String} dest The destination file path from client
+     * @param {Object} [options={}] Options
      * @return {boolean}
      */
     rename: crossWrapper('rename'),
@@ -278,6 +283,7 @@ module.exports = (core) => {
      * Copies given file or directory
      * @param {String} src The source file path from client
      * @param {String} dest The destination file path from client
+     * @param {Object} [options={}] Options
      * @return {boolean}
      */
     copy: crossWrapper('copy'),
@@ -285,6 +291,7 @@ module.exports = (core) => {
     /**
      * Removes given file or directory
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {boolean}
      */
     unlink: wrapper('remove'),
@@ -292,10 +299,11 @@ module.exports = (core) => {
     /**
      * Searches for files and folders
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {boolean}
      */
-    search: vfs => (root, pattern) =>
-      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, root))
+    search: vfs => (root, pattern, options = {}) =>
+      Promise.resolve(getRealPath(core, options.session, vfs.mount, root))
         .then(realPath => {
           return fh.create()
             .paths(realPath)
@@ -323,6 +331,7 @@ module.exports = (core) => {
     /**
      * Touches a file
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {boolean}
      */
     touch: wrapper('ensureFile'),
@@ -330,9 +339,10 @@ module.exports = (core) => {
     /**
      * Gets the real filesystem path (internal only)
      * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
      * @return {string}
      */
-    realpath: vfs => file =>
-      Promise.resolve(getRealPath(core, vfs.req, vfs.mount, file))
+    realpath: vfs => (file, options = {}) =>
+      Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
   };
 };

@@ -15,16 +15,6 @@ describe('VFS System adapter', () => {
   afterAll(() => core.destroy());
 
   const vfs = {
-    req: {
-      session: {
-        user: {
-          username: 'jest'
-        }
-      }
-    },
-    res: {
-
-    },
     mount: {
       name: 'home',
       root: 'home:/',
@@ -34,10 +24,19 @@ describe('VFS System adapter', () => {
     }
   };
 
+  const createOptions = (options = {}) => ({
+    ...options,
+    session: {
+      user: {
+        username: 'jest'
+      }
+    }
+  });
+
   const request = (name, ...args) => adapter[name](vfs, vfs)(...args);
 
   test('#touch', () => {
-    return expect(request('touch', 'home:/test'))
+    return expect(request('touch', 'home:/test', createOptions()))
       .resolves
       .toBe(true);
   });
@@ -45,7 +44,7 @@ describe('VFS System adapter', () => {
   test('#stat', () => {
     const realPath = path.join(core.configuration.tempPath, 'jest/test');
 
-    return expect(request('stat', 'home:/test'))
+    return expect(request('stat', 'home:/test', createOptions()))
       .resolves
       .toMatchObject({
         filename: 'test',
@@ -58,37 +57,37 @@ describe('VFS System adapter', () => {
   });
 
   test('#copy', () => {
-    return expect(request('copy', 'home:/test', 'home:/test-copy'))
+    return expect(request('copy', 'home:/test', 'home:/test-copy', createOptions()))
       .resolves
       .toBe(true);
   });
 
   test('#rename', () => {
-    return expect(request('rename', 'home:/test-copy', 'home:/test-rename'))
+    return expect(request('rename', 'home:/test-copy', 'home:/test-rename', createOptions()))
       .resolves
       .toBe(true);
   });
 
   test('#mkdir', () => {
-    return expect(request('mkdir', 'home:/test-directory'))
+    return expect(request('mkdir', 'home:/test-directory', createOptions()))
       .resolves
       .toBe(true);
   });
 
   test('#mkdir - existing directory', () => {
-    return expect(request('mkdir', 'home:/test-directory'))
+    return expect(request('mkdir', 'home:/test-directory', createOptions()))
       .rejects
       .toThrowError();
   });
 
   test('#mkdir - ensure', () => {
-    return expect(request('mkdir', 'home:/test-directory', {ensure: true}))
+    return expect(request('mkdir', 'home:/test-directory', createOptions({ensure: true})))
       .resolves
       .toBe(true);
   });
 
   test('#readfile', () => {
-    return expect(request('readfile', 'home:/test'))
+    return expect(request('readfile', 'home:/test', createOptions()))
       .resolves
       .toBeInstanceOf(stream.Readable);
   });
@@ -99,31 +98,31 @@ describe('VFS System adapter', () => {
     s.push('jest');
     s.push(null);
 
-    return expect(request('writefile', 'home:/test', s))
+    return expect(request('writefile', 'home:/test', s, createOptions()))
       .resolves
       .toBe(true);
   });
 
   test('#exists - existing file', () => {
-    return expect(request('exists', 'home:/test-rename'))
+    return expect(request('exists', 'home:/test-rename', createOptions()))
       .resolves
       .toBe(true);
   });
 
   test('#exists - existing directory', () => {
-    return expect(request('exists', 'home:/test-directory'))
+    return expect(request('exists', 'home:/test-directory', createOptions()))
       .resolves
       .toBe(true);
   });
 
   test('#exists - non existing file', () => {
-    return expect(request('exists', 'home:/test-copy'))
+    return expect(request('exists', 'home:/test-copy', createOptions()))
       .resolves
       .toBe(false);
   });
 
   test('#search', () => {
-    return expect(request('search', 'home:/', '*'))
+    return expect(request('search', 'home:/', '*', createOptions()))
       .resolves
       .toEqual(
         expect.arrayContaining([
@@ -140,7 +139,7 @@ describe('VFS System adapter', () => {
   });
 
   test('#readdir', () => {
-    return expect(request('readdir', 'home:/'))
+    return expect(request('readdir', 'home:/', createOptions()))
       .resolves
       .toEqual(
         expect.arrayContaining([
@@ -164,14 +163,14 @@ describe('VFS System adapter', () => {
     const files = ['home:/test', 'home:/test-directory', 'home:/test-rename'];
 
     return Promise.all(files.map(f => {
-      return expect(request('unlink', f))
+      return expect(request('unlink', f, createOptions()))
         .resolves
         .toBe(true);
     }));
   });
 
   test('#unlink', () => {
-    return expect(request('unlink', 'home:/test-directory'))
+    return expect(request('unlink', 'home:/test-directory', createOptions()))
       .resolves
       .toBe(true);
   });
@@ -179,7 +178,7 @@ describe('VFS System adapter', () => {
   test('#realpath', () => {
     const realPath = path.join(core.configuration.tempPath, 'jest/test');
 
-    return expect(request('realpath', 'home:/test'))
+    return expect(request('realpath', 'home:/test', createOptions()))
       .resolves
       .toBe(realPath);
   });
