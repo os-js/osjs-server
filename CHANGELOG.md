@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.8 - 2020-07-22
+
+* Minor cleanups
+
 ## 3.1.7 - 2020-07-22
 
 * Abstracted away req/res from VFS calls in favor of options (#34)
