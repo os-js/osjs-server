@@ -242,7 +242,7 @@ const vfs = core => {
     mkdir: createRequest(requestPath, 'mkdir', true, respondBoolean),
     unlink: createRequest(requestPath, 'unlink', true, respondBoolean),
     touch: createRequest(requestPath, 'touch', true, respondBoolean),
-    search: createRequest(requestSearch, 'search', true),
+    search: createRequest(requestSearch, 'search', false),
     copy: createCrossRequest(requestCross, 'copy'),
     rename: createCrossRequest(requestCross, 'rename')
   };
