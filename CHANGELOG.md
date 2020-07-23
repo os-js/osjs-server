@@ -1,5 +1,10 @@
 ## Changelog for osjs-server
 
+## 3.1.9 - 2020-07-23
+
+* Add appropriate error message on missing vfs adapter methods
+* Fixed search in readonly mountpoints (fixes #36)
+
 ## 3.1.8 - 2020-07-22
 
 * Minor cleanups
