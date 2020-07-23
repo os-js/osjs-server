@@ -149,7 +149,9 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   const {attributes} = found.mount;
   const strict = attributes.strictGroups !== false;
   const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
-  const vfsMethodWrapper = m => found.adapter[m](found)(...args);
+  const vfsMethodWrapper = m => found.adapter[m]
+    ? found.adapter[m](found)(...args)
+    : Promise.reject(new Error(`Adapter does not support ${m}`));
   const readstat = () => vfsMethodWrapper('stat').catch(() => ({}));
   await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
