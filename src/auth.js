@@ -28,6 +28,7 @@
  * @licence Simplified BSD License
  */
 
+const fs = require('fs-extra');
 const consola = require('consola');
 const logger = consola.withTag('Auth');
 const nullAdapter = require('./adapters/auth/null.js');
@@ -92,6 +93,7 @@ class Auth {
     if (result) {
       const profile = this.createUserProfile(req.body, result);
       if (profile && this.checkLoginPermissions(profile)) {
+        await this.createHomeDirectory(profile, req, res);
         req.session.user = profile;
         req.session.save(() => res.status(200).json(profile));
         return;
@@ -188,6 +190,23 @@ class Auth {
     }
 
     return false;
+  }
+
+  /**
+   * Tries to create home directory for a user
+   * @param {object} profile User profile
+   */
+  async createHomeDirectory(profile) {
+    try {
+      const homeDir = await this
+        .core
+        .make('osjs/vfs')
+        .realpath('home:/', profile);
+
+      await fs.ensureDir(homeDir);
+    } catch (e) {
+      console.warn('Failed trying to make home directory for', profile.username);
+    }
   }
 }
 
