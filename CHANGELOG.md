@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.10 - 2020-07-28
+
+* Try to create home directory on login (#37) (#38)
+
 ## 3.1.9 - 2020-07-23
 
 * Add appropriate error message on missing vfs adapter methods
