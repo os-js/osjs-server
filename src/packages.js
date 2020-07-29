@@ -31,15 +31,25 @@
 const fs = require('fs-extra');
 const fg = require('fast-glob');
 const path = require('path');
-const Package = require('./package.js');
 const consola = require('consola');
+const Package = require('./package.js');
+const {getPrefix} = require('./utils/vfs.js');
+const {
+  relative,
+  archiveName,
+  fetchSteam,
+  readOrDefault,
+  extract
+} = require('./utils/packages.js');
+
 const logger = consola.withTag('Packages');
 
-const relative = filename => filename.replace(process.cwd(), '');
-
-const readOrDefault = filename => fs.existsSync(filename)
-  ? fs.readJsonSync(filename)
-  : [];
+/**
+ * @typedef InstallPackageOptions
+ * @param {string} root
+ * @param {boolean} system
+ * @param {object} [headers]
+ */
 
 /**
  * OS.js Package Management
@@ -89,11 +99,11 @@ class Packages {
    * Loads all packages
    * @return {Promise<Package[]>}
    */
-  createLoader() {
+  async createLoader() {
     let result = [];
     const {discoveredFile, manifestFile} = this.options;
-    const discovered = readOrDefault(discoveredFile);
-    const manifest = readOrDefault(manifestFile);
+    const discovered = await readOrDefault(discoveredFile);
+    const manifest = await readOrDefault(manifestFile);
     const sources = discovered.map(d => path.join(d, 'metadata.json'));
 
     logger.info('Using package discovery file', relative(discoveredFile));
@@ -132,6 +142,129 @@ class Packages {
       logger.debug('Sending reload signal for', pkg.metadata.name);
       this.core.broadcast('osjs/packages:package:changed', [pkg.metadata.name]);
     }, 500);
+  }
+
+  /**
+   * Installs a package from given url
+   * @param {string} url
+   * @param {InstallPackageOptions} options
+   * @param {object} user
+   */
+  async installPackage(url, options, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
+    if (!options.root) {
+      throw new Error('Missing package installation root path');
+    }
+
+    const name = archiveName(url);
+    const target = await realpath(`${options.root}/${name}`, user);
+
+    if (path.resolve(target) === path.resolve(options.root)) {
+      throw new Error('Invalid package source');
+    } else if (await fs.exists(target)) {
+      throw new Error('Target already exists');
+    } else if (options.system) {
+      throw new Error('System packages not yet implemented');
+    }
+
+    const stream = await fetchSteam(url, options);
+
+    await fs.mkdirp(target);
+    await extract(stream, target);
+
+    // FIXME: npm packages have a 'package' subdirectory
+    const exists = await fs.exists(path.resolve(target, 'metadata.json'));
+    if (!exists) {
+      await fs.remove(target);
+
+      throw new Error('Invalid package');
+    }
+
+    await this.writeUserManifest(options.root, user);
+
+    return {
+      reload: !options.system
+    };
+  }
+
+  /**
+   * Uninstalls a package by name
+   * @param {string} name
+   * @param {InstallPackageOptions} options
+   * @param {object} user
+   */
+  async uninstallPackage(name, options, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
+    if (!options.root) {
+      throw new Error('Missing package installation root path');
+    }
+
+    const userRoot = options.root;
+    const target = await realpath(`${userRoot}/${name}`, user);
+
+    if (await fs.exists(target)) {
+      // FIXME: Secure this
+      await fs.remove(target);
+      await this.writeUserManifest(userRoot, user);
+    } else {
+      throw new Error('Package not found in root directory');
+    }
+
+    return {
+      reload: !options.system
+    };
+  }
+
+  /**
+   * Writes user installed package manifest
+   * @param {string} userRoot
+   * @param {object} user
+   */
+  async writeUserManifest(userRoot, user) {
+    const {realpath} = this.core.make('osjs/vfs');
+
+    // TODO: Check conflicts ?
+    const root = await realpath(userRoot, user);
+    const manifest = await realpath(`${userRoot}/metadata.json`, user);
+    const filenames = await fg(root.replace(/\\/g, '/') + '/*/metadata.json');
+    const metadatas = await Promise.all(filenames.map(f => fs.readJson(f)));
+
+    await fs.writeJson(manifest, metadatas);
+  }
+
+  /**
+   * Reads package manifests
+   * @param {string[]} paths
+   * @param {object} user
+   * @return {Package[]} List of packages
+   */
+  async readPackageManifests(paths, user) {
+    const {realpath, mountpoints} = this.core.make('osjs/vfs');
+    const {manifestFile} = this.options;
+    const systemManifest = await readOrDefault(manifestFile);
+
+    const isValidVfs = p => {
+      const prefix = getPrefix(p);
+      const mount = mountpoints.find(m => m.name === prefix);
+      return mount && mount.attributes.root;
+    };
+
+    const userManifests = await Promise.all(paths.filter(isValidVfs).map(async p => {
+      const real = await realpath(`${p}/metadata.json`, user);
+      const list = await readOrDefault(real);
+
+      return list.map(pkg => Object.assign({}, pkg, {
+        _vfs: p,
+        server: null
+      }));
+    }));
+
+    return [
+      ...systemManifest,
+      ...[].concat(...userManifests)
+    ];
   }
 
   /**

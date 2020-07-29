@@ -55,6 +55,12 @@ class PackageServiceProvider extends ServiceProvider {
     });
   }
 
+  depends() {
+    return [
+      'osjs/express'
+    ];
+  }
+
   provides() {
     return [
       'osjs/packages'
@@ -62,7 +68,34 @@ class PackageServiceProvider extends ServiceProvider {
   }
 
   init() {
+    const {routeAuthenticated} = this.core.make('osjs/express');
+
     this.core.singleton('osjs/packages', () => this.packages);
+
+    const usingPackageManager = cb => (req, res) => cb(req, res)
+      .then(json => res.json(json))
+      .catch((error) => {
+        console.error(error);
+        res.status(400).json({error: 'Action failed'});
+      });
+
+    routeAuthenticated(
+      'GET',
+      '/api/packages/metadata',
+      usingPackageManager(req => this.packages.readPackageManifests(req.query.root || [], req.session.user))
+    );
+
+    routeAuthenticated(
+      'POST',
+      '/api/packages/install',
+      usingPackageManager(req => this.packages.installPackage(req.body.url, req.body.options, req.session.user))
+    );
+
+    routeAuthenticated(
+      'POST',
+      '/api/packages/uninstall',
+      usingPackageManager(req => this.packages.uninstallPackage(req.body.name, req.body.options, req.session.user))
+    );
 
     return this.packages.init();
   }

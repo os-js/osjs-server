@@ -2,6 +2,8 @@ const osjs = require('osjs');
 const path = require('path');
 const Packages = require('../src/packages.js');
 
+jest.mock('bent');
+
 describe('Packages', () => {
   let core;
   let packages;
@@ -23,6 +25,22 @@ describe('Packages', () => {
     return expect(packages.init())
       .resolves
       .toBe(true);
+  });
+
+  test('#installPackage', async () => {
+    await expect(packages.installPackage('jest:/UserInstallablePackage.tgz?redacted', {
+      root: 'home:/.packages'
+    }, {username: 'packages'})).resolves.toEqual({
+      reload: true
+    });
+  });
+
+  test('#uninstallPackage', async () => {
+    await expect(packages.uninstallPackage('UserInstallablePackage', {
+      root: 'home:/.packages'
+    }, {username: 'packages'})).resolves.toEqual({
+      reload: true
+    });
   });
 
   test('#handleMessage', () => {
