@@ -99,6 +99,12 @@
         "name": "esdoc-publish-html-plugin"
       },
       {
+        "name": "esdoc-ecmascript-proposal-plugin",
+        "option": {
+          "all": true
+        }
+      },
+      {
         "name": "./src/esdoc.js"
       }
     ]
