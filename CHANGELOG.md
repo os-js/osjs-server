@@ -1,5 +1,12 @@
 ## Changelog for osjs-server
 
+## 3.1.11 - 2020-08-20
+
+* Updated documentation
+* Updated esdoc configs
+* Updated dependencies
+* Added 'websocket' to express service contract
+
 ## 3.1.10 - 2020-07-28
 
 * Try to create home directory on login (#37) (#38)
