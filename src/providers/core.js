@@ -92,6 +92,8 @@ class CoreServiceProvider extends ServiceProvider {
 
       call: (method, ...args) => app[method](...args),
 
+      websocket: (p, cb) => app.ws(p, cb),
+
       middleware: (authentication, cb) => {
         middleware[authentication ? 'routeAuthenticated' : 'route'].push(cb);
       },
