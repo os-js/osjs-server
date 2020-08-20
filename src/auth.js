@@ -34,6 +34,28 @@ const logger = consola.withTag('Auth');
 const nullAdapter = require('./adapters/auth/null.js');
 
 /**
+ * TODO: typedef
+ * @typedef {Object} AuthAdapter
+ */
+
+/**
+ * Authentication User Profile
+ * @typedef {Object} AuthUserProfile
+ * @property {number} id
+ * @property {string} username
+ * @property {string} name
+ * @property {string[]} groups
+ */
+
+/**
+ * Authentication Service Options
+ * @typedef {Object} AuthOptions
+ * @property {AuthAdapter} [adapter]
+ * @property {string[]} [requiredGroups]
+ * @property {string[]} [denyUsers]
+ */
+
+/**
  * Authentication Handler
  */
 class Auth {
@@ -41,12 +63,19 @@ class Auth {
   /**
    * Creates a new instance
    * @param {Core} core Core instance reference
-   * @param {Object} [options={}] Service Provider arguments
+   * @param {AuthOptions} [options={}] Service Provider arguments
    */
   constructor(core, options = {}) {
     const {requiredGroups, denyUsers} = core.configuration.auth;
 
+    /**
+     * @type {Core}
+     */
     this.core = core;
+
+    /**
+     * @type {AuthOptions}
+     */
     this.options = {
       adapter: nullAdapter,
       requiredGroups,
@@ -54,11 +83,15 @@ class Auth {
       ...options
     };
 
+    /**
+     * @type {AuthAdapter}
+     */
+    this.adapter = nullAdapter(core, this.options.config);
+
     try {
       this.adapter = this.options.adapter(core, this.options.config);
     } catch (e) {
       this.core.logger.warn(e);
-      this.adapter = nullAdapter(core, this.options.config);
     }
   }
 
@@ -73,6 +106,7 @@ class Auth {
 
   /**
    * Initializes adapter
+   * @return {Promise<boolean>}
    */
   async init() {
     if (this.adapter.init) {
@@ -84,8 +118,9 @@ class Auth {
 
   /**
    * Performs a login request
-   * @param {Object} req HTTP request
-   * @param {Object} res HTTP response
+   * @param {Request} req HTTP request
+   * @param {Response} res HTTP response
+   * @return {Promise<undefined>}
    */
   async login(req, res) {
     const result = await this.adapter.login(req, res);
@@ -106,8 +141,9 @@ class Auth {
 
   /**
    * Performs a logout request
-   * @param {Object} req HTTP request
-   * @param {Object} res HTTP response
+   * @param {Request} req HTTP request
+   * @param {Response} res HTTP response
+   * @return {Promise<undefined>}
    */
   async logout(req, res) {
     await this.adapter.logout(req, res);
@@ -123,8 +159,9 @@ class Auth {
 
   /**
    * Performs a register request
-   * @param {Object} req HTTP request
-   * @param {Object} res HTTP response
+   * @param {Request} req HTTP request
+   * @param {Response} res HTTP response
+   * @return {Promise<undefined>}
    */
   async register(req, res) {
     if (this.adapter.register) {
@@ -139,7 +176,7 @@ class Auth {
 
   /**
    * Checks if login is allowed for this user
-   * @param {object} profile User profile
+   * @param {AuthUserProfile} profile User profile
    * @return {boolean}
    */
   checkLoginPermissions(profile) {
@@ -164,7 +201,7 @@ class Auth {
    * Creates user profile object
    * @param {object} fields Input fields
    * @param {object} result Login result
-   * @return {object}
+   * @return {AuthUserProfile|boolean}
    */
   createUserProfile(fields, result) {
     const ignores = ['password'];
@@ -194,7 +231,8 @@ class Auth {
 
   /**
    * Tries to create home directory for a user
-   * @param {object} profile User profile
+   * @param {AuthUserProfile} profile User profile
+   * @return {Promise<undefined>}
    */
   async createHomeDirectory(profile) {
     try {

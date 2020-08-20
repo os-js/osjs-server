@@ -32,6 +32,17 @@ const nullAdapter = require('./adapters/settings/null');
 const fsAdapter = require('./adapters/settings/fs');
 
 /**
+ * TODO: typedef
+ * @typedef {Object} SettingsAdapter
+ */
+
+/**
+ * Settings Service Options
+ * @typedef {Object} SettingsOptions
+ * @property {SettingsAdapter|string} [adapter]
+ */
+
+/**
  * OS.js Settings Manager
  */
 class Settings {
@@ -39,10 +50,14 @@ class Settings {
   /**
    * Create new instance
    * @param {Core} core Core reference
-   * @param {object} [options] Instance options
+   * @param {SettingsOptions} [options] Instance options
    */
   constructor(core, options = {}) {
+    /**
+     * @type {Core}
+     */
     this.core = core;
+
     this.options = {
       adapter: nullAdapter,
       ...options
@@ -52,11 +67,12 @@ class Settings {
       this.options.adapter = fsAdapter;
     }
 
+    this.adapter = nullAdapter(core, this.options.config);
+
     try {
       this.adapter = this.options.adapter(core, this.options.config);
     } catch (e) {
       this.core.logger.warn(e);
-      this.adapter = nullAdapter(core, this.options.config);
     }
   }
 
@@ -71,6 +87,7 @@ class Settings {
 
   /**
    * Initializes adapter
+   * @return {Promise<boolean>}
    */
   async init() {
     if (this.adapter.init) {
@@ -84,6 +101,7 @@ class Settings {
    * Sends save request to adapter
    * @param {Request} req Express request
    * @param {Response} res Express response
+   * @return {Promise<undefined>}
    */
   async save(req, res) {
     const result = await this.adapter.save(req, res);
@@ -94,6 +112,7 @@ class Settings {
    * Sends load request to adapter
    * @param {Request} req Express request
    * @param {Response} res Express response
+   * @return {Promise<undefined>}
    */
   async load(req, res) {
     const result = await this.adapter.load(req, res);

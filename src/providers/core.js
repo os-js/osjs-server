@@ -39,8 +39,6 @@ const {isAuthenticated, closeWatches} = require('../utils/core.js');
 
 /**
  * OS.js Core Service Provider
- *
- * @desc Provides base services
  */
 class CoreServiceProvider extends ServiceProvider {
 

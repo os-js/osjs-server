@@ -72,18 +72,36 @@ class Core extends CoreBase {
     super(defaultConfiguration, deepmerge(cfg, argvConfig), options);
 
     this.logger = consola.withTag('Internal');
+
+    /**
+     * @type {Express}
+     */
     this.app = express();
 
     if (!this.configuration.public) {
       throw new Error('The public option is required');
     }
 
+    /**
+     * @type {http.Server|https.Server}
+     */
     this.httpServer = this.config('https.enabled')
       ? https.createServer(this.config('https.options'), this.app)
       : http.createServer(this.app);
 
+    /**
+     * @type {object}
+     */
     this.session = createSession(this.app, this.configuration);
+
+    /**
+     * @type {object}
+     */
     this.ws = createWebsocket(this.app, this.configuration, this.session, this.httpServer);
+
+    /**
+     * @type {object}
+     */
     this.wss = this.ws.getWss();
 
     _instance = this;
@@ -91,6 +109,8 @@ class Core extends CoreBase {
 
   /**
    * Destroys the instance
+   * @param {Function} [done] Callback when done
+   * @return {Promise<undefined>}
    */
   async destroy(done = () => {}) {
     if (this.destroyed) {

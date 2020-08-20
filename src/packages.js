@@ -42,6 +42,13 @@ const readOrDefault = filename => fs.existsSync(filename)
   : [];
 
 /**
+ * Package Service Options
+ * @typedef {Object} PackagesOptions
+ * @property {string} [manifestFile] Manifest filename
+ * @property {string} [discoveredFile] Discovery output file
+ */
+
+/**
  * OS.js Package Management
  */
 class Packages {
@@ -49,12 +56,24 @@ class Packages {
   /**
    * Create new instance
    * @param {Core} core Core reference
-   * @param {object} [options] Instance options
+   * @param {PackagesOptions} [options] Instance options
    */
   constructor(core, options = {}) {
+    /**
+     * @type {Core}
+     */
     this.core = core;
+
+    /**
+     * @type {Package[]}
+     */
     this.packages = [];
+
     this.hotReloading = {};
+
+    /**
+     * @type {PackagesOptions}
+     */
     this.options = {
       manifestFile: null,
       discoveredFile: null,
@@ -75,6 +94,7 @@ class Packages {
 
   /**
    * Loads package manager
+   * @return {Promise<boolean>}
    */
   load() {
     return this.createLoader()
@@ -137,7 +157,7 @@ class Packages {
   /**
    * Loads package data
    * @param {string} filename Filename
-   * @param {object} manifest Manifest
+   * @param {PackageMetadata} manifest Manifest
    * @return {Promise<Package>}
    */
   loadPackage(filename, manifest) {
@@ -195,6 +215,7 @@ class Packages {
 
   /**
    * Destroys packages
+   * @return {Promise<undefined>}
    */
   async destroy() {
     await Promise.all(this.packages.map(pkg => pkg.destroy()));
@@ -204,8 +225,10 @@ class Packages {
 
   /**
    * Handles an incoming message and signals an application
-   * @desc This will call the 'onmessage' event in your application server script
-   * @param {Object} ws Websocket Connection client
+   *
+   * This will call the 'onmessage' event in your application server script
+   *
+   * @param {WebSocket} ws Websocket Connection client
    * @param {Array} params A list of incoming parameters
    */
   handleMessage(ws, params) {

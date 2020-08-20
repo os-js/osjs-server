@@ -33,8 +33,6 @@ const {ServiceProvider} = require('@osjs/common');
 
 /**
  * OS.js Settings Service Provider
- *
- * @desc Provides services for settings
  */
 class SettingsServiceProvider extends ServiceProvider {
 

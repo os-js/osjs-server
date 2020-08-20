@@ -32,6 +32,18 @@ const path = require('path');
 const chokidar = require('chokidar');
 
 /**
+ * TODO: typedef
+ * @typedef {Object} PackageMetadata
+ */
+
+/**
+ * Package Options
+ * @typedef {Object} PackageOptions
+ * @property {string} filename
+ * @property {PackageMetadata} metadata
+ */
+
+/**
  * OS.js Package Abstraction
  */
 class Package {
@@ -39,18 +51,30 @@ class Package {
   /**
    * Create new instance
    * @param {Core} core Core reference
-   * @param {object} [options] Instance options
+   * @param {PackageOptions} [options] Instance options
    */
   constructor(core, options = {}) {
+    /**
+     * @type {Core}
+     */
     this.core = core;
 
     this.script = options.metadata.server
       ? path.resolve(path.dirname(options.filename), options.metadata.server)
       : null;
 
+    /**
+     * @type {string}
+     */
     this.filename = options.filename;
+
+    /**
+     * @type {PackageMetadata}
+     */
     this.metadata = options.metadata;
+
     this.handler = null;
+
     this.watcher = null;
   }
 
@@ -88,7 +112,7 @@ class Package {
 
   /**
    * Validates this package
-   * @param {object[]} manifest Global manifest
+   * @param {PackageMetadata[]} manifest Global manifest
    * @return {boolean}
    */
   validate(manifest) {
@@ -123,6 +147,7 @@ class Package {
 
   /**
    * Creates a watch in package dist
+   * @param {Function} cb Callback function on watch changes
    * @return {string} Watched path
    */
   watch(cb) {

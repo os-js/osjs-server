@@ -37,8 +37,6 @@ const {closeWatches} = require('../utils/core');
 
 /**
  * OS.js Package Service Provider
- *
- * @desc Provides package services
  */
 class PackageServiceProvider extends ServiceProvider {
   constructor(core) {

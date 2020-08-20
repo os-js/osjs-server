@@ -39,6 +39,36 @@ const consola = require('consola');
 const logger = consola.withTag('Filesystem');
 
 /**
+ * @typedef {Object} Mountpoint
+ * @property {string} [uuid]
+ * @property {string} [root]
+ * @property {object} [attributes]
+ */
+
+/**
+ * TODO: typedef
+ * @typedef {Object} FilesystemAdapter
+ */
+
+/**
+ * Filesystem Service Adapter Option Map
+ * @typedef {{name: FilesystemAdapter}} FilesystemAdapterMap
+ */
+
+/**
+ * Filesystem Service Options
+ * @typedef {Object} FilesystemOptions
+ * @property {FilesystemAdapterMap} [adapters]
+ */
+
+/**
+ * Filesystem Internal Call Options
+ * @typedef {Object} FilesystemCallOptions
+ * @property {string} method VFS Method name
+ * @property {object} [user] User session data
+ */
+
+/**
  * OS.js Virtual Filesystem
  */
 class Filesystem {
@@ -46,15 +76,33 @@ class Filesystem {
   /**
    * Create new instance
    * @param {Core} core Core reference
-   * @param {object} [options] Instance options
+   * @param {FilesystemOptions} [options] Instance options
    */
   constructor(core, options = {}) {
+    /**
+     * @type {Core}
+     */
     this.core = core;
+
+    /**
+     * @type {Mountpoint[]}
+     */
     this.mountpoints = [];
+
+    /**
+     * @type {FilesystemAdapterMap}
+     */
     this.adapters = {};
+
     this.watches = [];
+
     this.router = null;
+
     this.methods = {};
+
+    /**
+     * @type {FilesystemOptions}
+     */
     this.options = {
       adapters: {},
       ...options
@@ -63,6 +111,7 @@ class Filesystem {
 
   /**
    * Destroys instance
+   * @return {Promise<undefined>}
    */
   async destroy() {
     const watches = this.watches.filter(({watch}) => {
@@ -135,9 +184,7 @@ class Filesystem {
 
   /**
    * Performs a VFS request with simulated HTTP request
-   * @param {object} options Request options
-   * @param {string} options.method VFS Method name
-   * @param {object} [options.user] User session data
+   * @param {FilesystemCallOptions} options Request options
    * @param {*} ...args Arguments to pass to VFS method
    * @return {Promise<*>}
    */
@@ -170,7 +217,7 @@ class Filesystem {
   /**
    * Creates realpath VFS request
    * @param {string} filename The path
-   * @param {object} [user] User session object
+   * @param {AuthUserProfile} [user] User session object
    * @return {Promise<string>}
    */
   realpath(filename, user = {}) {
@@ -189,8 +236,8 @@ class Filesystem {
 
   /**
    * Mounts given mountpoint
-   * @param {object} mount Mountpoint
-   * @return {object} the mountpoint
+   * @param {Mountpoint} mount Mountpoint
+   * @return {Mountpoint} the mountpoint
    */
   async mount(mount) {
     const mountpoint = {
@@ -211,7 +258,7 @@ class Filesystem {
 
   /**
    * Unmounts given mountpoint
-   * @param {object} mount Mountpoint
+   * @param {Mountpoint} mount Mountpoint
    * @return {Promise<boolean>}
    */
   async unmount(mountpoint) {
@@ -234,7 +281,8 @@ class Filesystem {
 
   /**
    * Set up a watch for given mountpoint
-   * @param {object} mountpoint The mountpoint
+   * @param {Mountpoint} mountpoint The mountpoint
+   * @return {Promise<undefined>}
    */
   async watch(mountpoint) {
     if (
@@ -256,8 +304,9 @@ class Filesystem {
 
   /**
    * Internal method for setting up watch for given mountpoint adapter
-   * @param {object} mountpoint The mountpoint
-   * @param {object} adapter The adapter
+   * @param {Mountpoint} mountpoint The mountpoint
+   * @param {FilesystemAdapter} adapter The adapter
+   * @return {Promise<undefined>}
    */
   async _watch(mountpoint, adapter) {
     const watch = await adapter.watch(mountpoint, (args, dir, type) => {

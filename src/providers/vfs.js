@@ -33,8 +33,6 @@ const Filesystem = require('../filesystem');
 
 /**
  * OS.js Virtual Filesystem Service Provider
- *
- * @desc Provides methods to interact with filesystems
  */
 class VFSServiceProvider extends ServiceProvider {
 
