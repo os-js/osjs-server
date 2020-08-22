@@ -26,7 +26,8 @@ jobs:
           esdoc-unexported-identifier-plugin \
           esdoc-integrate-test-plugin \
           esdoc-integrate-manual-plugin \
-          esdoc-ecmascript-proposal-plugin
+          esdoc-ecmascript-proposal-plugin \
+          esdoc-node
       - name: Build
         run: esdoc
       - name: Deploy
