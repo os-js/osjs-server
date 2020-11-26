@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.14 - 2020-11-26
+
+No changes. Forgot to pull with rebase before publish.
+
 ## 3.1.13 - 2020-11-26
 
 * Updated dependencies
