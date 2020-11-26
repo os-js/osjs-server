@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.13 - 2020-11-26
+
+* Updated dependencies
+
 ## 3.1.12 - 2020-08-22
 
 * Updated esdoc setup
