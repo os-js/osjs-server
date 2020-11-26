@@ -1,7 +1,7 @@
 {
   "name": "@osjs/server",
   "version": "3.1.12",
-  "description": "OS.js v3 Server",
+  "description": "OS.js Server",
   "main": "index.js",
   "scripts": {
     "test": "npm run eslint && npm run jest",
@@ -34,9 +34,9 @@
   },
   "homepage": "https://github.com/os-js/osjs-server#readme",
   "dependencies": {
-    "@osjs/common": "^3.0.10",
+    "@osjs/common": "^3.0.12",
     "body-parser": "^1.19.0",
-    "chokidar": "^3.4.2",
+    "chokidar": "^3.4.3",
     "connect-loki": "^1.1.0",
     "consola": "^2.15.0",
     "deepmerge": "^4.2.2",
@@ -47,19 +47,19 @@
     "fast-glob": "^2.2.7",
     "filehound": "^1.17.4",
     "formidable": "^1.2.2",
-    "fs-extra": "^8.1.0",
+    "fs-extra": "^9.0.1",
     "mime": "^2.4.6",
     "minimist": "^1.2.5",
     "morgan": "^1.10.0",
     "nocache": "^2.1.0",
     "sanitize-filename": "^1.6.3",
-    "uuid": "^3.4.0"
+    "uuid": "^8.3.1"
   },
   "devDependencies": {
-    "@osjs/eslint-config": "^1.1.0",
-    "eslint": "^6.8.0",
+    "@osjs/eslint-config": "^2.0.1",
+    "eslint": "^7.14.0",
     "jest-express": "^1.12.0",
-    "temp": "^0.9.1"
+    "temp": "^0.9.4"
   },
   "eslintConfig": {
     "env": {

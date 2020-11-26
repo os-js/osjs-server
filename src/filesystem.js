@@ -30,7 +30,7 @@
 
 const {methodArguments} = require('./utils/vfs');
 const systemAdapter = require('./adapters/vfs/system');
-const uuid = require('uuid/v1');
+const { v1: uuid } = require('uuid');
 const mime = require('mime');
 const path = require('path');
 const vfs = require('./vfs');
