@@ -1,5 +1,9 @@
 ## Changelog for osjs-server
 
+## 3.1.15 - 2021-01-01
+
+* Added signals for user login/logout (#45) (#46)
+
 ## 3.1.14 - 2020-11-26
 
 No changes. Forgot to pull with rebase before publish.
