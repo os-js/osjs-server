@@ -181,7 +181,12 @@ class CoreServiceProvider extends ServiceProvider {
         try {
           const {name, params} = JSON.parse(msg);
 
-          if (name && params instanceof Array) {
+          if (typeof name === 'string' && params instanceof Array) {
+            // We don't wanna allow any internal signals from the outside!
+            if (name.match(/^osjs/) && name !== 'osjs/application:socket:message') {
+              return;
+            }
+
             this.core.emit(name, ws, ...params);
           }
         } catch (e) {
