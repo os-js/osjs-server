@@ -1,4 +1,8 @@
-## Changelog for osjs-server
+# Changelog for osjs-server
+
+## 3.1.16 - 2021-01-01
+
+* Don't allow client to use internal signals
 
 ## 3.1.15 - 2021-01-01
 
