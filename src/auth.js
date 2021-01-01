@@ -127,6 +127,9 @@ class Auth {
 
     if (result) {
       const profile = this.createUserProfile(req.body, result);
+
+      this.core.emit('osjs/core:logged-in', Object.freeze({...profile}));
+
       if (profile && this.checkLoginPermissions(profile)) {
         await this.createHomeDirectory(profile, req, res);
         req.session.user = profile;
@@ -146,6 +149,8 @@ class Auth {
    * @return {Promise<undefined>}
    */
   async logout(req, res) {
+    this.core.emit('osjs/core:logging-out', Object.freeze({...req.session.user}));
+
     await this.adapter.logout(req, res);
 
     try {
