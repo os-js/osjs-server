@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.1.17 - 2021-01-03
+
+* Send entire session object in login/out signal (#47)
+
 ## 3.1.16 - 2021-01-01
 
 * Don't allow client to use internal signals
