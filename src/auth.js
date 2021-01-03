@@ -128,12 +128,16 @@ class Auth {
     if (result) {
       const profile = this.createUserProfile(req.body, result);
 
-      this.core.emit('osjs/core:logged-in', Object.freeze({...profile}));
-
       if (profile && this.checkLoginPermissions(profile)) {
         await this.createHomeDirectory(profile, req, res);
         req.session.user = profile;
-        req.session.save(() => res.status(200).json(profile));
+        req.session.save(() => {
+          this.core.emit('osjs/core:logged-in', Object.freeze({
+            ...req.session
+          }));
+
+          res.status(200).json(profile);
+        });
         return;
       }
     }
@@ -149,7 +153,9 @@ class Auth {
    * @return {Promise<undefined>}
    */
   async logout(req, res) {
-    this.core.emit('osjs/core:logging-out', Object.freeze({...req.session.user}));
+    this.core.emit('osjs/core:logging-out', Object.freeze({
+      ...req.session
+    }));
 
     await this.adapter.logout(req, res);
 
