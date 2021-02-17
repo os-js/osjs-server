@@ -182,8 +182,8 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
     }
 
     if (options.download) {
-      const filename = path.basename(args[0]);
-      res.append('Content-Disposition', `attachment; filename="${filename}"`);
+      const filename = encodeURIComponent(path.basename(args[0]));
+      res.append('Content-Disposition', `attachment; filename*=utf-8''"${filename}"`);
     }
   }
 
