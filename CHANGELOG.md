@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.1.18 - 2021-02-21
+
+* Support UTF characters on VFS file downloads (#50)
+
 ## 3.1.17 - 2021-01-03
 
 * Send entire session object in login/out signal (#47)
