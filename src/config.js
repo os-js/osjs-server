@@ -42,7 +42,8 @@ const defaultConfiguration = {
   morgan: 'tiny',
   express: {
     maxFieldsSize: mb(20),
-    maxFileSize: mb(200)
+    maxFileSize: mb(200),
+    maxBodySize: '100kb'
   },
   https: {
     enabled: false,

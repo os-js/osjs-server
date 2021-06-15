@@ -113,6 +113,7 @@ class CoreServiceProvider extends ServiceProvider {
    */
   initExtensions() {
     const {app, session, configuration} = this.core;
+    const limit = configuration.express.maxBodySize;
 
     if (configuration.development) {
       app.use(nocache());
@@ -125,10 +126,13 @@ class CoreServiceProvider extends ServiceProvider {
 
     // Handle bodies
     app.use(bodyParser.urlencoded({
-      extended: false
+      extended: false,
+      limit
     }));
 
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({
+      limit
+    }));
   }
 
   /**
