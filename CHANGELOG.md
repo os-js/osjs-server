@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.1.19 - 2021-06-15
+
+* Added configurable body parser size limit (#52)
+
 ## 3.1.18 - 2021-02-21
 
 * Support UTF characters on VFS file downloads (#50)
