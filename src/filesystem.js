@@ -66,6 +66,7 @@ const logger = consola.withTag('Filesystem');
  * @typedef {Object} FilesystemCallOptions
  * @property {string} method VFS Method name
  * @property {object} [user] User session data
+ * @property {object} [session] Session data
  */
 
 /**
@@ -189,8 +190,9 @@ class Filesystem {
    * @return {Promise<*>}
    */
   call(options, ...args) {
-    const {method, user} = {
+    const {method, user, session} = {
       user: {},
+      session: null,
       ...options
     };
 
@@ -209,7 +211,7 @@ class Filesystem {
         return {fields, files};
       }, {fields: {}, files: {}});
 
-    req.session = {user};
+    req.session = session ? session : {user};
 
     return this.request(method, req);
   }
