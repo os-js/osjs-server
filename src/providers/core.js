@@ -89,6 +89,7 @@ class CoreServiceProvider extends ServiceProvider {
       isAuthenticated,
 
       call: (method, ...args) => app[method](...args),
+      use: (arg) => app.use(arg),
 
       websocket: (p, cb) => app.ws(p, cb),
 
@@ -104,7 +105,20 @@ class CoreServiceProvider extends ServiceProvider {
         app[method.toLowerCase()](uri, [
           ...middleware.routeAuthenticated,
           isAuthenticated(groups, strict)
-        ], cb)
+        ], cb),
+
+      router: () => {
+        const router = express.Router();
+        router.use(...middleware.route);
+        return router;
+      },
+
+      routerAuthenticated: (groups = [], strict = requireAllGroups) => {
+        const router = express.Router();
+        router.use(...middleware.routeAuthenticated);
+        router.use(isAuthenticated(groups, strict));
+        return router;
+      }
     }));
   }
 
