@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.2.1 - 2021-07-15
+
+* Added express router service bindings
+
 ## 3.1.20 - 2021-07-13
 
 * Added 'session' option to Filesystem#call
