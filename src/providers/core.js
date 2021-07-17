@@ -147,6 +147,10 @@ class CoreServiceProvider extends ServiceProvider {
     app.use(bodyParser.json({
       limit
     }));
+
+    app.use(bodyParser.raw({
+      limit
+    }));
   }
 
   /**
