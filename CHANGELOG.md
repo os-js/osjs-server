@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.2.2 - 2021-07-17
+
+* Added possibility to configure raw body parser
+
 ## 3.2.1 - 2021-07-15
 
 * Added express router service bindings
