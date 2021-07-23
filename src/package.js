@@ -126,7 +126,8 @@ class Package {
    * @return {Promise<undefined>}
    */
   init() {
-    const handler = require(this.script);
+    const mod = require(this.script);
+    const handler = typeof mod.default === 'function' ? mod.default : mod;
 
     this.handler = handler(this.core, this);
 
