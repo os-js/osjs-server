@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.2.3 - 2021-07-23
+
+* Allow default exports from ESM in packages
+
 ## 3.2.2 - 2021-07-17
 
 * Added possibility to configure raw body parser
