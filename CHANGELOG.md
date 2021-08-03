@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.2.4 - 2021-08-03
+
+* Add configuration for http bind host (#55)
+
 ## 3.2.3 - 2021-07-23
 
 * Allow default exports from ESM in packages
