@@ -201,13 +201,14 @@ class Core extends CoreBase {
    */
   listen() {
     const httpPort = this.config('port');
+    const httpHost = this.config('bind');
     const wsPort = this.config('ws.port') || httpPort;
     const pub = this.config('public');
     const session = path.basename(path.dirname(this.config('session.store.module')));
     const dist = pub.replace(process.cwd(), '');
     const secure = this.config('https.enabled', false);
     const proto = prefix => `${prefix}${secure ? 's' : ''}://`;
-    const host = port => `${this.config('hostname')}:${port}`;
+    const host = port => `${httpHost}:${port}`;
 
     logger.info('Opening server connection');
 
@@ -216,7 +217,7 @@ class Core extends CoreBase {
       logger.warn('Missing files in "dist/" directory. Did you forget to run "npm run build" ?');
     }
 
-    this.httpServer.listen(httpPort, () => {
+    this.httpServer.listen(httpPort, httpHost, () => {
       logger.success(`Using '${session}' sessions`);
       logger.success(`Serving '${dist}'`);
       logger.success(`WebSocket listening on ${proto('ws')}${host(wsPort)}`);
