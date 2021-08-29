@@ -111,7 +111,7 @@ const createMiddleware = core => {
 };
 
 const createOptions = req => {
-  const options = req.fields.options;
+  const options = req.fields.options ? req.fields.options : decodeOptions(req.fields);
   const range = req.headers && req.headers.range;
   const session = {...req.session || {}};
   let result = options || {};
@@ -132,6 +132,30 @@ const createOptions = req => {
     ...result,
     session
   };
+};
+
+const decodeOptions = (reqFileds) => {
+  let options = {};
+  let keyPath = [];
+  Object.keys(reqFileds).map((item) => {
+    keyPath = item.split('.');
+    assignObject(options, keyPath, reqFileds[item]);
+  });
+  console.log(options)
+  return options;
+};
+
+const assignObject = (obj, keyPath, value) => {
+  let lastKeyIndex = keyPath.length - 1;
+  let key;
+  for (let i = 0; i < lastKeyIndex; i++) {
+    key = keyPath[i];
+    if (!(key in obj)) {
+      obj[key] = {};
+    }
+    obj = obj[key];
+  }
+  obj[keyPath[lastKeyIndex]] = value;
 };
 
 // Standard request with only a target
