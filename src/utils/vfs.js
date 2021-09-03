@@ -176,9 +176,36 @@ const mountpointResolver = core => async (path) => {
  */
 const parseGet = req => {
   const {query} = url.parse(req.url, true);
-
-  return Promise.resolve({fields: query, files: {}});
+  const assembledQuery = assembleQueryData(query);
+  
+  return Promise.resolve({fields: assembledQuery, files: {}});
 };
+
+/*
+ * Assembles a given object query
+ */
+const assembleQueryData = (object) => {
+  const assembled = {}
+  const keys = Object.keys(object)
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]
+    const dots = key.split('.')
+
+    let last = assembled
+    for (let j = 0; j < dots.length; j++) {
+      const dot = dots[j]
+      if (j >= dots.length - 1) {
+        last[dot] = object[key]
+      } else {
+        last[dot] = last[dot] || {}
+      }
+
+      last = last[dot]
+    }
+  }
+  return assembled;
+}
 
 /*
  * Parses Json Body
