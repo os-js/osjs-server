@@ -195,7 +195,7 @@ const assembleQueryData = (object) => {
     }
   }
   return assembled;
-}
+};
 
 /*
  * Parses URL Body
