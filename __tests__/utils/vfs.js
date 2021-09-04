@@ -243,4 +243,36 @@ describe('VFS Utils', () => {
   test('parseFields - POST w/Form', () => {
     // TODO
   });
+
+  test('assembleQueryData', () => {
+    const result = utils.assembleQueryData({
+      'a': 'b',
+      'b.a': 'foo',
+      'b.b.a': 'foo',
+      'b.b.b': 'foo',
+      'b.b.c': 'foo',
+      'b.b.d': 'foo',
+      'b.b.e': 'foo',
+      'c': 'null',
+      'd': 'true',
+      'e': '1'
+    });
+
+    expect(result).toEqual({
+      a: 'b',
+      b: {
+        a: 'foo',
+        b: {
+          a: 'foo',
+          b: 'foo',
+          c: 'foo',
+          d: 'foo',
+          e: 'foo'
+        }
+      },
+      c: 'null',
+      d: 'true',
+      e: '1'
+    });
+  });
 });
