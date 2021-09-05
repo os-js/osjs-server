@@ -245,7 +245,7 @@ describe('VFS Utils', () => {
   });
 
   test('assembleQueryData', () => {
-    const result = utils.assembleQueryData({
+    const result1 = utils.assembleQueryData({
       'a': 'b',
       'b.a': 'foo',
       'b.b.a': 'foo',
@@ -258,7 +258,21 @@ describe('VFS Utils', () => {
       'e': '1'
     });
 
-    expect(result).toEqual({
+    const result2 = utils.assembleQueryData({
+      'a.0': 'foo',
+      'a.1': 'foo',
+      'b.0': 'foo',
+      'b.1': 'foo',
+      'b.a': 'foo',
+      'c.a': 'foo',
+      'c.b.0': 'foo',
+      'c.b.1': 'foo',
+      'c.c.0': 'foo',
+      'c.c.1': 'foo',
+      'c.c.a': 'foo',
+    });
+
+    expect(result1).toEqual({
       a: 'b',
       b: {
         a: 'foo',
@@ -273,6 +287,24 @@ describe('VFS Utils', () => {
       c: 'null',
       d: 'true',
       e: '1'
+    });
+
+    expect(result2).toEqual({
+      a: ['foo', 'foo'],
+      b:{
+        '0': 'foo',
+        '1': 'foo',
+        'a': 'foo',
+      },
+      c: {
+        a: 'foo',
+        b: ['foo', 'foo'],
+        c: {
+          '0': 'foo',
+          '1': 'foo',
+          'a': 'foo'
+        }
+      }
     });
   });
 });

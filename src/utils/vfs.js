@@ -183,14 +183,20 @@ const assembleQueryData = (object) => {
     const dots = key.split('.');
 
     let last = assembled;
+    let parent = null;
     for (let j = 0; j < dots.length; j++) {
       const dot = dots[j];
       if (j >= dots.length - 1) {
+        if (!/^\d+$/.test(dot) && Array.isArray(last)) {
+          last = Object.fromEntries(last.map((value, i) => [i, value]));
+          parent[dots[j - 1]] = last;
+        }
         last[dot] = object[key];
       } else {
-        last[dot] = last[dot] || {};
+        last[dot] = last[dot] || (/^\d+$/.test(dots[j + 1]) ? [] : {});
       }
 
+      parent = last;
       last = last[dot];
     }
   }
