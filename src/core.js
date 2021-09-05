@@ -157,7 +157,7 @@ class Core extends CoreBase {
 
       logger.success('Initialized!');
 
-      this.listen();
+      await this.listen();
     }
 
     return true;
@@ -199,7 +199,7 @@ class Core extends CoreBase {
   /**
    * Opens HTTP server
    */
-  listen() {
+  async listen() {
     const httpPort = this.config('port');
     const httpHost = this.config('bind');
     const wsPort = this.config('ws.port') || httpPort;
@@ -217,11 +217,18 @@ class Core extends CoreBase {
       logger.warn('Missing files in "dist/" directory. Did you forget to run "npm run build" ?');
     }
 
-    this.httpServer.listen(httpPort, httpHost, () => {
-      logger.success(`Using '${session}' sessions`);
-      logger.success(`Serving '${dist}'`);
-      logger.success(`WebSocket listening on ${proto('ws')}${host(wsPort)}`);
-      logger.success(`Server listening on ${proto('http')}${host(httpPort)}`);
+    return new Promise((resolve, reject) => {
+      try {
+        this.httpServer.listen(httpPort, httpHost, () => {
+          logger.success(`Using '${session}' sessions`);
+          logger.success(`Serving '${dist}'`);
+          logger.success(`WebSocket listening on ${proto('ws')}${host(wsPort)}`);
+          logger.success(`Server listening on ${proto('http')}${host(httpPort)}`);
+          resolve();
+        });
+      } catch (e) {
+        reject(e);
+      }
     });
   }
 
