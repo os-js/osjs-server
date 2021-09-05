@@ -219,12 +219,16 @@ class Core extends CoreBase {
 
     return new Promise((resolve, reject) => {
       try {
-        this.httpServer.listen(httpPort, httpHost, () => {
-          logger.success(`Using '${session}' sessions`);
-          logger.success(`Serving '${dist}'`);
-          logger.success(`WebSocket listening on ${proto('ws')}${host(wsPort)}`);
-          logger.success(`Server listening on ${proto('http')}${host(httpPort)}`);
-          resolve();
+        this.httpServer.listen(httpPort, httpHost, (e) => {
+          if (e) {
+            reject(e);
+          } else {
+            logger.success(`Using '${session}' sessions`);
+            logger.success(`Serving '${dist}'`);
+            logger.success(`WebSocket listening on ${proto('ws')}${host(wsPort)}`);
+            logger.success(`Server listening on ${proto('http')}${host(httpPort)}`);
+            resolve();
+          }
         });
       } catch (e) {
         reject(e);
