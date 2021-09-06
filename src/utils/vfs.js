@@ -221,7 +221,6 @@ const assembleQueryData = (object) => {
  */
 const parseGet = req => {
   const {query} = url.parse(req.url, true);
-  console.log(query);
   const assembledQuery = assembleQueryData(query);
   return Promise.resolve({fields: assembledQuery, files: {}});
 };
