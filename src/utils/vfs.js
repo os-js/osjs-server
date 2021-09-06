@@ -43,6 +43,17 @@ const errorCodes = {
 };
 
 /**
+ * A map of data types
+ */
+const typeMap = {
+  i: str => parseInt(str, 10),
+  s: str => str,
+  b: str => str === 'true',
+  u: str => undefined,
+  n: str => null
+};
+
+/**
  * Gets prefix of a VFS path
  */
 const getPrefix = path => String(path).split(':')[0];
@@ -181,6 +192,8 @@ const assembleQueryData = (object) => {
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const dots = key.split('.');
+    const type = dots[dots.length - 1];
+    dots.pop();
 
     let last = assembled;
     let parent = null;
@@ -191,7 +204,7 @@ const assembleQueryData = (object) => {
           last = Object.fromEntries(last.map((value, i) => [i, value]));
           parent[dots[j - 1]] = last;
         }
-        last[dot] = object[key];
+        last[dot] = typeMap[type](object[key]);
       } else {
         last[dot] = last[dot] || (/^\d+$/.test(dots[j + 1]) ? [] : {});
       }
@@ -208,6 +221,7 @@ const assembleQueryData = (object) => {
  */
 const parseGet = req => {
   const {query} = url.parse(req.url, true);
+  console.log(query);
   const assembledQuery = assembleQueryData(query);
   return Promise.resolve({fields: assembledQuery, files: {}});
 };
