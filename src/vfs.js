@@ -238,6 +238,7 @@ const vfs = core => {
     realpath: createRequest(requestPath, 'realpath', false),
     exists: createRequest(requestPath, 'exists', false, respondBoolean),
     stat: createRequest(requestPath, 'stat', false),
+    capabilities: createRequest(requestPath, 'capabilities', false),
     readdir: createRequest(requestPath, 'readdir', false),
     readfile: createRequest(requestPath, 'readfile', false),
     writefile: createRequest(requestFile, 'writefile', true, respondNumber),
@@ -268,6 +269,7 @@ module.exports = core => {
   // Then all VFS routes (needs implementation above)
   router.get('/exists', wrapper(methods.exists));
   router.get('/stat', wrapper(methods.stat));
+  router.get('/capabilities', wrapper(methods.capabilities));
   router.get('/readdir', wrapper(methods.readdir));
   router.get('/readfile', wrapper(methods.readfile));
   router.post('/writefile', wrapper(methods.writefile));
