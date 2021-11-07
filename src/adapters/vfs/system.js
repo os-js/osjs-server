@@ -203,10 +203,10 @@ module.exports = (core) => {
         }),
 
     /**
-     * Reads directory
-     * @param {String} root The file path from client
+     * Get vfs capabilities
+     * @param {String} file The optional file path from client
      * @param {Object} [options={}] Options
-     * @return {Object[]}
+     * @return {Object}
      */
     capabilities: vfs => (file, options = {}) =>
       Promise.resolve({
