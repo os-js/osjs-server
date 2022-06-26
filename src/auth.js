@@ -247,15 +247,19 @@ class Auth {
    */
   async createHomeDirectory(profile) {
     try {
-      const homeDir = await this
-        .core
-        .make('osjs/vfs')
-        .realpath('home:/', profile);
+			const vfs = this.core.make('osjs/vfs');
 
-      await fs.ensureDir(homeDir);
-    } catch (e) {
-      console.warn('Failed trying to make home directory for', profile.username);
-    }
+			const homeDir = await vfs.realpath('home:/', profile);
+			await fs.ensureDir(homeDir);
+
+			const desktopDir = await vfs.realpath('home:/.desktop', profile);
+			await fs.ensureDir(desktopDir);
+
+			const shortcutsFile = await vfs.realpath('home:/.desktop/.shortcuts.json', profile);
+			await fs.ensureFile(shortcutsFile);
+		} catch (e) {
+			console.warn('Failed trying to make home directory for', profile.username);
+		}
   }
 }
 
