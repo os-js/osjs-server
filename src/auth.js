@@ -246,19 +246,30 @@ class Auth {
    * @return {Promise<undefined>}
    */
   async createHomeDirectory(profile) {
-    try {
-      const vfs = this.core.make('osjs/vfs');
+    const vfs = this.core.make('osjs/vfs');
+    const template = this.core.config('vfs.home.template', []);
 
-      const homeDir = await vfs.realpath('home:/', profile);
-      await fs.ensureDir(homeDir);
+    if (typeof template === 'string') {
+      // If the template is a string, it is a path to a directory
+      // that should be copied to the user's home directory
+      const root = await vfs.realpath('home:/', profile);
 
-      const desktopDir = await vfs.realpath('home:/.desktop', profile);
-      await fs.ensureDir(desktopDir);
+      fs.copySync(template, root, { overwrite: false });
+    } else if (Array.isArray(template)) {
+      // If the template is an array, it is a list of files that
+      // should be copied to the user's home directory
+      for (const file of template) {
+        try {
+          const { path, contents = [] } = file;
+          const shortcutsFile = await vfs.realpath(`home:/${path}`, profile);
 
-      const shortcutsFile = await vfs.realpath('home:/.desktop/.shortcuts.json', profile);
-      await fs.ensureFile(shortcutsFile);
-    } catch (e) {
-      console.warn('Failed trying to make home directory for', profile.username);
+          await fs.ensureDir(pathLib.dirname(shortcutsFile));
+          await fs.writeFile(shortcutsFile, contents);
+        } catch (e) {
+          console.warn(`There was a problem writing '${file.path}' to the home directory template`);
+          console.error('ERROR:', e);
+        }
+      }
     }
   }
 }

@@ -1,4 +1,6 @@
 const osjs = require('osjs');
+const fs = require('fs-extra');
+const path = require('path');
 const Auth = require('../src/auth.js');
 const {Response} = require('jest-express/lib/response');
 const {Request} = require('jest-express/lib/request');
@@ -75,6 +77,40 @@ describe('Authentication', () => {
     expect(request.session.user).toEqual(profile);
     expect(request.session.save).toBeCalled();
     expect(response.json).toBeCalledWith(profile);
+  });
+
+  test('#login - createHomeDirectory file', async () => {
+    request.setBody({ username: 'jest', password: 'jest' });
+
+    await auth.login(request, response);
+    request.fields = {
+      path: 'home:/.desktop/.shortcuts.json',
+    };
+
+    const result = await filesystem.request('exists', request);
+    expect(result).toBe(true);
+  });
+
+  test('#login - createHomeDirectory directory', async () => {
+    request.setBody({ username: 'jest', password: 'jest' });
+
+    const dirpath = path.resolve(
+      core.configuration.root,
+      'homeDirFolder'
+    );
+    core.configuration.vfs.home.template = dirpath;
+
+    await auth.login(request, response);
+
+    const files = await fs.readdir(dirpath);
+    for (const file of files) {
+      request.fields = {
+        path: `home:/${file}`,
+      };
+
+      const fileExists = await filesystem.request('exists', request);
+      expect(fileExists).toBe(true);
+    }
   });
 
   test('#login - fail on denied user', async () => {
