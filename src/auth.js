@@ -257,7 +257,7 @@ class Auth {
 
       fs.copySync(template, root, {overwrite: false});
     } else if (Array.isArray(template)) {
-      await handleHomeDirectoryArray(template, vfs, profile);
+      await this.handleHomeDirectoryArray(template, vfs, profile);
     }
   }
 
