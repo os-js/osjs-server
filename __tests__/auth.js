@@ -80,7 +80,7 @@ describe('Authentication', () => {
   });
 
   test('#login - createHomeDirectory file', async () => {
-    request.setBody({ username: 'jest', password: 'jest' });
+    request.setBody({username: 'jest', password: 'jest'});
 
     await auth.login(request, response);
     request.fields = {
@@ -92,7 +92,7 @@ describe('Authentication', () => {
   });
 
   test('#login - createHomeDirectory directory', async () => {
-    request.setBody({ username: 'jest', password: 'jest' });
+    request.setBody({username: 'jest', password: 'jest'});
 
     const dirpath = path.resolve(
       core.configuration.root,

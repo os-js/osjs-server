@@ -128,7 +128,16 @@ const defaultConfiguration = {
       attributes: {
         root: '{vfs}/{username}'
       }
-    }]
+    }],
+
+    home: {
+      template: [
+        {
+          path: ".desktop/.shortcuts.json",
+          contents: JSON.stringify([]),
+        },
+      ]
+    }
   }
 };
 
