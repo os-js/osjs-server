@@ -131,12 +131,10 @@ const defaultConfiguration = {
     }],
 
     home: {
-      template: [
-        {
-          path: ".desktop/.shortcuts.json",
-          contents: JSON.stringify([]),
-        },
-      ]
+      template: [{
+        path: '.desktop/.shortcuts.json',
+        contents: JSON.stringify([])
+      }]
     }
   }
 };
