@@ -2,6 +2,7 @@ const osjs = require('osjs');
 const fs = require('fs-extra');
 const path = require('path');
 const Auth = require('../src/auth.js');
+const Filesystem = require('../src/filesystem.js');
 const {Response} = require('jest-express/lib/response');
 const {Request} = require('jest-express/lib/request');
 
@@ -33,7 +34,22 @@ describe('Authentication', () => {
     response.resetMocked();
   });
 
-  beforeAll(() => osjs().then(c => (core = c)));
+  beforeAll(() =>
+		meeseOS().then(async c => {
+			core = c;
+			c.make('osjs/fs');
+			filesystem = new Filesystem(core);
+			filesystem.init();
+
+			await filesystem.mount({
+				name: 'jest',
+				attributes: {
+					root: '/tmp'
+				}
+			});
+		})
+	);
+  
   afterAll(() => core.destroy());
 
   test('#constructor', () => {
