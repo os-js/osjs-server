@@ -35,7 +35,7 @@ describe('Authentication', () => {
   });
 
   beforeAll(() =>
-		meeseOS().then(async c => {
+		osjs().then(async c => {
 			core = c;
 			c.make('osjs/fs');
 			filesystem = new Filesystem(core);
