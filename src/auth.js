@@ -29,6 +29,7 @@
  */
 
 const fs = require('fs-extra');
+const pathLib = require('path');
 const consola = require('consola');
 const logger = consola.withTag('Auth');
 const nullAdapter = require('./adapters/auth/null.js');
@@ -254,13 +255,22 @@ class Auth {
       // that should be copied to the user's home directory
       const root = await vfs.realpath('home:/', profile);
 
-      fs.copySync(template, root, { overwrite: false });
+      fs.copySync(template, root, {overwrite: false});
     } else if (Array.isArray(template)) {
-      // If the template is an array, it is a list of files that
-      // should be copied to the user's home directory
+      await handleHomeDirectoryArray(template);
+    }
+  }
+
+  /**
+   * If the template is an array, it is a list of files that should be copied
+   * to the user's home directory.
+   * @param {Object[]} template array of objects with a specified path,
+   * optionally with specified content but defaulting to `[]` if not
+   */
+  async handleHomeDirectoryArray(template) {
       for (const file of template) {
         try {
-          const { path, contents = [] } = file;
+          const {path, contents = []} = file;
           const shortcutsFile = await vfs.realpath(`home:/${path}`, profile);
 
           await fs.ensureDir(pathLib.dirname(shortcutsFile));
@@ -270,7 +280,6 @@ class Auth {
           console.error('ERROR:', e);
         }
       }
-    }
   }
 }
 

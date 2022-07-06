@@ -90,7 +90,7 @@ const defaultConfiguration = {
       module: require.resolve('connect-loki'),
       options: {
         autosave: true
-        //ttl: maxAge
+        // ttl: maxAge
       }
     },
     options: {
