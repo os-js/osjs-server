@@ -255,21 +255,21 @@ class Auth {
       // that should be copied to the user's home directory
       const root = await vfs.realpath('home:/', profile);
 
-      fs.copySync(template, root, {overwrite: false});
+      await fs.copy(template, root, {overwrite: false});
     } else if (Array.isArray(template)) {
-      await this.handleHomeDirectoryArray(template, vfs, profile);
+      await this.createHomeDirectoryFromArray(template, vfs, profile);
     }
   }
 
   /**
    * If the template is an array, it is a list of files that should be copied
-   * to the user's home directory.
+   * to the user's home directory
    * @param {Object[]} template Array of objects with a specified path,
    * optionally with specified content but defaulting to `[]` if not
    * @param {VFSServiceProvider} vfs An instance of the virtual file system
    * @param {AuthUserProfile} profile User profile
    */
-  async handleHomeDirectoryArray(template, vfs, profile) {
+  async createHomeDirectoryFromArray(template, vfs, profile) {
     for (const file of template) {
       try {
         const {path, contents = []} = file;
