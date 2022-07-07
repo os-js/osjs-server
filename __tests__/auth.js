@@ -39,7 +39,7 @@ describe('Authentication', () => {
       core = c;
       c.make('osjs/fs');
       filesystem = new Filesystem(core);
-      filesystem.init();
+      await filesystem.init();
 
       await filesystem.mount({
         name: 'jest',
