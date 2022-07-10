@@ -265,14 +265,14 @@ class Auth {
    * If the template is an array, it is a list of files that should be copied
    * to the user's home directory
    * @param {Object[]} template Array of objects with a specified path,
-   * optionally with specified content but defaulting to `[]` if not
+   * optionally with specified content but defaulting to an empty string
    * @param {VFSServiceProvider} vfs An instance of the virtual file system
    * @param {AuthUserProfile} profile User profile
    */
   async createHomeDirectoryFromArray(template, vfs, profile) {
     for (const file of template) {
       try {
-        const {path, contents = []} = file;
+        const {path, contents = ""} = file;
         const shortcutsFile = await vfs.realpath(`home:/${path}`, profile);
 
         await fs.ensureDir(pathLib.dirname(shortcutsFile));
