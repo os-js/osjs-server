@@ -272,7 +272,7 @@ class Auth {
   async createHomeDirectoryFromArray(template, vfs, profile) {
     for (const file of template) {
       try {
-        const {path, contents = ""} = file;
+        const {path, contents = ''} = file;
         const shortcutsFile = await vfs.realpath(`home:/${path}`, profile);
 
         await fs.ensureDir(pathLib.dirname(shortcutsFile));
