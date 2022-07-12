@@ -90,7 +90,7 @@ const defaultConfiguration = {
       module: require.resolve('connect-loki'),
       options: {
         autosave: true
-        //ttl: maxAge
+        // ttl: maxAge
       }
     },
     options: {
@@ -128,7 +128,14 @@ const defaultConfiguration = {
       attributes: {
         root: '{vfs}/{username}'
       }
-    }]
+    }],
+
+    home: {
+      template: [{
+        path: '.desktop/.shortcuts.json',
+        contents: JSON.stringify([])
+      }]
+    }
   }
 };
 
