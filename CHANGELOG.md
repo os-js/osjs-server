@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.3.1 - 2022-07-13
+
+* Home directory template support (#58)
+
 ## 3.3.0 - 2022-07-13
 
 * Added .editorconfig (#61)
