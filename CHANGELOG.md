@@ -1,5 +1,19 @@
 # Changelog for osjs-server
 
+## 3.3.1 - 2022-07-13
+
+* Home directory template support (#58)
+
+## 3.3.0 - 2022-07-13
+
+* Added .editorconfig (#61)
+* Update codeclimate github workflow
+* Fix typo in github test workflow
+* Update node version requirements
+* Use spesific jest version in github actions
+* Add extra error check in Core#listen listen callback
+* Add promise to Core#listen
+
 ## 3.2.4 - 2021-08-03
 
 * Add configuration for http bind host (#55)
