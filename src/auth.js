@@ -274,9 +274,12 @@ class Auth {
       try {
         const {path, contents = ''} = file;
         const shortcutsFile = await vfs.realpath(`home:/${path}`, profile);
+        const dir = pathLib.dirname(shortcutsFile);
 
-        await fs.ensureDir(pathLib.dirname(shortcutsFile));
-        await fs.writeFile(shortcutsFile, contents);
+        if (!await fs.pathExists(shortcutsFile)) {
+          await fs.ensureDir(dir);
+          await fs.writeFile(shortcutsFile, contents);
+        }
       } catch (e) {
         console.warn(`There was a problem writing '${file.path}' to the home directory template`);
         console.error('ERROR:', e);
