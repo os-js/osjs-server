@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.3.2 - 2022-07-19
+
+* Fix shortcuts file overwrite
+
 ## 3.3.1 - 2022-07-13
 
 * Home directory template support (#58)
