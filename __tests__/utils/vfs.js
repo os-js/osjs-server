@@ -203,7 +203,7 @@ describe('VFS Utils', () => {
     const parser = utils.parseFields();
 
     return expect(parser({
-      url: '/foo/?bar.s=baz&jazz.s=bass',
+      url: '/foo/?bar=baz&jazz=bass',
       method: 'get'
     }))
       .resolves
@@ -246,65 +246,22 @@ describe('VFS Utils', () => {
 
   test('assembleQueryData', () => {
     const result1 = utils.assembleQueryData({
-      'a.s': 'b',
-      'b.a.s': 'foo',
-      'b.b.a.s': 'foo',
-      'b.b.b.s': 'foo',
-      'b.b.c.s': 'foo',
-      'b.b.d.s': 'foo',
-      'b.b.e.s': 'foo',
-      'c.n': 'null',
-      'd.b': 'true',
-      'e.i': '1',
-      'f.u': 'undefined'
-    });
-
-    const result2 = utils.assembleQueryData({
-      'a.0.s': 'foo',
-      'a.1.s': 'foo',
-      'b.0.s': 'foo',
-      'b.1.s': 'foo',
-      'b.a.s': 'foo',
-      'c.a.s': 'foo',
-      'c.b.0.s': 'foo',
-      'c.b.1.s': 'foo',
-      'c.c.0.s': 'foo',
-      'c.c.1.s': 'foo',
-      'c.c.a.s': 'foo',
+      'a': 'b',
+      'b': '{"a":"foo"}',
+      'c': '{"a":false,"c":null,"d":1,"e":{"a":"foo"}}'
     });
 
     expect(result1).toEqual({
       a: 'b',
       b: {
-        a: 'foo',
-        b: {
-          a: 'foo',
-          b: 'foo',
-          c: 'foo',
-          d: 'foo',
-          e: 'foo'
-        }
-      },
-      c: null,
-      d: true,
-      e: 1,
-      f: undefined
-    });
-
-    expect(result2).toEqual({
-      a: ['foo', 'foo'],
-      b:{
-        '0': 'foo',
-        '1': 'foo',
-        'a': 'foo',
+        a: 'foo'
       },
       c: {
-        a: 'foo',
-        b: ['foo', 'foo'],
-        c: {
-          '0': 'foo',
-          '1': 'foo',
-          'a': 'foo'
+        a: false,
+        c: null,
+        d: 1,
+        e: {
+          a: 'foo'
         }
       }
     });

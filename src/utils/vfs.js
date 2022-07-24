@@ -43,17 +43,6 @@ const errorCodes = {
 };
 
 /**
- * A map of data types
- */
-const typeMap = {
-  i: str => parseInt(str, 10),
-  s: str => str,
-  b: str => str === 'true',
-  u: str => undefined,
-  n: str => null
-};
-
-/**
  * Gets prefix of a VFS path
  */
 const getPrefix = path => String(path).split(':')[0];
@@ -185,35 +174,18 @@ const mountpointResolver = core => async (path) => {
 /*
  * Assembles a given object query
  */
-const assembleQueryData = (object) => {
-  const assembled = {};
-  const keys = Object.keys(object);
-
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const dots = key.split('.');
-    const type = dots[dots.length - 1];
-    dots.pop();
-
-    let last = assembled;
-    let parent = null;
-    for (let j = 0; j < dots.length; j++) {
-      const dot = dots[j];
-      if (j >= dots.length - 1) {
-        if (!/^\d+$/.test(dot) && Array.isArray(last)) {
-          last = Object.fromEntries(last.map((value, i) => [i, value]));
-          parent[dots[j - 1]] = last;
-        }
-        last[dot] = typeMap[type](object[key]);
-      } else {
-        last[dot] = last[dot] || (/^\d+$/.test(dots[j + 1]) ? [] : {});
+const assembleQueryData = (data) => {
+  const entries = Object
+    .entries(data)
+    .map(([k, v]) => {
+      try {
+        return [k, JSON.parse(v)];
+      } catch (e) {
+        return [k, v];
       }
+    });
 
-      parent = last;
-      last = last[dot];
-    }
-  }
-  return assembled;
+  return Object.fromEntries(entries);
 };
 
 /*
