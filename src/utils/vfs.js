@@ -172,12 +172,29 @@ const mountpointResolver = core => async (path) => {
 };
 
 /*
+ * Assembles a given object query
+ */
+const assembleQueryData = (data) => {
+  const entries = Object
+    .entries(data)
+    .map(([k, v]) => {
+      try {
+        return [k, JSON.parse(v)];
+      } catch (e) {
+        return [k, v];
+      }
+    });
+
+  return Object.fromEntries(entries);
+};
+
+/*
  * Parses URL Body
  */
 const parseGet = req => {
   const {query} = url.parse(req.url, true);
-
-  return Promise.resolve({fields: query, files: {}});
+  const assembledQuery = assembleQueryData(query);
+  return Promise.resolve({fields: assembledQuery, files: {}});
 };
 
 /*
@@ -254,5 +271,6 @@ module.exports = {
   getPrefix,
   parseFields,
   errorCodes,
-  methodArguments
+  methodArguments,
+  assembleQueryData
 };
