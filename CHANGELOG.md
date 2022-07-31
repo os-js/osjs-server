@@ -1,5 +1,12 @@
 # Changelog for osjs-server
 
+## 3.3.3 - 2022-07-31
+
+* Remove now defunct esdoc deploy
+* Update source code license comments
+* Update LICENSE
+* Support unserialization of url query parameters
+
 ## 3.3.2 - 2022-07-19
 
 * Fix shortcuts file overwrite
