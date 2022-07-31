@@ -1,5 +1,7 @@
 # Changelog for osjs-server
 
+## 3.4.0 - 2022-08-01
+
 ## 3.3.3 - 2022-07-31
 
 * Remove now defunct esdoc deploy
