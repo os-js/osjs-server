@@ -35,6 +35,15 @@ describe('VFS System adapter', () => {
 
   const request = (name, ...args) => adapter[name](vfs, vfs)(...args);
 
+  test('#capabilities', () => {
+    return expect(request('capabilities', '', createOptions()))
+      .resolves
+      .toMatchObject({
+        pagination: false,
+        sort: false,
+      });
+  });
+
   test('#touch', () => {
     return expect(request('touch', 'home:/test', createOptions()))
       .resolves
