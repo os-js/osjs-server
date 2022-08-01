@@ -162,6 +162,7 @@ module.exports = (core) => {
 
       return watch;
     },
+
     /**
      * Get filesystem capabilities
      * @param {String} file The file path from client
@@ -170,8 +171,8 @@ module.exports = (core) => {
      */
     capabilities: vfs => (file, options = {}) =>
       Promise.resolve({
-        sort:false,
-        pagination:false
+        sort: false,
+        pagination: false
       }),
 
     /**
