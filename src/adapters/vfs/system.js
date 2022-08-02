@@ -36,20 +36,36 @@ const chokidar = require('chokidar');
 /*
  * Creates an object readable by client
  */
-const createFileIter = (core, realRoot, file) => {
+const createFileIter = (core, realRoot, file, options = {}) => {
   const filename = path.basename(file);
   const realPath = path.join(realRoot, filename);
   const {mime} = core.make('osjs/vfs');
 
-  const createStat = stat => ({
-    isDirectory: stat.isDirectory(),
-    isFile: stat.isFile(),
-    mime: stat.isFile() ? mime(realPath) : null,
-    size: stat.size,
-    path: file,
-    filename,
-    stat
-  });
+  const createStat = async stat => {
+    let totalSize = 0;
+    let files = [];
+    if (stat.isDirectory()) {
+      files = await fs.readdir(realPath);
+      if(!options.showHiddenFiles) {
+        files = files.filter(f => f.substr(0, 1) !== '.');
+      }
+      const promises = files.map(f => fs.stat(path.join(realPath, f)));
+      const allPromises = await Promise.all(promises);
+      allPromises.map(s => totalSize += s.size);
+    }
+
+    return ({
+      isDirectory: stat.isDirectory(),
+      isFile: stat.isFile(),
+      mime: stat.isFile() ? mime(realPath) : null,
+      size: stat.size,
+      path: file,
+      totalCount: stat.isDirectory() ? files.length : null,
+      totalSize: stat.isDirectory() ? totalSize : null,
+      filename,
+      stat
+    });
+  };
 
   return fs.stat(realPath)
     .then(createStat)
@@ -196,7 +212,7 @@ module.exports = (core) => {
       Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
         .then(realPath => {
           return fs.access(realPath, fs.F_OK)
-            .then(() => createFileIter(core, path.dirname(realPath), realPath));
+            .then(() => createFileIter(core, path.dirname(realPath), realPath, options));
         }),
 
     /**

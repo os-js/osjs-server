@@ -50,21 +50,6 @@ describe('VFS System adapter', () => {
       .toBe(true);
   });
 
-  test('#stat', () => {
-    const realPath = path.join(core.configuration.tempPath, 'jest/test');
-
-    return expect(request('stat', 'home:/test', createOptions()))
-      .resolves
-      .toMatchObject({
-        filename: 'test',
-        path: realPath,
-        size: 0,
-        isFile: true,
-        isDirectory: false,
-        mime: 'application/octet-stream'
-      });
-  });
-
   test('#copy', () => {
     return expect(request('copy', 'home:/test', 'home:/test-copy', createOptions()))
       .resolves
@@ -93,6 +78,40 @@ describe('VFS System adapter', () => {
     return expect(request('mkdir', 'home:/test-directory', createOptions({ensure: true})))
       .resolves
       .toBe(true);
+  });
+
+  test('#stat - file', () => {
+    const realPath = path.join(core.configuration.tempPath, 'jest/test');
+
+    return expect(request('stat', 'home:/test', createOptions()))
+      .resolves
+      .toMatchObject({
+        filename: 'test',
+        path: realPath,
+        size: 0,
+        isFile: true,
+        isDirectory: false,
+        mime: 'application/octet-stream',
+        totalCount:null,
+        toalSize:null
+      });
+  });
+
+  test('#stat - directory', () => {
+    const realPath = path.join(core.configuration.tempPath, 'jest/test-directory');
+
+    return expect(request('stat', 'home:/test-directory', createOptions()))
+      .resolves
+      .toMatchObject({
+        filename: 'test-directory',
+        path: realPath,
+        size: 4096,
+        isFile: false,
+        isDirectory: true,
+        mime: null,
+        totalCount:0,
+        toalSize:0
+      });
   });
 
   test('#readfile', () => {
