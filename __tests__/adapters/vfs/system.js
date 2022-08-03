@@ -93,7 +93,7 @@ describe('VFS System adapter', () => {
         isDirectory: false,
         mime: 'application/octet-stream',
         totalCount:null,
-        toalSize:null
+        totalSize:null
       });
   });
 
@@ -110,7 +110,7 @@ describe('VFS System adapter', () => {
         isDirectory: true,
         mime: null,
         totalCount:0,
-        toalSize:0
+        totalSize:0
       });
   });
 
