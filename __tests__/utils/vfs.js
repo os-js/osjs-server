@@ -243,4 +243,27 @@ describe('VFS Utils', () => {
   test('parseFields - POST w/Form', () => {
     // TODO
   });
+
+  test('assembleQueryData', () => {
+    const result1 = utils.assembleQueryData({
+      'a': 'b',
+      'b': '{"a":"foo"}',
+      'c': '{"a":false,"c":null,"d":1,"e":{"a":"foo"}}'
+    });
+
+    expect(result1).toEqual({
+      a: 'b',
+      b: {
+        a: 'foo'
+      },
+      c: {
+        a: false,
+        c: null,
+        d: 1,
+        e: {
+          a: 'foo'
+        }
+      }
+    });
+  });
 });

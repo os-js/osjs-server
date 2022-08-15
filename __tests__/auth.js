@@ -1,5 +1,8 @@
 const osjs = require('osjs');
+const fs = require('fs-extra');
+const path = require('path');
 const Auth = require('../src/auth.js');
+const Filesystem = require('../src/filesystem.js');
 const {Response} = require('jest-express/lib/response');
 const {Request} = require('jest-express/lib/request');
 
@@ -31,7 +34,22 @@ describe('Authentication', () => {
     response.resetMocked();
   });
 
-  beforeAll(() => osjs().then(c => (core = c)));
+  beforeAll(() =>
+    osjs().then(async c => {
+      core = c;
+      c.make('osjs/fs');
+      filesystem = new Filesystem(core);
+      await filesystem.init();
+
+      await filesystem.mount({
+        name: 'jest',
+        attributes: {
+          root: '/tmp'
+        }
+      });
+    })
+  );
+  
   afterAll(() => core.destroy());
 
   test('#constructor', () => {
@@ -75,6 +93,49 @@ describe('Authentication', () => {
     expect(request.session.user).toEqual(profile);
     expect(request.session.save).toBeCalled();
     expect(response.json).toBeCalledWith(profile);
+  });
+
+  test('#login - createHomeDirectory string', async () => {
+    request.setBody({username: 'jest', password: 'jest'});
+
+    await auth.login(request, response);
+    request.fields = {
+      path: 'home:/.desktop/.shortcuts.json'
+    };
+
+    const result = await filesystem.request('exists', request);
+    expect(result).toBe(true);
+  });
+
+  test('#login - createHomeDirectory array', async () => {
+    request.setBody({username: 'jest', password: 'jest'});
+
+    const dirpath = path.resolve(
+      core.configuration.root,
+      'homeDirFolder'
+    );
+    core.configuration.vfs.home.template = dirpath;
+
+    await auth.login(request, response);
+
+    request.fields = {
+      path: 'home:/otherfile.xml'
+    };
+    const fileExists = await filesystem.request('exists', request);
+    expect(fileExists).toBe(true);
+
+    request.fields = {
+      path: 'home:/test.txt'
+    };
+
+    let chunks = [];
+    const fileStream = await filesystem.request('readfile', request, response);
+    for await (let chunk of fileStream) {
+      chunks.push(chunk);
+    }
+
+    const fileContents = Buffer.concat(chunks).toString();
+    expect(fileContents).toBe('this is proof that copying a folder works :)');
   });
 
   test('#login - fail on denied user', async () => {

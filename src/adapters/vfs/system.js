@@ -1,7 +1,7 @@
 /*
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
- * Copyright (c) 2011-2020, Anders Evenrud <andersevenrud@gmail.com>
+ * Copyright (c) Anders Evenrud <andersevenrud@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -162,6 +162,18 @@ module.exports = (core) => {
 
       return watch;
     },
+
+    /**
+     * Get filesystem capabilities
+     * @param {String} file The file path from client
+     * @param {Object} [options={}] Options
+     * @return {Object[]}
+     */
+    capabilities: vfs => (file, options = {}) =>
+      Promise.resolve({
+        sort: false,
+        pagination: false
+      }),
 
     /**
      * Checks if file exists

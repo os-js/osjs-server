@@ -1,7 +1,7 @@
 /*
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
- * Copyright (c) 2011-2020, Anders Evenrud <andersevenrud@gmail.com>
+ * Copyright (c) Anders Evenrud <andersevenrud@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,7 +90,7 @@ const defaultConfiguration = {
       module: require.resolve('connect-loki'),
       options: {
         autosave: true
-        //ttl: maxAge
+        // ttl: maxAge
       }
     },
     options: {
@@ -128,7 +128,14 @@ const defaultConfiguration = {
       attributes: {
         root: '{vfs}/{username}'
       }
-    }]
+    }],
+
+    home: {
+      template: [{
+        path: '.desktop/.shortcuts.json',
+        contents: JSON.stringify([])
+      }]
+    }
   }
 };
 
