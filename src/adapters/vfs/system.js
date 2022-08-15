@@ -146,8 +146,8 @@ module.exports = (core) => {
 
   const addDirToArchive = async (zipfile, realPath) => {
     const files = await fs.readdir(realPath)
-      .then((files) => ({ realPath, files }))
-      .then(({ realPath, files }) => {
+      .then((files) => ({realPath, files}))
+      .then(({realPath, files}) => {
         const promises = files.map((fileName) => {
           const filePath = realPath.replace(/\/?$/, '/') + fileName;
           return createFileIter(
@@ -407,12 +407,12 @@ module.exports = (core) => {
       Promise.resolve(getRealPath(core, options.session, vfs.mount, file)),
 
     /**
-		 * Compresses or decompresses a given selection.
-		 * @param {Array} selection The selection from the client
-		 * @param {Object} [options={}] Options
-		 * @returns {Promise<Boolean, Error>}
-		 */
-		archive: vfs => async (selection, options = {}) => {
+     * Compresses or decompresses a given selection.
+     * @param {Array} selection The selection from the client
+     * @param {Object} [options={}] Options
+     * @returns {Promise<Boolean, Error>}
+     */
+    archive: vfs => async (selection, options = {}) => {
       const realPaths = selection.map(
         (file) => getRealPath(core, options.session, vfs.mount, file)
       );
@@ -428,17 +428,22 @@ module.exports = (core) => {
           const output = fs.createWriteStream(realPaths[0] + '.zip');
           zipfile.outputStream.pipe(output);
 
-          // Add the files to the archive
-          for (const realPath of realPaths) {
-            await addToArchive(zipfile, realPath);
+          try {
+            // Add the files to the archive
+            for (const realPath of realPaths) {
+              await addToArchive(zipfile, realPath);
 
-            // Delete the original file
-            // fs.unlink(realPath);
+              // Delete the original file
+              // fs.unlink(realPath);
+            }
+
+            zipfile.end();
+          } catch (err) {
+            // If there is an error, end the archive and delete the file
+            zipfile.end();
+            fs.unlink(realPaths[0] + '.zip');
+            throw err;
           }
-
-          zipfile.end();
-
-          // TODO: Try/catch then delete the archive if it fails
 
           break;
         }
