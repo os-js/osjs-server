@@ -44,6 +44,7 @@ const {
 const respondNumber = result => typeof result === 'number' ? result : -1;
 const respondBoolean = result => typeof result === 'boolean' ? result : !!result;
 const requestPath = req => ([sanitize(req.fields.path)]);
+const requestSelection = req => [req.fields.selection];
 const requestSearch = req => ([sanitize(req.fields.root), req.fields.pattern]);
 const requestCross = req => ([sanitize(req.fields.from), sanitize(req.fields.to)]);
 const requestFile = req => ([sanitize(req.fields.path), streamFromRequest(req)]);
@@ -64,7 +65,7 @@ const parseRangeHeader = (range, size) => {
 const onDone = (req, res) => {
   if (req.files) {
     for (let fieldname in req.files) {
-      fs.unlink(req.files[fieldname].path, () => ({}));
+      fs.unlink(req.files[fieldname].filepath, () => ({}));
     }
   }
 };
@@ -118,7 +119,7 @@ const createOptions = req => {
 
   if (typeof options === 'string') {
     try {
-      result = JSON.parse(req.fields.options) || {};
+      result = JSON.parse(options) || {};
     } catch (e) {
       // Allow to fall through
     }
@@ -247,7 +248,8 @@ const vfs = core => {
     touch: createRequest(requestPath, 'touch', true, respondBoolean),
     search: createRequest(requestSearch, 'search', false),
     copy: createCrossRequest(requestCross, 'copy'),
-    rename: createCrossRequest(requestCross, 'rename')
+    rename: createCrossRequest(requestCross, 'rename'),
+    archive: createRequest(requestSelection, 'archive', false)
   };
 };
 
@@ -279,6 +281,7 @@ module.exports = core => {
   router.post('/unlink', wrapper(methods.unlink));
   router.post('/touch', wrapper(methods.touch));
   router.post('/search', wrapper(methods.search));
+  router.post('/archive', wrapper(methods.archive));
 
   // Finally catch promise exceptions
   router.use((error, req, res, next) => {

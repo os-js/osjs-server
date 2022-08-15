@@ -70,7 +70,7 @@ const streamFromRequest = req => {
   const isStream = req.files.upload instanceof Stream;
   return isStream
     ? req.files.upload
-    : fs.createReadStream(req.files.upload.path);
+    : fs.createReadStream(req.files.upload.filepath);
 };
 
 const validateAll = (arr, compare, strict = true) => arr[strict ? 'every' : 'some'](g => compare.indexOf(g) !== -1);
@@ -215,9 +215,11 @@ const parseJson = req => {
  * Parses Form Body
  */
 const parseFormData = (req, {maxFieldsSize, maxFileSize}) => {
-  const form = new formidable.IncomingForm();
-  form.maxFieldsSize = maxFieldsSize;
-  form.maxFileSize = maxFileSize;
+  const form = formidable({
+    multiples: true,
+    maxFieldsSize,
+    maxFileSize,
+  });
 
   return new Promise((resolve, reject) => {
     form.parse(req, (err, fields, files) => {
@@ -258,7 +260,8 @@ const methodArguments = {
   touch: ['path'],
   search: ['root', 'pattern'],
   copy: ['from', 'to'],
-  rename: ['from', 'to']
+  rename: ['from', 'to'],
+  archive: ['selection'],
 };
 
 module.exports = {

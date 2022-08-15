@@ -32,6 +32,8 @@ const fs = require('fs-extra');
 const path = require('path');
 const fh = require('filehound');
 const chokidar = require('chokidar');
+const extract = require('extract-zip');
+const yazl = require('yazl');
 
 /*
  * Creates an object readable by client
@@ -107,7 +109,7 @@ const resolveSegments = (core, session, str) => matchSegments(str)
  */
 const getRealPath = (core, session, mount, file) => {
   const root = resolveSegments(core, session, mount.attributes.root);
-  const str = file.substr(mount.root.length - 1);
+  const str = file.substring(mount.root.length - 1);
   return path.join(root, str);
 };
 
@@ -132,6 +134,53 @@ module.exports = (core) => {
   })
     .then(({realSource, realDest}) => fs[method](realSource, realDest))
     .then(() => true);
+
+  const addFileToArchive = (zipfile, realPath) => {
+    const zipfileLocation = zipfile.outputStream._readableState.pipes[0].path;
+    const archiveRoot = path.parse(zipfileLocation).dir + path.sep;
+
+    const readStream = fs.createReadStream(realPath);
+    const destination = realPath.replace(archiveRoot, '');
+    zipfile.addReadStream(readStream, destination);
+  };
+
+  const addDirToArchive = async (zipfile, realPath) => {
+    const files = await fs.readdir(realPath)
+      .then((files) => ({ realPath, files }))
+      .then(({ realPath, files }) => {
+        const promises = files.map((fileName) => {
+          const filePath = realPath.replace(/\/?$/, '/') + fileName;
+          return createFileIter(
+            core,
+            path.dirname(filePath),
+            filePath
+          );
+        });
+        return Promise.all(promises);
+      });
+
+    for (const file of files) {
+      if (file.isDirectory) {
+        await addToArchive(zipfile, file.path);
+      } else {
+        addFileToArchive(zipfile, file.path);
+      }
+    }
+  };
+
+  /**
+   * Adds everything in the given directory to the VFS archive.
+   * @param {yazl.ZipFile} zipfile The ZIP file to add to
+   * @param {String} realPath The real path to the file/directory
+   */
+  const addToArchive = async (zipfile, realPath) => {
+    const isDirectory = await fs.stat(realPath).then((stat) => stat.isDirectory());
+    if (isDirectory) {
+      await addDirToArchive(zipfile, realPath);
+    } else {
+      await addFileToArchive(zipfile, realPath);
+    }
+  };
 
   return {
     watch: (mount, callback) => {
@@ -355,6 +404,65 @@ module.exports = (core) => {
      * @return {string}
      */
     realpath: vfs => (file, options = {}) =>
-      Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
+      Promise.resolve(getRealPath(core, options.session, vfs.mount, file)),
+
+    /**
+		 * Compresses or decompresses a given selection.
+		 * @param {Array} selection The selection from the client
+		 * @param {Object} [options={}] Options
+		 * @returns {Promise<Boolean, Error>}
+		 */
+		archive: vfs => async (selection, options = {}) => {
+      const realPaths = selection.map(
+        (file) => getRealPath(core, options.session, vfs.mount, file)
+      );
+
+      const action = options.action || 'compress';
+      switch (action) {
+        case 'compress': {
+          // Define the archive instance
+          const zipfile = new yazl.ZipFile();
+
+          // Create a stream for the archive output
+          // IDEA: Dialog for the archive name on the client side?
+          const output = fs.createWriteStream(realPaths[0] + '.zip');
+          zipfile.outputStream.pipe(output);
+
+          // Add the files to the archive
+          for (const realPath of realPaths) {
+            await addToArchive(zipfile, realPath);
+
+            // Delete the original file
+            // fs.unlink(realPath);
+          }
+
+          zipfile.end();
+
+          // TODO: Try/catch then delete the archive if it fails
+
+          break;
+        }
+        case 'extract':
+          for (const realPath of realPaths) {
+            // Remove the `.zip` extension from the path
+            // IDEA: Dialog for the target name on the client side?
+            const target = realPath.split('.').slice(0, -1).join('.');
+
+            // Extract the archive
+            await extract(realPath, { dir: target });
+
+            // Delete the archive file
+            // fs.unlink(realPath);
+          }
+
+          break;
+        default:
+          return Promise.reject(
+            new Error(`Unknown archive action: '${action}'`)
+          );
+      }
+
+      return Promise.resolve(true);
+    }
   };
 };

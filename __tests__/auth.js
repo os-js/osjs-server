@@ -119,13 +119,13 @@ describe('Authentication', () => {
     await auth.login(request, response);
 
     request.fields = {
-      path: 'home:/otherfile.xml'
+      path: 'home:/exampleEmptyFile.xml'
     };
     const fileExists = await filesystem.request('exists', request);
     expect(fileExists).toBe(true);
 
     request.fields = {
-      path: 'home:/test.txt'
+      path: 'home:/exampleFileWithContents.txt'
     };
 
     let chunks = [];

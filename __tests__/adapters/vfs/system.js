@@ -50,6 +50,43 @@ describe('VFS System adapter', () => {
       .toBe(true);
   });
 
+  test('#archive - compress', () => {
+    const options = createOptions({ action: 'compress' });
+
+    return expect(
+      request(
+        'archive',
+        // TODO: Figure out why this is being uploaded as a directory instead of a file.
+        ['home:/exampleFileWithContents.txt', 'home:/exampleEmptyFile.xml'],
+        options
+      )
+    ).resolves.toBe(true);
+  });
+
+  test('#archive - compress error', () => {
+    const options = createOptions({ action: 'compress' });
+
+    return expect(
+      request('archive', ['home:/fakefile.php'], options)
+    ).rejects.toThrowError();
+  });
+
+  test('#archive - extract', () => {
+    const options = createOptions({ action: 'extract' });
+
+    return expect(
+      request('archive', ['home:/exampleFileWithContents.txt.zip'], options)
+    ).resolves.toBe(true);
+  });
+
+  test('#archive - bad option', () => {
+    const options = createOptions({ action: 'fake' });
+
+    return expect(
+      request('archive', ['home:/text.txt.zip'], options)
+    ).rejects.toThrowError();
+  });
+
   test('#stat', () => {
     const realPath = path.join(core.configuration.tempPath, 'jest/test');
 
