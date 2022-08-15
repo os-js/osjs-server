@@ -454,7 +454,7 @@ module.exports = (core) => {
             const target = realPath.split('.').slice(0, -1).join('.');
 
             // Extract the archive
-            await extract(realPath, { dir: target });
+            await extract(realPath, {dir: target});
 
             // Delete the archive file
             // fs.unlink(realPath);
