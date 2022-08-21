@@ -95,7 +95,9 @@ const defaultConfiguration = {
     },
     options: {
       name: 'osjs.sid',
-      secret: 'osjs',
+      // NOTE: You should DEFINITELY override these in production
+      accessTokenSecret: 'osjs',
+      refreshTokenSecret: 'osjsRefresh',
       rolling: true,
       resave: false,
       saveUninitialized: false,

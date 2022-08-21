@@ -32,6 +32,7 @@ const fs = require('fs-extra');
 const pathLib = require('path');
 const consola = require('consola');
 const logger = consola.withTag('Auth');
+const jwt = require('jsonwebtoken');
 const nullAdapter = require('./adapters/auth/null.js');
 
 /**
@@ -125,26 +126,31 @@ class Auth {
    */
   async login(req, res) {
     const result = await this.adapter.login(req, res);
+    const token = result.accessToken || '';
 
-    if (result) {
-      const profile = this.createUserProfile(req.body, result);
-
-      if (profile && this.checkLoginPermissions(profile)) {
-        await this.createHomeDirectory(profile, req, res);
-        req.session.user = profile;
-        req.session.save(() => {
-          this.core.emit('osjs/core:logged-in', Object.freeze({
-            ...req.session
-          }));
-
-          res.status(200).json(profile);
-        });
-        return;
+    jwt.verify(token, this.core.config('session.options.accessTokenSecret'), (err, user) => {
+      if (err) {
+        res.status(403).json({error: 'Invalid login or permission denied'});
       }
-    }
 
-    res.status(403)
-      .json({error: 'Invalid login or permission denied'});
+      req.user = user;
+    });
+
+    const profile = this.createUserProfile(req.body, result);
+
+    if (profile && this.checkLoginPermissions(profile)) {
+      await this.createHomeDirectory(profile, req, res);
+      req.session.user = profile;
+      req.session.save(() => {
+        this.core.emit('osjs/core:logged-in', Object.freeze({
+          ...req.session
+        }));
+
+        res.status(200).json(profile);
+      });
+
+      return;
+    }
   }
 
   /**
@@ -216,8 +222,8 @@ class Auth {
    * @return {AuthUserProfile|boolean}
    */
   createUserProfile(fields, result) {
-    const ignores = ['password'];
-    const required = ['username', 'id'];
+    const ignores = [];
+    const required = ['username'];
     const template = {
       id: 0,
       username: fields.username,

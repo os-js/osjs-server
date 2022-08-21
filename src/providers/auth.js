@@ -53,6 +53,7 @@ class AuthServiceProvider extends ServiceProvider {
 
     route('post', '/register', (req, res) => this.auth.register(req, res));
     route('post', '/login', (req, res) => this.auth.login(req, res));
+    route('post', '/token', (req, res) => this.auth.token(req, res));
     routeAuthenticated('post', '/logout', (req, res) => this.auth.logout(req, res));
 
     await this.auth.init();

@@ -48,6 +48,7 @@
     "filehound": "^1.17.4",
     "formidable": "^1.2.2",
     "fs-extra": "^9.0.1",
+    "jsonwebtoken": "^8.5.1",
     "mime": "^2.4.6",
     "minimist": "^1.2.5",
     "morgan": "^1.10.0",
