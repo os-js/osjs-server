@@ -1,7 +1,7 @@
 /*
  * OS.js - JavaScript Cloud/Web Desktop Platform
  *
- * Copyright (c) 2011-2020, Anders Evenrud <andersevenrud@gmail.com>
+ * Copyright (c) Anders Evenrud <andersevenrud@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
  */
 
 const fs = require('fs-extra');
+const pathLib = require('path');
 const consola = require('consola');
 const logger = consola.withTag('Auth');
 const nullAdapter = require('./adapters/auth/null.js');
@@ -246,15 +247,43 @@ class Auth {
    * @return {Promise<undefined>}
    */
   async createHomeDirectory(profile) {
-    try {
-      const homeDir = await this
-        .core
-        .make('osjs/vfs')
-        .realpath('home:/', profile);
+    const vfs = this.core.make('osjs/vfs');
+    const template = this.core.config('vfs.home.template', []);
 
-      await fs.ensureDir(homeDir);
-    } catch (e) {
-      console.warn('Failed trying to make home directory for', profile.username);
+    if (typeof template === 'string') {
+      // If the template is a string, it is a path to a directory
+      // that should be copied to the user's home directory
+      const root = await vfs.realpath('home:/', profile);
+
+      await fs.copy(template, root, {overwrite: false});
+    } else if (Array.isArray(template)) {
+      await this.createHomeDirectoryFromArray(template, vfs, profile);
+    }
+  }
+
+  /**
+   * If the template is an array, it is a list of files that should be copied
+   * to the user's home directory
+   * @param {Object[]} template Array of objects with a specified path,
+   * optionally with specified content but defaulting to an empty string
+   * @param {VFSServiceProvider} vfs An instance of the virtual file system
+   * @param {AuthUserProfile} profile User profile
+   */
+  async createHomeDirectoryFromArray(template, vfs, profile) {
+    for (const file of template) {
+      try {
+        const {path, contents = ''} = file;
+        const shortcutsFile = await vfs.realpath(`home:/${path}`, profile);
+        const dir = pathLib.dirname(shortcutsFile);
+
+        if (!await fs.pathExists(shortcutsFile)) {
+          await fs.ensureDir(dir);
+          await fs.writeFile(shortcutsFile, contents);
+        }
+      } catch (e) {
+        console.warn(`There was a problem writing '${file.path}' to the home directory template`);
+        console.error('ERROR:', e);
+      }
     }
   }
 }

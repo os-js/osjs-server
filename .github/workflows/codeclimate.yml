@@ -9,8 +9,7 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '14'
-    - run: npm install -g jest@^26
-    - run: npm install
+    - run: npm ci
     - uses: paambaati/codeclimate-action@v2.4.0
       env:
         CC_TEST_REPORTER_ID: 125467a1ee6a975ccd559c38662bdc1dd9540cd2803f98db94e1cf3596738773
