@@ -32,6 +32,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const fh = require('filehound');
 const chokidar = require('chokidar');
+const du = require('du');
 
 /*
  * Creates an object readable by client
@@ -42,17 +43,8 @@ const createFileIter = (core, realRoot, file, options = {}) => {
   const {mime} = core.make('osjs/vfs');
 
   const createStat = async stat => {
-    let totalSize = 0;
-    let files = [];
-    if (stat.isDirectory()) {
-      files = await fs.readdir(realPath);
-      if(!options.showHiddenFiles) {
-        files = files.filter(f => f.substr(0, 1) !== '.');
-      }
-      const promises = files.map(f => fs.stat(path.join(realPath, f)));
-      const allPromises = await Promise.all(promises);
-      allPromises.map(s => totalSize += s.size);
-    }
+    const totalSize = stat.isDirectory() ? await du(realPath) : null;
+    const files = stat.isDirectory() ? await fs.readdir(realPath) : [];
 
     return ({
       isDirectory: stat.isDirectory(),
@@ -61,7 +53,7 @@ const createFileIter = (core, realRoot, file, options = {}) => {
       size: stat.size,
       path: file,
       totalCount: stat.isDirectory() ? files.length : null,
-      totalSize: stat.isDirectory() ? totalSize : null,
+      totalSize: totalSize,
       filename,
       stat
     });

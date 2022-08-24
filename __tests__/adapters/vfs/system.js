@@ -110,7 +110,7 @@ describe('VFS System adapter', () => {
         isDirectory: true,
         mime: null,
         totalCount: 0,
-        totalSize: 0
+        totalSize: 4096
       });
   });
 
