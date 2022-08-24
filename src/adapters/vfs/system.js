@@ -32,24 +32,32 @@ const fs = require('fs-extra');
 const path = require('path');
 const fh = require('filehound');
 const chokidar = require('chokidar');
+const du = require('du');
 
 /*
  * Creates an object readable by client
  */
-const createFileIter = (core, realRoot, file) => {
+const createFileIter = (core, realRoot, file, options = {}) => {
   const filename = path.basename(file);
   const realPath = path.join(realRoot, filename);
   const {mime} = core.make('osjs/vfs');
 
-  const createStat = stat => ({
-    isDirectory: stat.isDirectory(),
-    isFile: stat.isFile(),
-    mime: stat.isFile() ? mime(realPath) : null,
-    size: stat.size,
-    path: file,
-    filename,
-    stat
-  });
+  const createStat = async stat => {
+    const totalSize = stat.isDirectory() ? await du(realPath) : null;
+    const files = stat.isDirectory() ? await fs.readdir(realPath) : [];
+
+    return ({
+      isDirectory: stat.isDirectory(),
+      isFile: stat.isFile(),
+      mime: stat.isFile() ? mime(realPath) : null,
+      size: stat.size,
+      path: file,
+      totalCount: stat.isDirectory() ? files.length : null,
+      totalSize: totalSize,
+      filename,
+      stat
+    });
+  };
 
   return fs.stat(realPath)
     .then(createStat)
@@ -196,7 +204,7 @@ module.exports = (core) => {
       Promise.resolve(getRealPath(core, options.session, vfs.mount, file))
         .then(realPath => {
           return fs.access(realPath, fs.F_OK)
-            .then(() => createFileIter(core, path.dirname(realPath), realPath));
+            .then(() => createFileIter(core, path.dirname(realPath), realPath, options));
         }),
 
     /**
