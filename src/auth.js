@@ -57,6 +57,9 @@ const nullAdapter = require('./adapters/auth/null.js');
  * @property {string[]} [denyUsers]
  */
 
+/** Keeps track of the active refresh tokens. */
+let refreshTokens = [];
+
 /**
  * Authentication Handler
  */
@@ -95,6 +98,26 @@ class Auth {
     } catch (e) {
       this.core.logger.warn(e);
     }
+
+    /**
+     * @type {String}
+     * @private
+     * @readonly
+     */
+    this.refreshTokenSecret = core.config('session.options.refreshTokenSecret');
+
+    /**
+     * @type {Array}
+     * @private
+     */
+    this.refreshTokens = refreshTokens;
+
+    /**
+     * @type {String}
+     * @private
+     * @readonly
+     */
+    this.accessTokenSecret = core.config('session.options.accessTokenSecret');
   }
 
   /**
@@ -119,6 +142,98 @@ class Auth {
   }
 
   /**
+   * Creates a refresh token for a user and stores it on the server.
+   *
+   * @private
+   * @param {String} username
+   * @param {Array} groups
+   * @returns {String}
+   */
+  createRefreshToken(username, groups) {
+    const refreshToken = jwt.sign(
+      {username, groups: JSON.stringify(groups)},
+      this.refreshTokenSecret
+    );
+
+    refreshTokens.push(refreshToken);
+    this.refreshTokens.push(refreshToken);
+    return refreshToken;
+  }
+
+  /**
+   * Creates and returns an access token.
+   *
+   * @private
+   * @param {String} username
+   * @param {Array} groups
+   * @returns {String}
+   */
+  createAccessToken(username, groups) {
+    return jwt.sign(
+      {username, groups: JSON.stringify(groups)},
+      this.accessTokenSecret,
+      {expiresIn: '10m'}
+    );
+  }
+
+  /**
+   * Removes a refresh token from the server.
+   *
+   * @private
+   * @param {String} refreshToken
+   */
+  removeRefreshToken(refreshToken) {
+    refreshTokens = refreshTokens.filter(
+      token => token !== refreshToken
+    );
+
+    this.refreshTokens = refreshTokens;
+  }
+
+  /**
+   * Returns the associated user if the access token is valid,
+   * otherwise returns false.
+   * @param {String} accessToken
+   * @returns {Boolean|Object}
+   */
+  validateAccessToken(accessToken) {
+    let returnValue;
+    jwt.verify(accessToken, this.accessTokenSecret, (err, user) => {
+      returnValue = err ? false : user;
+    });
+
+    return returnValue;
+  }
+
+  /**
+   * Uses a refresh token to create a new access token, then returns the
+   * associated user profile along with the new access token.
+   *
+   * @param {String} refreshToken
+   * @returns {Object|Boolean}
+   */
+  getUserFromRefreshToken(refreshToken) {
+    // Need to ensure that the refreshToken hasn't been revoked, hence the
+    // second condition checking the array.
+    if (!refreshToken || !this.refreshTokens.includes(refreshToken)) {
+      return false;
+    }
+
+    let returnValue;
+    jwt.verify(refreshToken, this.refreshTokenSecret, (err, user) => {
+      if (err) {
+        this.removeRefreshToken(refreshToken);
+        return returnValue = false;
+      }
+
+      const accessToken = this.createAccessToken(user.username, user.groups);
+      return returnValue = {...user, accessToken};
+    });
+
+    return returnValue;
+  }
+
+  /**
    * Performs a login request
    * @param {Request} req HTTP request
    * @param {Response} res HTTP response
@@ -126,31 +241,24 @@ class Auth {
    */
   async login(req, res) {
     const result = await this.adapter.login(req, res);
-    const token = result.accessToken || '';
+    if (result) {
+      const profile = this.createUserProfile(req.body, result);
+      if (profile && this.checkLoginPermissions(profile)) {
+        await this.createHomeDirectory(profile, req, res);
+        req.session.user = profile;
+        req.session.save(() => {
+          this.core.emit('osjs/core:logged-in', Object.freeze({
+            ...req.session
+          }));
 
-    jwt.verify(token, this.core.config('session.options.accessTokenSecret'), (err, user) => {
-      if (err) {
-        res.status(403).json({error: 'Invalid login or permission denied'});
+          res.status(200).json(profile);
+        });
+
+        return;
       }
-
-      req.user = user;
-    });
-
-    const profile = this.createUserProfile(req.body, result);
-
-    if (profile && this.checkLoginPermissions(profile)) {
-      await this.createHomeDirectory(profile, req, res);
-      req.session.user = profile;
-      req.session.save(() => {
-        this.core.emit('osjs/core:logged-in', Object.freeze({
-          ...req.session
-        }));
-
-        res.status(200).json(profile);
-      });
-
-      return;
     }
+
+    res.status(403).json({error: 'Invalid login or permission denied'});
   }
 
   /**
@@ -171,6 +279,9 @@ class Auth {
     } catch (e) {
       logger.warn(e);
     }
+
+    const {refreshToken} = req.body;
+    this.removeRefreshToken(refreshToken);
 
     res.json({});
   }
@@ -205,9 +316,9 @@ class Auth {
     }
 
     if (requiredGroups.length > 0) {
-      const passes = requiredGroups.every(name => {
-        return profile.groups.indexOf(name) !== -1;
-      });
+      const passes = requiredGroups.every(name =>
+        profile.groups.indexOf(name) !== -1
+      );
 
       return passes;
     }
@@ -222,29 +333,41 @@ class Auth {
    * @return {AuthUserProfile|boolean}
    */
   createUserProfile(fields, result) {
-    const ignores = [];
-    const required = ['username'];
-    const template = {
-      id: 0,
-      username: fields.username,
-      name: fields.username,
-      groups: this.core.config('auth.defaultGroups', [])
-    };
-
-    const missing = required
-      .filter(k => typeof result[k] === 'undefined');
-
-    if (missing.length) {
-      logger.warn('Missing user attributes', missing);
+    if (fields.refreshToken) {
+      // Decodes the JWT refresh token and returns the user information
+      const user = this.getUserFromRefreshToken(fields.refreshToken);
+      if (user && user.accessToken) {
+        result.username = user.username;
+        result.groups = user.groups;
+        result.accessToken = user.accessToken;
+      } else {
+        return false;
+      }
     } else {
-      const values = Object.keys(result)
-        .filter(k => ignores.indexOf(k) === -1)
-        .reduce((o, k) => ({...o, [k]: result[k]}), {});
-
-      return {...template, ...values};
+      result.refreshToken = this.createRefreshToken(fields.username, fields.groups);
+      result.accessToken = this.createAccessToken(fields.username, fields.groups);
     }
 
-    return false;
+    const ignores = ['password'];
+    const required = ['username'];
+    const template = {
+      username: fields.username,
+      name: fields.username,
+      groups: this.core.config('auth.defaultGroups', []),
+      refreshToken: fields.refreshToken
+    };
+
+    const missing = required.filter(k => typeof result[k] === 'undefined');
+    if (missing.length) {
+      logger.warn('Missing user attributes', missing);
+      return false;
+    }
+
+    const values = Object.keys(result)
+      .filter(k => ignores.indexOf(k) === -1)
+      .reduce((o, k) => ({...o, [k]: result[k]}), {});
+
+    return {...template, ...values};
   }
 
   /**

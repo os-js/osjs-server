@@ -104,7 +104,7 @@ class CoreServiceProvider extends ServiceProvider {
       routeAuthenticated: (method, uri, cb, groups = [], strict = requireAllGroups) =>
         app[method.toLowerCase()](uri, [
           ...middleware.routeAuthenticated,
-          isAuthenticated(groups, strict)
+          isAuthenticated(app, groups, strict)
         ], cb),
 
       router: () => {
@@ -116,7 +116,7 @@ class CoreServiceProvider extends ServiceProvider {
       routerAuthenticated: (groups = [], strict = requireAllGroups) => {
         const router = express.Router();
         router.use(...middleware.routeAuthenticated);
-        router.use(isAuthenticated(groups, strict));
+        router.use(isAuthenticated(app, groups, strict));
         return router;
       }
     }));

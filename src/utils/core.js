@@ -30,6 +30,7 @@
 
 const express_session = require('express-session');
 const express_ws = require('express-ws');
+const Auth = require('../auth');
 
 /*
  * Converts an input argument to configuration entry
@@ -56,6 +57,7 @@ module.exports.createSession = (app, configuration) => {
 
   return express_session({
     store,
+    secret: configuration.session.options.accessTokenSecret,
     ...configuration.session.options
   });
 };
@@ -103,14 +105,35 @@ const validateGroups = (req, groups, all) => {
 /*
  * Authentication middleware wrapper
  */
-module.exports.isAuthenticated = (groups = [], all = false) => (req, res, next) => {
-  if (req.session.user && validateGroups(req, groups, all)) {
-    return next();
+module.exports.isAuthenticated = (core, groups = [], all = false) => (req, res, next) => {
+  const user = req.session.user;
+
+  if (user) {
+    const auth = new Auth(core);
+    let accessToken = user.accessToken;
+    const accessTokenUser = auth.validateAccessToken(accessToken);
+
+    if (accessTokenUser.username !== user.username) {
+      // Access token is invalid, check if refresh token is valid
+      const refreshTokenUser = auth.getUserFromRefreshToken(user.refreshToken);
+
+      if (refreshTokenUser && refreshTokenUser.username === user.username) {
+        // Refresh token is valid, update access token
+        accessToken = refreshTokenUser.accessToken;
+      } else {
+        // Refresh token is invalid, user is not authenticated
+        accessToken = null;
+      }
+
+      req.session.user.accessToken = accessToken;
+    }
+
+    if (accessToken && validateGroups(req, groups, all)) {
+      return next();
+    }
   }
 
-  return res
-    .status(403)
-    .send('Access denied');
+  return res.status(403).send('Access denied');
 };
 
 /**

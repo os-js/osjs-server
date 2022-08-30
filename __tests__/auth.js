@@ -49,7 +49,7 @@ describe('Authentication', () => {
       });
     })
   );
-  
+
   afterAll(() => core.destroy());
 
   test('#constructor', () => {
@@ -90,9 +90,9 @@ describe('Authentication', () => {
     await auth.login(request, response);
 
     expect(response.status).toBeCalledWith(200);
-    expect(request.session.user).toEqual(profile);
+    expect(request.session.user).toMatchObject(profile);
     expect(request.session.save).toBeCalled();
-    expect(response.json).toBeCalledWith(profile);
+    expect(response.json).toBeCalledWith(expect.objectContaining(profile));
   });
 
   test('#login - createHomeDirectory string', async () => {

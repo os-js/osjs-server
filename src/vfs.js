@@ -263,7 +263,7 @@ module.exports = core => {
   const logEnabled = core.config('development');
 
   // Middleware first
-  router.use(isAuthenticated(vfsGroups));
+  router.use(isAuthenticated(core, vfsGroups));
   router.use(middleware);
 
   // Then all VFS routes (needs implementation above)
