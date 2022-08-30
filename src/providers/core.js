@@ -35,7 +35,7 @@ const bodyParser = require('body-parser');
 const proxy = require('express-http-proxy');
 const nocache = require('nocache');
 const {ServiceProvider} = require('@osjs/common');
-const {isAuthenticated, closeWatches} = require('../utils/core.js');
+const {useWebTokens, isAuthenticated, closeWatches} = require('../utils/core.js');
 
 /**
  * OS.js Core Service Provider
@@ -86,6 +86,7 @@ class CoreServiceProvider extends ServiceProvider {
     };
 
     this.core.singleton('osjs/express', () => ({
+      useWebTokens,
       isAuthenticated,
 
       call: (method, ...args) => app[method](...args),
@@ -104,7 +105,8 @@ class CoreServiceProvider extends ServiceProvider {
       routeAuthenticated: (method, uri, cb, groups = [], strict = requireAllGroups) =>
         app[method.toLowerCase()](uri, [
           ...middleware.routeAuthenticated,
-          isAuthenticated(app, groups, strict)
+          useWebTokens(app),
+          isAuthenticated(groups, strict)
         ], cb),
 
       router: () => {
@@ -116,7 +118,8 @@ class CoreServiceProvider extends ServiceProvider {
       routerAuthenticated: (groups = [], strict = requireAllGroups) => {
         const router = express.Router();
         router.use(...middleware.routeAuthenticated);
-        router.use(isAuthenticated(app, groups, strict));
+        router.use(useWebTokens(app));
+        router.use(isAuthenticated(groups, strict));
         return router;
       }
     }));

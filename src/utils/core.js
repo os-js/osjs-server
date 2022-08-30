@@ -32,7 +32,7 @@ const express_session = require('express-session');
 const express_ws = require('express-ws');
 const Auth = require('../auth');
 
-/*
+/**
  * Converts an input argument to configuration entry
  * Overrides the user-created configuration file
  */
@@ -48,7 +48,7 @@ module.exports.argvToConfig = {
   'manifest': manifest => ({packages: {manifest}})
 };
 
-/*
+/**
  * Create session parser
  */
 module.exports.createSession = (app, configuration) => {
@@ -62,7 +62,7 @@ module.exports.createSession = (app, configuration) => {
   });
 };
 
-/*
+/**
  * Create WebSocket server
  */
 module.exports.createWebsocket = (app, configuration, session, httpServer) => express_ws(app, httpServer, {
@@ -87,7 +87,7 @@ module.exports.parseJson = str => {
   }
 };
 
-/*
+/**
  * Checks groups for a request
  */
 const validateGroups = (req, groups, all) => {
@@ -102,20 +102,22 @@ const validateGroups = (req, groups, all) => {
   return true;
 };
 
-/*
- * Authentication middleware wrapper
+/**
+ * JSON web token middleware wrapper
+ * @param {Core} core
+ * @returns {*}
  */
-module.exports.isAuthenticated = (core, groups = [], all = false) => (req, res, next) => {
+module.exports.useWebTokens = (core) => async (req, res, next) => {
   const user = req.session.user;
 
   if (user) {
     const auth = new Auth(core);
     let accessToken = user.accessToken;
-    const accessTokenUser = auth.validateAccessToken(accessToken);
+    const accessTokenUser = await auth.validateAccessToken(accessToken);
 
     if (accessTokenUser.username !== user.username) {
       // Access token is invalid, check if refresh token is valid
-      const refreshTokenUser = auth.getUserFromRefreshToken(user.refreshToken);
+      const refreshTokenUser = await auth.getUserFromRefreshToken(user.refreshToken);
 
       if (refreshTokenUser && refreshTokenUser.username === user.username) {
         // Refresh token is valid, update access token
@@ -128,9 +130,23 @@ module.exports.isAuthenticated = (core, groups = [], all = false) => (req, res, 
       req.session.user.accessToken = accessToken;
     }
 
-    if (accessToken && validateGroups(req, groups, all)) {
+    if (accessToken) {
       return next();
     }
+  }
+
+  return res.status(403).send('Access denied');
+};
+
+/**
+ * Authentication middleware wrapper
+ * @param {array} groups
+ * @param {boolean} all
+ * @returns {*}
+ */
+module.exports.isAuthenticated = (groups = [], all = false) => (req, res, next) => {
+  if (req.session.user && validateGroups(req, groups, all)) {
+    return next();
   }
 
   return res.status(403).send('Access denied');

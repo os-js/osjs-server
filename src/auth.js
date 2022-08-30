@@ -57,9 +57,6 @@ const nullAdapter = require('./adapters/auth/null.js');
  * @property {string[]} [denyUsers]
  */
 
-/** Keeps track of the active refresh tokens. */
-let refreshTokens = [];
-
 /**
  * Authentication Handler
  */
@@ -107,12 +104,6 @@ class Auth {
     this.refreshTokenSecret = core.config('session.options.refreshTokenSecret');
 
     /**
-     * @type {Array}
-     * @private
-     */
-    this.refreshTokens = refreshTokens;
-
-    /**
      * @type {String}
      * @private
      * @readonly
@@ -145,18 +136,18 @@ class Auth {
    * Creates a refresh token for a user and stores it on the server.
    *
    * @private
-   * @param {String} username
-   * @param {Array} groups
-   * @returns {String}
+   * @param {Request} req
+   * @param {string} username
+   * @param {array} groups
+   * @returns {string}
    */
-  createRefreshToken(username, groups) {
+  createRefreshToken(req, username, groups) {
     const refreshToken = jwt.sign(
       {username, groups: JSON.stringify(groups)},
       this.refreshTokenSecret
     );
 
-    refreshTokens.push(refreshToken);
-    this.refreshTokens.push(refreshToken);
+    req.session.refreshTokens.push(refreshToken);
     return refreshToken;
   }
 
@@ -164,9 +155,9 @@ class Auth {
    * Creates and returns an access token.
    *
    * @private
-   * @param {String} username
-   * @param {Array} groups
-   * @returns {String}
+   * @param {string} username
+   * @param {array} groups
+   * @returns {string}
    */
   createAccessToken(username, groups) {
     return jwt.sign(
@@ -180,57 +171,61 @@ class Auth {
    * Removes a refresh token from the server.
    *
    * @private
-   * @param {String} refreshToken
+   * @param {Request} req
+   * @param {string} refreshToken
    */
-  removeRefreshToken(refreshToken) {
-    refreshTokens = refreshTokens.filter(
+  removeRefreshToken(req, refreshToken) {
+    const refreshTokens = req.session.refreshTokens.filter(
       token => token !== refreshToken
     );
 
-    this.refreshTokens = refreshTokens;
+    req.session.refreshTokens = refreshTokens;
   }
 
   /**
    * Returns the associated user if the access token is valid,
    * otherwise returns false.
-   * @param {String} accessToken
-   * @returns {Boolean|Object}
+   * @param {string} accessToken
+   * @returns {Promise<boolean|object>}
    */
-  validateAccessToken(accessToken) {
-    let returnValue;
-    jwt.verify(accessToken, this.accessTokenSecret, (err, user) => {
-      returnValue = err ? false : user;
+  async validateAccessToken(accessToken) {
+    return new Promise((resolve, reject) => {
+      jwt.verify(accessToken, this.accessTokenSecret, (err, user) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(user);
+        }
+      });
     });
-
-    return returnValue;
   }
 
   /**
    * Uses a refresh token to create a new access token, then returns the
    * associated user profile along with the new access token.
    *
-   * @param {String} refreshToken
-   * @returns {Object|Boolean}
+   * @param {Request} req
+   * @param {string} refreshToken
+   * @returns {boolean|Promise<object|boolean>}
    */
-  getUserFromRefreshToken(refreshToken) {
+  getUserFromRefreshToken(req, refreshToken) {
     // Need to ensure that the refreshToken hasn't been revoked, hence the
     // second condition checking the array.
-    if (!refreshToken || !this.refreshTokens.includes(refreshToken)) {
+    if (!refreshToken || !req.session.refreshTokens.includes(refreshToken)) {
       return false;
     }
 
-    let returnValue;
-    jwt.verify(refreshToken, this.refreshTokenSecret, (err, user) => {
-      if (err) {
-        this.removeRefreshToken(refreshToken);
-        return returnValue = false;
-      }
-
-      const accessToken = this.createAccessToken(user.username, user.groups);
-      return returnValue = {...user, accessToken};
+    return new Promise((resolve, reject) => {
+      jwt.verify(refreshToken, this.refreshTokenSecret, (err, user) => {
+        if (err) {
+          this.removeRefreshToken(req, refreshToken);
+          reject(false);
+        } else {
+          const accessToken = this.createAccessToken(user.username, user.groups);
+          resolve({...user, accessToken});
+        }
+      });
     });
-
-    return returnValue;
   }
 
   /**
@@ -240,11 +235,44 @@ class Auth {
    * @return {Promise<undefined>}
    */
   async login(req, res) {
-    const result = await this.adapter.login(req, res);
+    // Initialize the refreshToken array if it doesn't exist
+    if (!req.session.refreshTokens) {
+      req.session.refreshTokens = [];
+    }
+
+    let result = {};
+    const refreshToken = req.body.refreshToken;
+
+    if (refreshToken) {
+      // Decodes the JWT refresh token and returns the user information
+      const user = await this.getUserFromRefreshToken(req, refreshToken);
+      if (user && user.accessToken) {
+        result.username = user.username;
+        result.groups = user.groups;
+        result.accessToken = user.accessToken;
+      }
+    } else {
+      // Attempts to log the user in using the adapter
+      const standardAuthResult = await this.adapter.login(req, res);
+
+      if (standardAuthResult) {
+        result = standardAuthResult;
+        result.refreshToken = this.createRefreshToken(
+          req,
+          standardAuthResult.username,
+          standardAuthResult.groups
+        );
+        result.accessToken = this.createAccessToken(
+          standardAuthResult.username,
+          standardAuthResult.groups
+        );
+      }
+    }
+
     if (result) {
       const profile = this.createUserProfile(req.body, result);
       if (profile && this.checkLoginPermissions(profile)) {
-        await this.createHomeDirectory(profile, req, res);
+        await this.createHomeDirectory(profile);
         req.session.user = profile;
         req.session.save(() => {
           this.core.emit('osjs/core:logged-in', Object.freeze({
@@ -279,9 +307,6 @@ class Auth {
     } catch (e) {
       logger.warn(e);
     }
-
-    const {refreshToken} = req.body;
-    this.removeRefreshToken(refreshToken);
 
     res.json({});
   }
@@ -333,21 +358,6 @@ class Auth {
    * @return {AuthUserProfile|boolean}
    */
   createUserProfile(fields, result) {
-    if (fields.refreshToken) {
-      // Decodes the JWT refresh token and returns the user information
-      const user = this.getUserFromRefreshToken(fields.refreshToken);
-      if (user && user.accessToken) {
-        result.username = user.username;
-        result.groups = user.groups;
-        result.accessToken = user.accessToken;
-      } else {
-        return false;
-      }
-    } else {
-      result.refreshToken = this.createRefreshToken(fields.username, fields.groups);
-      result.accessToken = this.createAccessToken(fields.username, fields.groups);
-    }
-
     const ignores = ['password'];
     const required = ['username'];
     const template = {
