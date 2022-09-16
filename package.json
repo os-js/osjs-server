@@ -8,7 +8,8 @@
     "jest": "jest",
     "coverage": "jest --coverage",
     "eslint": "eslint index.js src",
-    "prepublishOnly": "npm run test"
+    "prepublishOnly": "npm run test",
+    "prepare": "husky install"
   },
   "files": [
     "src/",
@@ -56,9 +57,12 @@
     "uuid": "^8.3.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
     "@osjs/dev-meta": "^2.2.0",
     "jest-express": "^1.12.0",
-    "temp": "^0.9.4"
+    "temp": "^0.9.4",
+    "husky": "^8.0.0"
   },
   "eslintConfig": {
     "env": {
@@ -121,6 +125,11 @@
       "src/config.js",
       "src/providers",
       "/node_modules/"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
     ]
   }
 }
