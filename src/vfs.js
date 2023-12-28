@@ -64,7 +64,11 @@ const parseRangeHeader = (range, size) => {
 const onDone = (req, res) => {
   if (req.files) {
     for (let fieldname in req.files) {
-      fs.unlink(req.files[fieldname].path, () => ({}));
+      try {
+        fs.removeSync(req.files[fieldname].path);
+      } catch (e) {
+        console.warn('Failed to unlink temporary file', e);
+      }
     }
   }
 };
@@ -75,17 +79,23 @@ const onDone = (req, res) => {
 const wrapper = fn => (req, res, next) => fn(req, res)
   .then(result => {
     if (result instanceof Stream) {
+      result.on('error', error => {
+        next(error);
+      });
+
+      result.on('end', () => {
+        onDone(req, res);
+      });
+
       result.pipe(res);
     } else {
       res.json(result);
+      onDone(req, res);
     }
-
-    onDone(req, res);
   })
   .catch(error => {
-    onDone(req, res);
-
     next(error);
+    onDone(req, res);
   });
 
 /**
