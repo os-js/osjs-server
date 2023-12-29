@@ -64,6 +64,13 @@ describe('VFS Utils', () => {
         upload: temp.openSync('osjs-jest-file-upload')
       }
     })).toBeInstanceOf(Readable);
+
+    temp.track();
+    expect(utils.streamFromRequest({
+      files: {
+        upload: temp.openSync('osjs-jest-file-upload')
+      }
+    })).toBeInstanceOf(Readable);
   });
 
   test('validateGroups - flat groups', () => {

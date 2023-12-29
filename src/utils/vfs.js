@@ -70,7 +70,8 @@ const streamFromRequest = req => {
   const isStream = req.files.upload instanceof Stream;
   return isStream
     ? req.files.upload
-    : fs.createReadStream(req.files.upload.path);
+    : fs.createReadStream(req.files.upload.path)
+      .on('error', (err) => {});
 };
 
 const validateAll = (arr, compare, strict = true) => arr[strict ? 'every' : 'some'](g => compare.indexOf(g) !== -1);
