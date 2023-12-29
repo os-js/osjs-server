@@ -1,6 +1,17 @@
 # Changelog for osjs-server
 
-## 3.4.0 - 2022-08-01
+## 3.4.0 - 2023-12-29
+
+* fix(vfs): race condition on temp file cleanup
+* docs(vfs): update search function annotation (#70)
+* ci: add husky and commit checks
+* ci: add commitlint workflow
+* ci: update actions
+* Add VFS capabilities method (#65)
+* Remove defunct jest CI installation
+* Update 'npm install' to 'npm ci' in CI
+* Remove global npm install from test CI
+* Update dependencies
 
 ## 3.3.3 - 2022-07-31
 
