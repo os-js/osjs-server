@@ -145,7 +145,7 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   const [target, ...rest] = getter(req, res);
 
   const found = await findMountpoint(target);
-  const attributes = found.mount || {};
+  const attributes = found.mount.attributes || {};
   const strict = attributes.strictGroups !== false;
 
   if (method === 'search') {
