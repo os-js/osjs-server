@@ -43,10 +43,10 @@ const {
 
 const respondNumber = result => typeof result === 'number' ? result : -1;
 const respondBoolean = result => typeof result === 'boolean' ? result : !!result;
-const requestPath = req => ([sanitize(req.fields.path)]);
-const requestSearch = req => ([sanitize(req.fields.root), req.fields.pattern]);
-const requestCross = req => ([sanitize(req.fields.from), sanitize(req.fields.to)]);
-const requestFile = req => ([sanitize(req.fields.path), streamFromRequest(req)]);
+const requestPath = req => [sanitize(req.fields.path)];
+const requestSearch = req => [sanitize(req.fields.root), req.fields.pattern];
+const requestFile = req => [sanitize(req.fields.path), () => streamFromRequest(req)];
+const requestCross = req => [sanitize(req.fields.from), sanitize(req.fields.to)];
 
 /*
  * Parses the range request headers
@@ -65,7 +65,10 @@ const onDone = (req, res) => {
   if (req.files) {
     for (let fieldname in req.files) {
       try {
-        fs.removeSync(req.files[fieldname].path);
+        const n = req.files[fieldname].path;
+        if (fs.existsSync(n)) {
+          fs.removeSync(n);
+        }
       } catch (e) {
         console.warn('Failed to unlink temporary file', e);
       }
@@ -77,26 +80,18 @@ const onDone = (req, res) => {
  * Wraps a vfs adapter request
  */
 const wrapper = fn => (req, res, next) => fn(req, res)
-  .then(result => {
+  .then(result => new Promise((resolve, reject) => {
     if (result instanceof Stream) {
-      result.on('error', error => {
-        next(error);
-      });
-
-      result.on('end', () => {
-        onDone(req, res);
-      });
-
+      result.once('error', reject);
+      result.once('end', resolve);
       result.pipe(res);
     } else {
       res.json(result);
-      onDone(req, res);
+      resolve();
     }
-  })
-  .catch(error => {
-    next(error);
-    onDone(req, res);
-  });
+  }))
+  .catch(error => next(error))
+  .finally(() => onDone(req, res));
 
 /**
  * Creates the middleware
@@ -147,27 +142,31 @@ const createOptions = req => {
 // Standard request with only a target
 const createRequestFactory = findMountpoint => (getter, method, readOnly, respond) => async (req, res) => {
   const options = createOptions(req);
-  const args = [...getter(req, res), options];
+  const [target, ...rest] = getter(req, res);
 
-  const found = await findMountpoint(args[0]);
+  const found = await findMountpoint(target);
+  const attributes = found.mount.attributes || {};
+  const strict = attributes.strictGroups !== false;
+
   if (method === 'search') {
-    if (found.mount.attributes && found.mount.attributes.searchable === false) {
+    if (attributes.searchable === false) {
       return [];
     }
   }
 
-  const {attributes} = found.mount;
-  const strict = attributes.strictGroups !== false;
-  const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
-  const vfsMethodWrapper = m => found.adapter[m]
-    ? found.adapter[m](found)(...args)
-    : Promise.reject(new Error(`Adapter does not support ${m}`));
-  const readstat = () => vfsMethodWrapper('stat').catch(() => ({}));
   await checkMountpointPermission(req, res, method, readOnly, strict)(found);
+
+  const vfsMethodWrapper = m => {
+    const args = [target, ...rest.map(r => typeof r === 'function' ? r() : r), options];
+    return found.adapter[m]
+      ? found.adapter[m](found)(...args)
+      : Promise.reject(new Error(`Adapter does not support ${m}`));
+  };
 
   const result = await vfsMethodWrapper(method);
   if (method === 'readfile') {
-    const stat = await readstat();
+    const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
+    const stat = await vfsMethodWrapper('stat').catch(() => ({}));
 
     if (ranges && options.range) {
       try {
@@ -192,7 +191,7 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
     }
 
     if (options.download) {
-      const filename = encodeURIComponent(path.basename(args[0]));
+      const filename = encodeURIComponent(path.basename(target));
       res.append('Content-Disposition', `attachment; filename*=utf-8''${filename}`);
     }
   }
