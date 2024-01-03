@@ -45,7 +45,7 @@ const respondNumber = result => typeof result === 'number' ? result : -1;
 const respondBoolean = result => typeof result === 'boolean' ? result : !!result;
 const requestPath = req => [sanitize(req.fields.path)];
 const requestSearch = req => [sanitize(req.fields.root), req.fields.pattern];
-const requestFile = req => [sanitize(req.fields.path), () => streamFromRequest(req)];
+const requestFile = req => [sanitize(req.fields.path), streamFromRequest(req)];
 const requestCross = req => [sanitize(req.fields.from), sanitize(req.fields.to)];
 
 /*
@@ -143,6 +143,7 @@ const createOptions = req => {
 const createRequestFactory = findMountpoint => (getter, method, readOnly, respond) => async (req, res) => {
   const options = createOptions(req);
   const [target, ...rest] = getter(req, res);
+  const [resource] = rest;
 
   const found = await findMountpoint(target);
   const attributes = found.mount.attributes || {};
@@ -154,49 +155,58 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
     }
   }
 
-  await checkMountpointPermission(req, res, method, readOnly, strict)(found);
+  const call = async () => {
+    await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
-  const vfsMethodWrapper = m => {
-    const args = [target, ...rest.map(r => typeof r === 'function' ? r() : r), options];
-    return found.adapter[m]
-      ? found.adapter[m](found)(...args)
-      : Promise.reject(new Error(`Adapter does not support ${m}`));
+    const vfsMethodWrapper = m => {
+      return found.adapter[m]
+        ? found.adapter[m](found)(target, ...rest, options)
+        : Promise.reject(new Error(`Adapter does not support ${m}`));
+    };
+
+    const result = await vfsMethodWrapper(method);
+    if (method === 'readfile') {
+      const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
+      const stat = await vfsMethodWrapper('stat').catch(() => ({}));
+
+      if (ranges && options.range) {
+        try {
+          if (stat.size) {
+            const size = stat.size;
+            const [start, end] = options.range;
+            const realEnd = end ? end : size - 1;
+            const chunksize = (realEnd - start) + 1;
+
+            res.writeHead(206, {
+              'Content-Range': `bytes ${start}-${realEnd}/${size}`,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': chunksize,
+              'Content-Type': stat.mime
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to send a ranged response', e);
+        }
+      } else if (stat.mime) {
+        res.append('Content-Type', stat.mime);
+      }
+
+      if (options.download) {
+        const filename = encodeURIComponent(path.basename(target));
+        res.append('Content-Disposition', `attachment; filename*=utf-8''${filename}`);
+      }
+    }
+
+    return respond ? respond(result) : result;
   };
 
-  const result = await vfsMethodWrapper(method);
-  if (method === 'readfile') {
-    const ranges = (!attributes.adapter || attributes.adapter === 'system') || attributes.ranges === true;
-    const stat = await vfsMethodWrapper('stat').catch(() => ({}));
-
-    if (ranges && options.range) {
-      try {
-        if (stat.size) {
-          const size = stat.size;
-          const [start, end] = options.range;
-          const realEnd = end ? end : size - 1;
-          const chunksize = (realEnd - start) + 1;
-
-          res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${realEnd}/${size}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': stat.mime
-          });
-        }
-      } catch (e) {
-        console.warn('Failed to send a ranged response', e);
-      }
-    } else if (stat.mime) {
-      res.append('Content-Type', stat.mime);
+  return new Promise((resolve, reject) => {
+    if (resource instanceof Stream) {
+      resource.once('error', reject);
     }
 
-    if (options.download) {
-      const filename = encodeURIComponent(path.basename(target));
-      res.append('Content-Disposition', `attachment; filename*=utf-8''${filename}`);
-    }
-  }
-
-  return respond ? respond(result) : result;
+    call().then(resolve).catch(reject);
+  });
 };
 
 // Request that has a source and target
