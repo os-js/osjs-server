@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.4.1 - 2024-01-03
+
+* fix(vfs): defer stream creation in vfs requests (#80)
+
 ## 3.4.0 - 2023-12-29
 
 * fix(vfs): race condition on temp file cleanup
