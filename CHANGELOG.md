@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.4.2 - 2024-01-04
+
+* fix(vfs): late stream error
+
 ## 3.4.1 - 2024-01-03
 
 * fix(vfs): defer stream creation in vfs requests (#80)
