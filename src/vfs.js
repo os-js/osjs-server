@@ -141,21 +141,17 @@ const createOptions = req => {
 
 // Standard request with only a target
 const createRequestFactory = findMountpoint => (getter, method, readOnly, respond) => async (req, res) => {
-  const options = createOptions(req);
-  const [target, ...rest] = getter(req, res);
-  const [resource] = rest;
+  const call = async (target, rest, options) => {
+    const found = await findMountpoint(target);
+    const attributes = found.mount.attributes || {};
+    const strict = attributes.strictGroups !== false;
 
-  const found = await findMountpoint(target);
-  const attributes = found.mount.attributes || {};
-  const strict = attributes.strictGroups !== false;
-
-  if (method === 'search') {
-    if (attributes.searchable === false) {
-      return [];
+    if (method === 'search') {
+      if (attributes.searchable === false) {
+        return [];
+      }
     }
-  }
 
-  const call = async () => {
     await checkMountpointPermission(req, res, method, readOnly, strict)(found);
 
     const vfsMethodWrapper = m => {
@@ -201,11 +197,15 @@ const createRequestFactory = findMountpoint => (getter, method, readOnly, respon
   };
 
   return new Promise((resolve, reject) => {
+    const options = createOptions(req);
+    const [target, ...rest] = getter(req, res);
+    const [resource] = rest;
+
     if (resource instanceof Stream) {
       resource.once('error', reject);
     }
 
-    call().then(resolve).catch(reject);
+    call(target, rest, options).then(resolve).catch(reject);
   });
 };
 
