@@ -1,5 +1,9 @@
 # Changelog for osjs-server
 
+## 3.4.3 - 2024-01-09
+
+* fix(vfs): exception falls through in mountpoint check
+
 ## 3.4.2 - 2024-01-04
 
 * fix(vfs): late stream error
